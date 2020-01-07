@@ -111,12 +111,14 @@ public strictfp class RobotPlayer {
     // returns best move to greedily move to target. Returns null if greedy move doesn't work
     static Direction getGreedyMove(MapLocation target) throws GameActionException {
         Direction dir = rc.getLocation().directionTo(target);
-        if (!rc.canMove(dir)) {
+        // FIXME: Remove senseFlooding in future
+        if (!rc.canMove(dir) || rc.senseFlooding((rc.adjacentLocation((dir))))) {
             int minDist = 999999;
             for (int i = directions.length; --i >= 0; ) {
                 // if distance to target from this potential direction is smaller, set it
                 int dist = target.distanceSquaredTo(rc.adjacentLocation(directions[i]));
-                if (dist < minDist && rc.canMove(directions[i])) {
+                // FIXME: Remove sensefLooding in future
+                if (dist < minDist && rc.canMove(directions[i]) && !rc.senseFlooding(rc.adjacentLocation(directions[i]))) {
                     dir = directions[i];
                     minDist = dist;
                     System.out.println("I chose " + dir + " instead in order to go to " + target);
@@ -192,7 +194,8 @@ public strictfp class RobotPlayer {
 
     // announces the location with that cost.
     static boolean announceSoupLocation(MapLocation loc, int cost) throws GameActionException {
-        // announce x y coords and round number
+        // announce x y coords and round number,
+        // and how many miners are there already?
         int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, loc.x, loc.y, rc.getRoundNum()};
         encodeMsg(message);
 
@@ -207,8 +210,13 @@ public strictfp class RobotPlayer {
 
     /**
      * Read announcement code and store in SoupLocation the new soup location found
+     * Store closest one
      */
     static void checkBlockForSoupLocations(Transaction[] transactions) throws GameActionException {
+        int minDist = 99999;
+        if (SoupLocation != null) {
+            minDist = rc.getLocation().distanceSquaredTo(SoupLocation);
+        }
         for (int i = transactions.length; --i >= 0;) {
             int[] msg = transactions[i].getMessage();
             decodeMsg(msg);
@@ -216,10 +224,13 @@ public strictfp class RobotPlayer {
                 // if it is announce SOUP location message
                 if ((msg[1] ^ ANNOUNCE_SOUP_LOCATION) == 0) {
                     // TODO: do something with msg[4], the round number, determine outdatedness?
-                    if (SoupLocation == null) {
+                    MapLocation potentialLoc = new MapLocation(msg[2], msg[3]);
+                    int dist = rc.getLocation().distanceSquaredTo(potentialLoc);
+                    if (dist < minDist) {
 
-                        SoupLocation = new MapLocation(msg[2], msg[3]);
-                        if (debug) System.out.println("Found soup location in messages: " + SoupLocation);
+                        SoupLocation = potentialLoc;
+                        minDist = dist;
+                        if (debug) System.out.println("Found closer soup location in messages: " + SoupLocation);
                     }
                     else {
                         // already have soup location target that still exists, continue with mining it

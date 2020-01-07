@@ -10,10 +10,9 @@ public class Miner extends RobotPlayer {
     static int role = MINER; // default ROLE
     static MapLocation[] RefineryLocations = new MapLocation[100];
     static MapLocation targetLoc; // location to head towards
-    // BFS deltas
-    static final int[][] BFS = new int[][] {{0,0},{1,0},{0,-1},{-1,0},{0,1},{2,0},{1,-1},{0,-2},{-1,-1},{-2,0},{-1,1},{0,2},{1,1}};
-    // static final int[][] BFSFlipped = new int[][]{{6,6}};
     public static void run() throws GameActionException {
+        // try to get out of water, checks if in water for you
+        getOutOfWater();
 
         // Strat: MINE if possible!
         // TODO: can do with mining optimization? Mine furthest tile away from friends?
@@ -41,8 +40,8 @@ public class Miner extends RobotPlayer {
             role = RETURNING;
         }
 
-
-
+        // always read last round's blocks
+        Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
 
         // if bot has no target mining patch, continue in scout mode
         // we search for soup patches and move around if we dont find any in vicinity
@@ -56,9 +55,10 @@ public class Miner extends RobotPlayer {
                   TODO: searches 162 locations if we go through entire array. lots of bytecode...
                    could optimize by searching locations within 2 units and those 6 >= units >=4 away...
                 */
-                    // TODO: BIG: WHEN POLLUTED, CANT SENSE THAT FAR : ISSUE ISSUE ISSUE
                     // iterate backwards to start from outer most field of view to search for patch of soup
-                    for (int i = Constants.BFSDeltas35.length; --i >= 0; ) {
+                    //for (int i = Constants.BFSDeltas35.length; --i >= 0; ) {
+                    // finds closest soup location in sensor range
+                    for (int i = 0; i < Constants.BFSDeltas35.length; i++) {
                         int[] deltas = Constants.BFSDeltas35[i];
                         MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
                         // TODO: instead of canSenseLocation, maybe do the math and choose the right BFS deltas to iterate over
@@ -86,7 +86,6 @@ public class Miner extends RobotPlayer {
                     }
                     // if we haven't broken out of this search: tag, then we haven't found soup
                     // look through last rounds announcements, see whats there
-                    Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
                     checkBlockForSoupLocations(lastRoundsBlocks);
                 }
             }
@@ -118,8 +117,9 @@ public class Miner extends RobotPlayer {
         else if (role == RETURNING) {
             // targetLoc should be place miner tries to return to
             if (rc.getLocation().distanceSquaredTo(targetLoc) > 1) {
-                if (debug) System.out.println("Heading to soup depo at " + targetLoc);
+
                 Direction greedyDir = getGreedyMove(targetLoc);
+                if (debug) System.out.println("Heading to soup depo at " + targetLoc + " by moving to " + rc.adjacentLocation(greedyDir));
                 tryMove(greedyDir);
             }
             else {
@@ -138,20 +138,41 @@ public class Miner extends RobotPlayer {
         // search enemy robots and scout
         //
         // rc.senseNearbyRobots(-1, enemyTeam);
-        
+
         if (debug) {
             System.out.println("Miner " + role + " - Bytecode used: " + Clock.getBytecodeNum() +
                     " | Bytecode left: " + Clock.getBytecodesLeft() +
-                    " | SoupLoc Target: " + SoupLocation + " | targetLoc: " + targetLoc);
+                    " | SoupLoc Target: " + SoupLocation + " | targetLoc: " + targetLoc +
+                    " | Cooldown: " + rc.getCooldownTurns());
         }
     }
 
     // algorithm to allow miner to explore and attempt to generally move to new spaces
     // fuzzy pathing, go in general direction and sway side to side
+    // general direction is direction away from HQ
     static void explore() throws GameActionException {
-        Direction dir = randomDirection();
+        Direction generalDir = rc.getLocation().directionTo(HQLocation).opposite();
+        if (rc.getLocation().x <= 5) {
+
+        }
+        double p = Math.random();
+        if (p < 0.35) {
+            generalDir = generalDir.rotateLeft();
+            if (p < 0.05) {
+                generalDir = generalDir.rotateLeft();
+            }
+        }
+        else {
+            generalDir = generalDir.rotateRight();
+            if (p > 0.65) {
+                generalDir = generalDir.rotateRight();
+            }
+        }
+        Direction dir = getGreedyMove(rc.adjacentLocation(generalDir));
+        // first try a good general direction
         if (tryMove(dir));
-        System.out.println("Attempted to move to " + rc.adjacentLocation(dir));
+        // then try some other one
+        System.out.println("Attempted to move to " + rc.adjacentLocation(generalDir));
     }
 
     static MapLocation getNearestDropsite() throws GameActionException {
