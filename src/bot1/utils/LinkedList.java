@@ -4,7 +4,7 @@ public class LinkedList<T> {
     public int size = 0;
     public Node head;
     public Node end;
-    LinkedList() {
+    public LinkedList() {
 
     }
     public void add(T obj) {
@@ -23,7 +23,7 @@ public class LinkedList<T> {
 class Node<T> {
     public Node next;
     public T val;
-    Node(T obj) {
+    public Node(T obj) {
         val = obj;
     }
 }
