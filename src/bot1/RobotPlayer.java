@@ -1,17 +1,26 @@
 package bot1;
 import battlecode.common.*;
+import sun.awt.SunToolkit;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
 
-    static Direction[] directions = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+    static final Direction[] simpleDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+    static final Direction[] directions = {Direction.CENTER, Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
     static RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
-    static RobotType[] ordinalToType = {RobotType.HQ, RobotType.MINER};
-    static MapLocation[] RefineryLocations = new MapLocation[1000];
+    // maps ordinals to their robot types, 10 robot types, takes up 0-9
+    static final RobotType[] ordinalToType = {RobotType.HQ, RobotType.MINER, RobotType.REFINERY, RobotType.VAPORATOR,
+            RobotType.DESIGN_SCHOOL, RobotType.FULFILLMENT_CENTER, RobotType.LANDSCAPER, RobotType.DELIVERY_DRONE, RobotType.NET_GUN, RobotType.COW};
+    // static MapLocation[] SoupLocations = new MapLocation[100];
+    static MapLocation SoupLocation; // stores a target soup location to go and mine
+    static MapLocation HQLocation;
     static int turnCount;
     static final boolean debug = true;
     static final int UNIQUEKEY = -92390123;
+
+    // signal codes
+    static final int ANNOUNCE_SOUP_LOCATION = 10;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -29,10 +38,7 @@ public strictfp class RobotPlayer {
             System.out.println("Created " + rc.getType().ordinal() + ": " + rc.getType() + " init bytecount: " + Clock.getBytecodeNum());
         }
 
-        // store HQ position of this miner
-        getHome();
-        // store enemy HQ position
-        //storeEnemyHQ();
+        // run setup code
         switch (rc.getType()) {
             case HQ:                 HQ.setup();                break;
             case MINER:              Miner.setup();             break;
@@ -90,10 +96,6 @@ public strictfp class RobotPlayer {
         }
     }
 
-    static void runNetGun() throws GameActionException {
-
-    }
-
     // moves robot to a target greedily, null if no good positions (possibly blocked)
     // byte code cost is:
     static Direction moveToGreedy(MapLocation target) throws GameActionException {
@@ -108,35 +110,122 @@ public strictfp class RobotPlayer {
     // returns best move to greedily move to target. Returns null if greedy move doesn't work
     static Direction getGreedyMove(MapLocation target) throws GameActionException {
         Direction dir = rc.getLocation().directionTo(target);
-
-        if (!rc.isReady() || !rc.canMove(dir)) {
-            dir = null;
+        if (!rc.canMove(dir)) {
+            int minDist = 999999;
+            for (int i = directions.length; --i >= 0; ) {
+                // if distance to target from this potential direction is smaller, set it
+                int dist = target.distanceSquaredTo(rc.adjacentLocation(directions[i]));
+                if (dist < minDist && rc.canMove(directions[i])) {
+                    dir = directions[i];
+                    minDist = dist;
+                    System.out.println("I chose " + dir + " instead in order to go to " + target);
+                }
+            }
         }
+
         return dir;
     }
 
-    static void getHome() throws GameActionException {
-        // gets the home of this unit and stores in known refineries list
-
+    /**
+     * Stores HQ location sent out by HQ earlier
+     * @throws GameActionException
+     */
+    static void storeHQLocation() throws GameActionException {
+        // gets the HQ of this unit;
+        Transaction[] first = rc.getBlock(1);
+        for (int i = first.length; --i >= 0;) {
+            int[] msg = first[i].getMessage();
+            decodeMsg(msg);
+            if (isOurMessage((msg))) {
+                HQLocation = new MapLocation(msg[2], msg[3]);
+                break;
+            }
+        }
     }
 
+    /**
+     * Code to deal with blockchain communication
+     * key generator and scrambler to sign off messages whilst retaining content?
+     * a key checker to check if message is our own
+     * a decoder to unscramble a message
+     * always decode -> check -> use data
+     */
+    static boolean isOurMessage(int[] msg) {
+        return msg[0] == UNIQUEKEY;
+    }
+
+    // decodes the message to its original form
+    static void decodeMsg(int[] msg) {
+        // decode...
+    }
+    static void encodeMsg(int[] msg) {
+        // encode...
+    }
+
+    // generate a unique key for this game to sign off messages
     static int generateUNIQUEKEY() {
         return UNIQUEKEY;
     }
+    /**
+        Announcement code
+     */
     // announces location into block chain hopefully
     // announces type and location
+    // returns true if submitted to block chain
     // 0: HQ, 1: MINER
-    static void announceLocation(int cost) throws GameActionException {
+    static boolean announceSelfLocation(int cost) throws GameActionException {
 
         // announce robot type, and x, y coords
-        // sign it off with a UNIQUEKEY
+        // sign it off with a UNIQUEKEY // could also store info in transaction cost
         int[] message = new int[] {generateUNIQUEKEY(), rc.getType().ordinal(), rc.getLocation().x, rc.getLocation().y};
-        /*
-            add some scramble function to scramble message a bit based on round
-         */
-        // attempt to submit with cost 2.
+        encodeMsg(message);
+        // attempt to submit with
         if (rc.canSubmitTransaction(message, cost)) {
+            rc.submitTransaction(message, cost);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
 
+    // announces the location with that cost.
+    static boolean announceSoupLocation(MapLocation loc, int cost) throws GameActionException {
+        // announce x y coords and round number
+        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, loc.x, loc.y, rc.getRoundNum()};
+        encodeMsg(message);
+
+        if (rc.canSubmitTransaction(message, cost)) {
+            rc.submitTransaction(message, cost);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * Read announcement code and store in SoupLocation the new soup location found
+     */
+    static void checkBlockForSoupLocations(Transaction[] transactions) throws GameActionException {
+        for (int i = transactions.length; --i >= 0;) {
+            int[] msg = transactions[i].getMessage();
+            decodeMsg(msg);
+            if (isOurMessage((msg))) {
+                // if it is announce SOUP location message
+                if ((msg[1] ^ ANNOUNCE_SOUP_LOCATION) == 0) {
+                    // TODO: do something with msg[4], the round number, determine outdatedness?
+                    if (SoupLocation == null) {
+
+                        SoupLocation = new MapLocation(msg[2], msg[3]);
+                        if (debug) System.out.println("Found soup location in messages: " + SoupLocation);
+                    }
+                    else {
+                        // already have soup location target that still exists, continue with mining it
+                        // TODO: Do something about measuring how much soup is left, and announcing it.
+                    }
+                }
+            }
         }
     }
 

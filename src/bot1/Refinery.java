@@ -7,6 +7,6 @@ public class Refinery extends RobotPlayer {
 
     }
     public static void setup() throws GameActionException {
-
+        announceSelfLocation(2);
     }
 }
