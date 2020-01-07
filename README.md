@@ -8,6 +8,12 @@ Max 210/70 = 3 miners at start of game, first movement of first miner is at roun
 
 # Strategies
 
+## Cheap strategies
+
+Rush with miners, look for enemy base, send signal out about where it is, then surround HQ with miners. have some miners continue to mine and then have surrounding miners build net guns
+
+If they have landscapers then build some drones first? Although HQ can shoot it down
+
 ## Early
 
 Send a miner to the middle of the map to try and steal any stuff there?

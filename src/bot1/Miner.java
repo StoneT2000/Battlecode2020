@@ -40,6 +40,7 @@ public class Miner extends RobotPlayer {
 
 
 
+
         // always read last round's blocks
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
