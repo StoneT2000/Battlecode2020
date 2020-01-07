@@ -1,27 +1,15 @@
-# Battlecode 2020 Scaffold
+# Battlecode 2020 - Bowl of Chowder
 
-This is the Battlecode 2020 scaffold, containing an `examplefuncsplayer`. Read https://2020.battlecode.org/getting-started!
+Notes:
 
-### Project Structure
+Max 210/70 = 3 miners at start of game, first movement of first miner is at round 10
 
-- `README.md`
-    This file.
-- `build.gradle`
-    The Gradle build file used to build and run players.
-- `src/`
-    Player source code.
-- `test/`
-    Player test code.
-- `client/`
-    Contains the client.
-- `build/`
-    Contains compiled player code and other artifacts of the build process. Can be safely ignored.
-- `matches/`
-    The output folder for match files.
-- `maps/`
-    The default folder for custom maps.
-- `gradlew`, `gradlew.bat`
-    The Unix (OS X/Linux) and Windows versions, respectively, of the Gradle wrapper. These are nifty scripts that you can execute in a terminal to run the Gradle build tasks of this project. If you aren't planning to do command line development, these can be safely ignored.
-- `gradle/`
-    Contains files used by the Gradle wrapper scripts. Can be safely ignored.
 
+
+# Strategies
+
+## Early
+
+Send a miner to the middle of the map to try and steal any stuff there?
+
+Signal that this is a contested resource and we should steal that one

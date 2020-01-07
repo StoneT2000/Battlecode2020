@@ -43,51 +43,59 @@ public class Miner extends RobotPlayer {
         // always read last round's blocks
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
 
-        // if bot has no target mining patch, continue in scout mode
-        // we search for soup patches and move around if we dont find any in vicinity
+
+        // we always search for soup patches and move around if we don't find any in vicinity
         // once we found one, we announce the soup location
         // we also check for announcements to see if there is one found already...
         if (role == MINER) {
             search:
             {
-                if (SoupLocation == null) {
+                int minDist = 99999999;
+                if (SoupLocation != null) {
+                    minDist = rc.getLocation().distanceSquaredTo(SoupLocation);
+                }
                 /*
                   TODO: searches 162 locations if we go through entire array. lots of bytecode...
                    could optimize by searching locations within 2 units and those 6 >= units >=4 away...
                 */
-                    // iterate backwards to start from outer most field of view to search for patch of soup
-                    //for (int i = Constants.BFSDeltas35.length; --i >= 0; ) {
-                    // finds closest soup location in sensor range
-                    for (int i = 0; i < Constants.BFSDeltas35.length; i++) {
-                        int[] deltas = Constants.BFSDeltas35[i];
-                        MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
-                        // TODO: instead of canSenseLocation, maybe do the math and choose the right BFS deltas to iterate over
-                        if (rc.canSenseLocation(checkLoc)) {
-                            // TODO: maybe change minimum to higher or dependent on team soup (if we are rich, don't mine less than x etc.)
-                            if (rc.senseSoup(checkLoc) > 0) {
-                                if (!rc.senseFlooding(checkLoc)) {
-                                    SoupLocation = checkLoc;
-                                    // TODO: cost of announcement should be upped in later rounds with many units.
-                                    // announce soup location if it is not flooding and it has soup.
-                                    announceSoupLocation(checkLoc, 0);
+                // iterate backwards to start from outer most field of view to search for patch of soup
+                //for (int i = Constants.BFSDeltas35.length; --i >= 0; ) {
+                // finds closest soup location in sensor range
+                for (int i = 0; i < Constants.BFSDeltas35.length; i++) {
+                    int[] deltas = Constants.BFSDeltas35[i];
+                    MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
+                    // TODO: instead of canSenseLocation, maybe do the math and choose the right BFS deltas to iterate over
+                    if (rc.canSenseLocation(checkLoc)) {
+                        // TODO: maybe change minimum to higher or dependent on team soup (if we are rich, don't mine less than x etc.)
+                        if (rc.senseSoup(checkLoc) > 0) {
+                            int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+                            if (!rc.senseFlooding(checkLoc) && dist < minDist) {
+                                SoupLocation = checkLoc;
+                                // TODO: cost of announcement should be upped in later rounds with many units.
+                                // announce soup location if it is not flooding and it has soup.
+                                announceSoupLocation(checkLoc, 0);
 
-                                    if (debug) System.out.println("I found soup location at " + checkLoc);
-                                    // YELLOW means they found soup location!
-                                    if (debug) rc.setIndicatorDot(checkLoc, 255, 200, 20);
-                                    break search;
-                                } else {
-                                    // TODO: handle when we find a flooded patch, how do we mark it for clearing by landscapers?
-                                    // found a tile with soup, but its flooded
-                                    // announceSoupLocation(checkLoc, 0, false);
-                                }
+                                if (debug) System.out.println("I found soup location at " + checkLoc);
+                                // YELLOW means they found soup location!
+                                if (debug) rc.setIndicatorDot(checkLoc, 255, 200, 20);
+                                break search;
+                            } else {
+                                // TODO: handle when we find a flooded patch, how do we mark it for clearing by landscapers?
+                                // found a tile with soup, but its flooded
+                                // announceSoupLocation(checkLoc, 0, false);
                             }
-
                         }
+
                     }
-                    // if we haven't broken out of this search: tag, then we haven't found soup
-                    // look through last rounds announcements, see whats there
-                    checkBlockForSoupLocations(lastRoundsBlocks);
+                    else {
+                        // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
+                        break;
+                    }
                 }
+                // if we haven't broken out of this search: tag, then we haven't found soup
+                // look through last rounds announcements, see whats there
+                checkBlockForSoupLocations(lastRoundsBlocks);
+
             }
             // EXPLORE if still no soup found
             if (SoupLocation == null) {

@@ -3,12 +3,14 @@ package bot1;
 import battlecode.common.*;
 public class HQ extends RobotPlayer {
     static Direction buildDir = Direction.NORTH;
-    static RobotType unitToBuild = RobotType.MINER;
+    static RobotType unitToBuild;
     static int[] BotCounts = new int[10];
+    static MapLocation SoupLocation;
     public static void run() throws GameActionException {
         System.out.println("TEAM SOUP: " + rc.getTeamSoup());
 
 
+        decideOnUnitToBuild();
         // if we are to build a unit, proceed
         if (unitToBuild != null) {
             // keep trying to build in buildDir direction, rotate a little to find new build loc
@@ -30,10 +32,31 @@ public class HQ extends RobotPlayer {
             // make next turns build direction different
             buildDir = buildDir.rotateRight();
         }
-        // otherwise we dont build (stack up)
+        // otherwise we dont build (stock up)
+
+        if (rc.getRoundNum() > 1) {
+            Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
+            checkBlockForSoupLocations(lastRoundsBlocks);
+        }
+
     }
     public static void decideOnUnitToBuild() throws GameActionException {
-        unitToBuild = RobotType.MINER;
+        unitToBuild = null;
+        if (rc.getRoundNum() <= 3) {
+            unitToBuild = RobotType.MINER;
+            return;
+        }
+
+        // if soup was found early on..., pause and wait for refinery
+        if (rc.getRoundNum() < 60) {
+            if (SoupLocation != null) {
+                // unitToBuild = RobotType.MINER;
+            }
+            // if no early soup, stock up, wait for design school to be built
+            else {
+
+            }
+        }
     }
     public static void setup() throws GameActionException {
         // announce self location on turn 1 (will always run)
