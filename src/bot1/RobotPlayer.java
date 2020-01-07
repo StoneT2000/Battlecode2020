@@ -272,6 +272,17 @@ public strictfp class RobotPlayer {
         } else return false;
     }
 
+    // attempts to run out of the water if it was in it
+    static void getOutOfWater() throws GameActionException {
+        if (rc.senseFlooding(rc.getLocation())) {
+            System.out.println("About to drown, trying to jump out");
+            for (int i = directions.length; --i >= 1; ) {
+                //MapLocation checkLoc = rc.adjacentLocation(directions[i]);
+                tryMove(directions[i]);
+            }
+        }
+    }
+
     /**
      * Attempts to build a given robot in a given direction.
      *
