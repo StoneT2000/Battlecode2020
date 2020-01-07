@@ -10,7 +10,10 @@ public class HQ extends RobotPlayer{
     public static void setup() throws GameActionException {
         // announce self location on turn 1 (will always run)
         announceSelfLocation(0);
-
         // allows all other bots to refer to the HQ if needed by storeHQLocation()
+    }
+    // initializes the strategy through placement of first units and broadcasts
+    public static void initializeStrategy() throws GameActionException {
+
     }
 }

@@ -14,10 +14,6 @@ public class Miner extends RobotPlayer {
     static final int[][] BFS = new int[][] {{0,0},{1,0},{0,-1},{-1,0},{0,1},{2,0},{1,-1},{0,-2},{-1,-1},{-2,0},{-1,1},{0,2},{1,1}};
     // static final int[][] BFSFlipped = new int[][]{{6,6}};
     public static void run() throws GameActionException {
-        // auto just return if not ready to move anyway
-        if (rc.getCooldownTurns() >= 1) {
-            return;
-        }
 
         // Strat: MINE if possible!
         // TODO: can do with mining optimization? Mine furthest tile away from friends?
@@ -65,24 +61,27 @@ public class Miner extends RobotPlayer {
                     for (int i = Constants.BFSDeltas35.length; --i >= 0; ) {
                         int[] deltas = Constants.BFSDeltas35[i];
                         MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
+                        // TODO: instead of canSenseLocation, maybe do the math and choose the right BFS deltas to iterate over
+                        if (rc.canSenseLocation(checkLoc)) {
+                            // TODO: maybe change minimum to higher or dependent on team soup (if we are rich, don't mine less than x etc.)
+                            if (rc.senseSoup(checkLoc) > 0) {
+                                if (!rc.senseFlooding(checkLoc)) {
+                                    SoupLocation = checkLoc;
+                                    // TODO: cost of announcement should be upped in later rounds with many units.
+                                    // announce soup location if it is not flooding and it has soup.
+                                    announceSoupLocation(checkLoc, 0);
 
-                        // TODO: maybe change minimum to higher or dependent on team soup (if we are rich, don't mine less than x etc.)
-                        if (rc.senseSoup(checkLoc) > 0) {
-                            if (!rc.senseFlooding(checkLoc)) {
-                                SoupLocation = checkLoc;
-                                // TODO: cost of announcement should be upped in later rounds with many units.
-                                // announce soup location if it is not flooding and it has soup.
-                                announceSoupLocation(checkLoc, 0);
-
-                                if (debug) System.out.println("I found soup location at " + checkLoc);
-                                // YELLOW means they found soup location!
-                                rc.setIndicatorDot(checkLoc, 255, 200, 20);
-                                break search;
-                            } else {
-                                // TODO: handle when we find a flooded patch, how do we mark it for clearing by landscapers?
-                                // found a tile with soup, but its flooded
-                                // announceSoupLocation(checkLoc, 0, false);
+                                    if (debug) System.out.println("I found soup location at " + checkLoc);
+                                    // YELLOW means they found soup location!
+                                    if (debug) rc.setIndicatorDot(checkLoc, 255, 200, 20);
+                                    break search;
+                                } else {
+                                    // TODO: handle when we find a flooded patch, how do we mark it for clearing by landscapers?
+                                    // found a tile with soup, but its flooded
+                                    // announceSoupLocation(checkLoc, 0, false);
+                                }
                             }
+
                         }
                     }
                     // if we haven't broken out of this search: tag, then we haven't found soup
@@ -136,6 +135,10 @@ public class Miner extends RobotPlayer {
                 }
             }
         }
+        // search enemy robots and scout
+        //
+        // rc.senseNearbyRobots(-1, enemyTeam);
+        
         if (debug) {
             System.out.println("Miner " + role + " - Bytecode used: " + Clock.getBytecodeNum() +
                     " | Bytecode left: " + Clock.getBytecodesLeft() +
@@ -146,7 +149,9 @@ public class Miner extends RobotPlayer {
     // algorithm to allow miner to explore and attempt to generally move to new spaces
     // fuzzy pathing, go in general direction and sway side to side
     static void explore() throws GameActionException {
-        if (tryMove(randomDirection()));
+        Direction dir = randomDirection();
+        if (tryMove(dir));
+        System.out.println("Attempted to move to " + rc.adjacentLocation(dir));
     }
 
     static MapLocation getNearestDropsite() throws GameActionException {
