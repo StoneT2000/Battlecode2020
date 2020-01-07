@@ -8,4 +8,7 @@ public class DesignSchool extends RobotPlayer {
 
         }
     }
+    public static void setup() throws GameActionException {
+
+    }
 }

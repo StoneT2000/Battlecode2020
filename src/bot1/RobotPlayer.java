@@ -7,9 +7,11 @@ public strictfp class RobotPlayer {
     static Direction[] directions = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
     static RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
-
+    static RobotType[] ordinalToType = {RobotType.HQ, RobotType.MINER};
+    static MapLocation[] RefineryLocations = new MapLocation[1000];
     static int turnCount;
     static final boolean debug = true;
+    static final int UNIQUEKEY = -92390123;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -24,7 +26,23 @@ public strictfp class RobotPlayer {
 
         turnCount = 0;
         if (debug) {
-            System.out.println("Created " + rc.getType());
+            System.out.println("Created " + rc.getType().ordinal() + ": " + rc.getType() + " init bytecount: " + Clock.getBytecodeNum());
+        }
+
+        // store HQ position of this miner
+        getHome();
+        // store enemy HQ position
+        //storeEnemyHQ();
+        switch (rc.getType()) {
+            case HQ:                 HQ.setup();                break;
+            case MINER:              Miner.setup();             break;
+            case REFINERY:           Refinery.setup();          break;
+            case VAPORATOR:          Vaporator.setup();         break;
+            case DESIGN_SCHOOL:      DesignSchool.setup();      break;
+            case FULFILLMENT_CENTER: FulfillmentCenter.setup(); break;
+            case LANDSCAPER:         Landscaper.setup();        break;
+            case DELIVERY_DRONE:     DeliveryDrone.setup();     break;
+            case NET_GUN:            NetGun.setup();            break;
         }
         while (true) {
             turnCount += 1;
@@ -55,36 +73,6 @@ public strictfp class RobotPlayer {
         }
     }
 
-    static void runHQ() throws GameActionException {
-        for (Direction dir : directions)
-            tryBuild(RobotType.MINER, dir);
-    }
-
-    static void runMiner() throws GameActionException {
-
-    }
-
-    static void runRefinery() throws GameActionException {
-        // System.out.println("Pollution: " + rc.sensePollution(rc.getLocation()));
-    }
-
-    static void runVaporator() throws GameActionException {
-
-    }
-
-    static void runDesignSchool() throws GameActionException {
-
-    }
-
-    static void runFulfillmentCenter() throws GameActionException {
-        for (Direction dir : directions)
-            tryBuild(RobotType.DELIVERY_DRONE, dir);
-    }
-
-    static void runLandscaper() throws GameActionException {
-
-    }
-
     static void runDeliveryDrone() throws GameActionException {
         Team enemy = rc.getTeam().opponent();
         if (!rc.isCurrentlyHoldingUnit()) {
@@ -104,6 +92,52 @@ public strictfp class RobotPlayer {
 
     static void runNetGun() throws GameActionException {
 
+    }
+
+    // moves robot to a target greedily, null if no good positions (possibly blocked)
+    // byte code cost is:
+    static Direction moveToGreedy(MapLocation target) throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(target);
+
+        if (rc.isReady() && rc.canMove(dir)) {
+            rc.move(dir);
+        }
+        return dir;
+    }
+
+    // returns best move to greedily move to target. Returns null if greedy move doesn't work
+    static Direction getGreedyMove(MapLocation target) throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(target);
+
+        if (!rc.isReady() || !rc.canMove(dir)) {
+            dir = null;
+        }
+        return dir;
+    }
+
+    static void getHome() throws GameActionException {
+        // gets the home of this unit and stores in known refineries list
+
+    }
+
+    static int generateUNIQUEKEY() {
+        return UNIQUEKEY;
+    }
+    // announces location into block chain hopefully
+    // announces type and location
+    // 0: HQ, 1: MINER
+    static void announceLocation(int cost) throws GameActionException {
+
+        // announce robot type, and x, y coords
+        // sign it off with a UNIQUEKEY
+        int[] message = new int[] {generateUNIQUEKEY(), rc.getType().ordinal(), rc.getLocation().x, rc.getLocation().y};
+        /*
+            add some scramble function to scramble message a bit based on round
+         */
+        // attempt to submit with cost 2.
+        if (rc.canSubmitTransaction(message, cost)) {
+
+        }
     }
 
     /**

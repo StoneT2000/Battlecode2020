@@ -7,4 +7,7 @@ public class HQ extends RobotPlayer{
         for (Direction dir : directions)
             tryBuild(RobotType.MINER, dir);
     }
+    public static void setup() throws GameActionException {
+
+    }
 }
