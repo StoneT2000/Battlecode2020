@@ -1,56 +1,88 @@
 package bot1;
 
 import battlecode.common.*;
+import bot1.utils.LinkedList;
 
 public class Miner extends RobotPlayer {
     static final int SCOUT = 0; // default to search for patches of soup and what not
     static final int MINER = 1; // default to go and mine nearest souplocation it knows
     static final int RETURNING = 2; // RETURNING TO SOME REFINERY OR HQ TO DEPOSIT
+    static final int BUILDING = 3;
+    static RobotType unitToBuild;
     // if no soup location known, acts as scout
     static int role = MINER; // default ROLE
-    static MapLocation[] RefineryLocations = new MapLocation[100];
+    static LinkedList<MapLocation> RefineryLocations = new LinkedList<>();
     static MapLocation targetLoc; // location to head towards
     public static void run() throws GameActionException {
         // try to get out of water, checks if in water for you
         getOutOfWater();
 
-        // Strat: MINE if possible!
-        // TODO: can do with mining optimization? Mine furthest tile away from friends?
-        // try to mine if mining max rate one turn won't go over soup limit (waste of mining power)
-        if (rc.getSoupCarrying() <= RobotType.MINER.soupLimit - GameConstants.SOUP_MINING_RATE) {
-            for (Direction dir: directions) {
-                // for each direction, check if there is soup in that direction
-                MapLocation newLoc = rc.adjacentLocation(dir);
-                if(rc.canMineSoup(dir)) {
-                    rc.mineSoup(dir);
-                    if (debug) {
-                        System.out.println("Turn: " + turnCount + " - I mined " + newLoc +"; Now have " + rc.getSoupCarrying());
-                    }
-                    // if the location no longer has soup, set SoupLocation to null as we have no target
-                    if (rc.senseSoup(newLoc) <= 0) {
-                        SoupLocation = null;
-                    }
+        if (role == BUILDING) {
+            Direction buildDir = Direction.NORTH;
+            boolean builtUnit = false;
+            for (int i = 9; --i >= 1;) {
+                if (tryBuild(unitToBuild, buildDir)) {
+                    builtUnit = true;
                     break;
                 }
+                else {
+                    buildDir = buildDir.rotateRight();
+                }
             }
+            if (builtUnit) {
+                // add to refinery locations list
+                RefineryLocations.add(rc.adjacentLocation(buildDir));
+            }
+            // go back to miner role
+            role = MINER;
+            //unitToBuild = null;
         }
-        // else if we are near full, we go to nearest refinery known, otherwise go to HQ
-        else {
-            targetLoc = getNearestDropsite();
-            role = RETURNING;
-        }
+
+
 
         // always read last round's blocks
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
-
-
+        RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         // we always search for soup patches and move around if we don't find any in vicinity
         // once we found one, we announce the soup location
         // we also check for announcements to see if there is one found already...
         if (role == MINER) {
+            // Strat: MINE if possible!
+            // TODO: can do with mining optimization? Mine furthest tile away from friends?
+            // try to mine if mining max rate one turn won't go over soup limit (waste of mining power)
+            if (rc.getSoupCarrying() <= RobotType.MINER.soupLimit - GameConstants.SOUP_MINING_RATE) {
+                for (Direction dir: directions) {
+                    // for each direction, check if there is soup in that direction
+                    MapLocation newLoc = rc.adjacentLocation(dir);
+                    if(rc.canMineSoup(dir)) {
+                        rc.mineSoup(dir);
+                        if (debug) {
+                            System.out.println("Turn: " + turnCount + " - I mined " + newLoc +"; Now have " + rc.getSoupCarrying());
+                        }
+                        // if the location no longer has soup, set SoupLocation to null as we have no target
+                        if (rc.senseSoup(newLoc) <= 0) {
+                            SoupLocation = null;
+                        }
+                        break;
+                    }
+                }
+            }
+            // else if we are near full, we go to nearest refinery known, otherwise go to HQ
+            else {
+                targetLoc = getNearestDropsite();
+                role = RETURNING;
+            }
+
+            int soupNearbyCount = 0; // amount of soup nearby in BFS search range
+
+            // Search with BFS
             search:
             {
                 int minDist = 99999999;
+                boolean newLocation = false;
+                if (SoupLocation == null) {
+                    newLocation = true;
+                }
                 if (SoupLocation != null) {
                     minDist = rc.getLocation().distanceSquaredTo(SoupLocation);
                 }
@@ -60,7 +92,8 @@ public class Miner extends RobotPlayer {
                 */
                 // iterate backwards to start from outer most field of view to search for patch of soup
                 //for (int i = Constants.BFSDeltas35.length; --i >= 0; ) {
-                // finds closest soup location in sensor range
+                // finds closest soup location in sensor range and also find total soup nearby
+
                 for (int i = 0; i < Constants.BFSDeltas35.length; i++) {
                     int[] deltas = Constants.BFSDeltas35[i];
                     MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
@@ -68,17 +101,14 @@ public class Miner extends RobotPlayer {
                     if (rc.canSenseLocation(checkLoc)) {
                         // TODO: maybe change minimum to higher or dependent on team soup (if we are rich, don't mine less than x etc.)
                         if (rc.senseSoup(checkLoc) > 0) {
+                            soupNearbyCount += rc.senseSoup(checkLoc);
                             int dist = rc.getLocation().distanceSquaredTo(checkLoc);
                             if (!rc.senseFlooding(checkLoc) && dist < minDist) {
                                 SoupLocation = checkLoc;
-                                // TODO: cost of announcement should be upped in later rounds with many units.
-                                // announce soup location if it is not flooding and it has soup.
-                                announceSoupLocation(checkLoc, 0);
-
+                                minDist = dist; // set this so we wont reset SoupLocation as we add soupNearbyCount
                                 if (debug) System.out.println("I found soup location at " + checkLoc);
-                                // YELLOW means they found soup location!
-                                if (debug) rc.setIndicatorDot(checkLoc, 255, 200, 20);
-                                break search;
+
+                                //break search;
                             } else {
                                 // TODO: handle when we find a flooded patch, how do we mark it for clearing by landscapers?
                                 // found a tile with soup, but its flooded
@@ -92,11 +122,50 @@ public class Miner extends RobotPlayer {
                         break;
                     }
                 }
+                // TODO: cost of announcement should be upped in later rounds with many units.
+                // announce soup location if we just made a new soup location
+                if (SoupLocation != null && newLocation) {
+                    // YELLOW means we found soup location, and we make announcement!
+                    if (debug) rc.setIndicatorDot(SoupLocation, 255, 200, 20);
+                    announceSoupLocation(SoupLocation, 0, soupNearbyCount);
+                }
+
+
+                System.out.println(soupNearbyCount + " soup nearby");
                 // if we haven't broken out of this search: tag, then we haven't found soup
                 // look through last rounds announcements, see whats there
                 checkBlockForSoupLocations(lastRoundsBlocks);
 
             }
+
+            // TODO move this function to RobotPlayer.java for general searching of robots?
+            // Search sensor range friendly robots
+            int RefineryCount = 0;
+            MapLocation nearestRefinery = HQLocation;
+            int minDist = rc.getLocation().distanceSquaredTo(HQLocation);
+            for (int i = nearbyFriendlyRobots.length; --i >= 0;) {
+                RobotInfo info = nearbyFriendlyRobots[i];
+                if (info.type == RobotType.REFINERY) {
+                    RefineryCount++;
+                    // if bot is returning, locate nearest refinery as well
+                    if (role == RETURNING) {
+                        int dist = rc.getLocation().distanceSquaredTo(info.location);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            targetLoc = info.location;
+                        }
+                    }
+                }
+            }
+
+
+            // set up for building refinery next turn
+            if (soupNearbyCount > 500 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
+                role = BUILDING;
+                unitToBuild = RobotType.REFINERY;
+            }
+
+
             // EXPLORE if still no soup found
             if (SoupLocation == null) {
                 if (debug) System.out.println("Exploring");

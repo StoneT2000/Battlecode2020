@@ -97,16 +97,6 @@ public strictfp class RobotPlayer {
         }
     }
 
-    // moves robot to a target greedily, null if no good positions (possibly blocked)
-    // byte code cost is:
-    static Direction moveToGreedy(MapLocation target) throws GameActionException {
-        Direction dir = rc.getLocation().directionTo(target);
-
-        if (rc.isReady() && rc.canMove(dir)) {
-            rc.move(dir);
-        }
-        return dir;
-    }
 
     // returns best move to greedily move to target. Returns null if greedy move doesn't work
     static Direction getGreedyMove(MapLocation target) throws GameActionException {
@@ -193,10 +183,11 @@ public strictfp class RobotPlayer {
     }
 
     // announces the location with that cost.
-    static boolean announceSoupLocation(MapLocation loc, int cost) throws GameActionException {
+    static boolean announceSoupLocation(MapLocation loc, int cost, int soupCountApprox) throws GameActionException {
         // announce x y coords and round number,
         // and how many miners are there already?
-        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, loc.x, loc.y, rc.getRoundNum()};
+        // how much soup left?
+        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, hashLoc(loc), soupCountApprox};
         encodeMsg(message);
 
         if (rc.canSubmitTransaction(message, cost)) {
@@ -224,7 +215,7 @@ public strictfp class RobotPlayer {
                 // if it is announce SOUP location message
                 if ((msg[1] ^ ANNOUNCE_SOUP_LOCATION) == 0) {
                     // TODO: do something with msg[4], the round number, determine outdatedness?
-                    MapLocation potentialLoc = new MapLocation(msg[2], msg[3]);
+                    MapLocation potentialLoc = parseLoc(msg[2]);
                     int dist = rc.getLocation().distanceSquaredTo(potentialLoc);
                     if (dist < minDist) {
 
@@ -307,5 +298,26 @@ public strictfp class RobotPlayer {
             rc.buildRobot(type, dir);
             return true;
         } else return false;
+    }
+
+
+    // location related
+
+    // checks if unit is within unit distance away from map edge
+    // e.g withinMapEdge(Math.min(rc.getMapWidth()/4, rc.getMapHeight()/4))
+    // would check if unit is closer to center or edge sorta.
+    static boolean withinMapEdge(int distance) {
+        if (rc.getLocation().x <= distance || rc.getLocation().y <= distance
+                || rc.getLocation().x >= rc.getMapWidth() - distance || rc.getLocation().y >= rc.getMapHeight() - distance) {
+            return true;
+        }
+        return false;
+    }
+
+    static int hashLoc(MapLocation loc) {
+        return loc.x  + loc.y << 6;
+    }
+    static MapLocation parseLoc(int hash) {
+        return new MapLocation(hash % 64, hash >> 6);
     }
 }
