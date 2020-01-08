@@ -320,4 +320,16 @@ public strictfp class RobotPlayer {
     static MapLocation parseLoc(int hash) {
         return new MapLocation(hash % 64, hash >> 6);
     }
+
+
+    // stuff to do in a BFS, pass it a input target, and it will output nextBestLocation
+    static void pathTo(MapLocation target, MapLocation nextBestLoc) {
+
+    }
+    static void bfs() {
+        for (int i = 0; i < Constants.BFSDeltas35.length; i++) {
+            int[] deltas = Constants.BFSDeltas35[i];
+            MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
+        };
+    }
 }
