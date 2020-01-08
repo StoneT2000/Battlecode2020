@@ -126,7 +126,6 @@ public strictfp class RobotPlayer {
         enemyHQLocations.add(new MapLocation(HQLocation.x, flippedY));
         enemyHQLocations.add(new MapLocation(flippedX, HQLocation.y));
         enemyHQLocations.add(new MapLocation(flippedX, flippedY));
-        System.out.println("Flipped enemy pos? [" + flippedX + ", " + flippedY + "]");
     }
 
     /**
@@ -182,7 +181,7 @@ public strictfp class RobotPlayer {
         // how much soup left?
         int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, hashLoc(loc), soupCountApprox};
         encodeMsg(message);
-        System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
+        if (debug) System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
 
         if (rc.canSubmitTransaction(message, cost)) {
             rc.submitTransaction(message, cost);
@@ -245,7 +244,7 @@ public strictfp class RobotPlayer {
     // attempts to run out of the water if it was in it
     static void getOutOfWater() throws GameActionException {
         if (rc.senseFlooding(rc.getLocation())) {
-            System.out.println("About to drown, trying to jump out");
+            if (debug) System.out.println("About to drown, trying to jump out");
             for (int i = directions.length; --i >= 1; ) {
                 //MapLocation checkLoc = rc.adjacentLocation(directions[i]);
                 tryMove(directions[i]);

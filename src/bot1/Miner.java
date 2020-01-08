@@ -9,11 +9,13 @@ public class Miner extends RobotPlayer {
     static final int MINER = 1; // default to go and mine nearest souplocation it knows
     static final int RETURNING = 2; // RETURNING TO SOME REFINERY OR HQ TO DEPOSIT
     static final int BUILDING = 3;
+    static int timeSpentOnExploreLoc = 0;
     static MapLocation[] exploreLocs;
     static int exploreLocIndex = 0;
     static RobotType unitToBuild;
     // if no soup location known, acts as scout
     static int role = MINER; // default ROLE
+    static int HQParity;
     static LinkedList<MapLocation> RefineryLocations = new LinkedList<>();
     static MapLocation targetLoc; // location to head towards
     public static void run() throws GameActionException {
@@ -148,7 +150,7 @@ public class Miner extends RobotPlayer {
             }
 
 
-            System.out.println(soupNearbyCount + " soup nearby");
+            if (debug) System.out.println(soupNearbyCount + " soup nearby");
             // check messages for soup locations, possibly closer
             checkBlockForSoupLocations(lastRoundsBlocks);
 
@@ -158,7 +160,7 @@ public class Miner extends RobotPlayer {
                 unitToBuild = RobotType.REFINERY;
             }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if ((mined || RefineryCount > 0) && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
+            else if ((mined || RefineryCount > 0) && DesignSchoolCount == 999 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
             }
@@ -173,7 +175,7 @@ public class Miner extends RobotPlayer {
 
             // EXPLORE if still no soup found
             if (SoupLocation == null) {
-                if (debug) System.out.println("Exploring");
+                if (debug) System.out.println("Exploring to " + exploreLocs[exploreLocIndex]);
                 targetLoc = rc.adjacentLocation(getExploreDir());
             }
             // otherwise we approach the soup location.
@@ -201,7 +203,7 @@ public class Miner extends RobotPlayer {
             boolean builtUnit = false;
             for (int i = 9; --i >= 1;) {
                 MapLocation buildLoc = rc.adjacentLocation(buildDir);
-                if ((buildLoc.x + buildLoc.y) % 2 == 0) {
+                if ((buildLoc.x + buildLoc.y) % 2 == HQParity) {
                     if (tryBuild(unitToBuild, buildDir)) {
                         builtUnit = true;
                         break;
@@ -247,7 +249,7 @@ public class Miner extends RobotPlayer {
         // whatever targetloc is, try to go to it
         if (targetLoc != null) {
             Direction greedyDir = getGreedyMove(targetLoc); //TODO: should return a valid direction usually???
-            System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
+            if (debug) System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
             tryMove(greedyDir); // wasting bytecode probably here
         }
         else {
@@ -270,7 +272,11 @@ public class Miner extends RobotPlayer {
     // fuzzy pathing, go in general direction and sway side to side
     // general direction is direction away from HQ
     static Direction getExploreDir() throws GameActionException {
-        Direction generalDir = rc.getLocation().directionTo(HQLocation).opposite();
+        if (timeSpentOnExploreLoc > 100) {
+            exploreLocIndex = (exploreLocIndex + 1) % exploreLocs.length;
+            timeSpentOnExploreLoc = 0;
+        }
+        Direction generalDir = rc.getLocation().directionTo(exploreLocs[exploreLocIndex]);
 
         double p = Math.random();
         if (p < 0.35) {
@@ -279,14 +285,14 @@ public class Miner extends RobotPlayer {
                 generalDir = generalDir.rotateLeft();
             }
         }
-        else {
+        else if (p > 0.65) {
             generalDir = generalDir.rotateRight();
-            if (p > 0.65) {
+            if (p > 0.95) {
                 generalDir = generalDir.rotateRight();
             }
         }
         Direction dir = getGreedyMove(rc.adjacentLocation(generalDir));
-
+        timeSpentOnExploreLoc++;
         return dir;
     }
 
@@ -297,15 +303,18 @@ public class Miner extends RobotPlayer {
     public static void setup() throws GameActionException {
         storeHQLocation();
         storeEnemyHQLocations();
+        HQParity = (HQLocation.x + HQLocation.y) % 2;
         if (debug) System.out.println("HQ at " + HQLocation);
         // needs to determine a direction to go explore in
 
         // 4 corners and center
         exploreLocs = new MapLocation[] {
+                new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2),
                 new MapLocation(0, 0),
                 new MapLocation(0, rc.getMapHeight()),
                 new MapLocation(rc.getMapWidth(), 0),
                 new MapLocation(rc.getMapWidth(), rc.getMapHeight())
         };
+        exploreLocIndex = (int) (Math.random() * exploreLocs.length);
     }
 }

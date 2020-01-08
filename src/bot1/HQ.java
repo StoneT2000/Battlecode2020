@@ -10,7 +10,7 @@ public class HQ extends RobotPlayer {
     static int mapSize;
     static boolean nearCenter;
     public static void run() throws GameActionException {
-        System.out.println("TEAM SOUP: " + rc.getTeamSoup());
+        if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup());
 
         // shoot nearest robot
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
