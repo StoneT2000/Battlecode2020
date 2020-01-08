@@ -3,6 +3,8 @@ package bot1;
 import battlecode.common.*;
 
 public class DesignSchool extends RobotPlayer {
+    static Direction buildDir = Direction.NORTH;
+    static int landscapersBuilt = 0;
     public static void run() throws GameActionException {
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
@@ -10,23 +12,25 @@ public class DesignSchool extends RobotPlayer {
             RobotInfo info = nearbyEnemyRobots[i];
         }
 
-        /* SCOUTING CODE */
-
-        /* BIG BFS LOOP ISH */
-        for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
-            int[] deltas = Constants.BFSDeltas24[i];
-            MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
-            // TODO: instead of canSenseLocation, maybe do the math and choose the right BFS deltas to iterate over
-            if (rc.canSenseLocation(checkLoc)) {
-
+        if ((rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + 100 && landscapersBuilt < 1) ||
+        (rc.getTeamSoup() >= 1600 && landscapersBuilt <= 4)) {
+            // should rely on some signal
+            boolean builtUnit = false;
+            for (int i = 9; --i >= 1; ) {
+                if (tryBuild(RobotType.LANDSCAPER, buildDir)) {
+                    builtUnit = true;
+                    break;
+                } else {
+                    buildDir = buildDir.rotateRight();
+                }
             }
-            else {
-                // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
-                break;
+            if (builtUnit) {
+                landscapersBuilt++;
             }
+            buildDir = buildDir.rotateRight();
         }
     }
     public static void setup() throws GameActionException {
-
+        storeHQLocation();
     }
 }

@@ -1,5 +1,6 @@
 package bot1;
 import battlecode.common.*;
+import bot1.utils.LinkedList;
 import sun.awt.SunToolkit;
 
 public strictfp class RobotPlayer {
@@ -15,6 +16,7 @@ public strictfp class RobotPlayer {
     // static MapLocation[] SoupLocations = new MapLocation[100];
     static MapLocation SoupLocation; // stores a target soup location to go and mine
     static MapLocation HQLocation;
+    static LinkedList<MapLocation> enemyHQLocations =  new LinkedList<>();
     static int turnCount;
     static final boolean debug = true;
     static final int UNIQUEKEY = -92390123;
@@ -103,7 +105,6 @@ public strictfp class RobotPlayer {
 
     /**
      * Stores HQ location sent out by HQ earlier
-     * @throws GameActionException
      */
     static void storeHQLocation() throws GameActionException {
         // gets the HQ of this unit;
@@ -116,6 +117,16 @@ public strictfp class RobotPlayer {
                 break;
             }
         }
+    }
+    static void storeEnemyHQLocations() throws GameActionException {
+        // flip vertical, horizontal, and both
+
+        int flippedY = rc.getMapHeight() - HQLocation.y - 1;
+        int flippedX = rc.getMapWidth() - HQLocation.x - 1;
+        enemyHQLocations.add(new MapLocation(HQLocation.x, flippedY));
+        enemyHQLocations.add(new MapLocation(flippedX, HQLocation.y));
+        enemyHQLocations.add(new MapLocation(flippedX, flippedY));
+        System.out.println("Flipped enemy pos? [" + flippedX + ", " + flippedY + "]");
     }
 
     /**
@@ -171,6 +182,7 @@ public strictfp class RobotPlayer {
         // how much soup left?
         int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, hashLoc(loc), soupCountApprox};
         encodeMsg(message);
+        System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
 
         if (rc.canSubmitTransaction(message, cost)) {
             rc.submitTransaction(message, cost);
@@ -203,7 +215,7 @@ public strictfp class RobotPlayer {
 
                         SoupLocation = potentialLoc;
                         minDist = dist;
-                        if (debug) System.out.println("Found closer soup location in messages: " + SoupLocation);
+                        if (debug) System.out.println("Found closer soup location in messages: " + SoupLocation + " msg: " + msg[2]);
                     }
                     else {
                         // already have soup location target that still exists, continue with mining it
@@ -271,7 +283,7 @@ public strictfp class RobotPlayer {
     }
 
     static int hashLoc(MapLocation loc) {
-        return loc.x  + loc.y << 6;
+        return loc.x  + (loc.y << 6);
     }
     static MapLocation parseLoc(int hash) {
         return new MapLocation(hash % 64, hash >> 6);
