@@ -163,7 +163,7 @@ public class Miner extends RobotPlayer {
             }
 
 
-            System.out.println(soupNearbyCount + " soup nearby");
+            if (debug) System.out.println(soupNearbyCount + " soup nearby");
             // check messages for soup locations, possibly closer
             checkBlockForSoupLocations(lastRoundsBlocks);
 
@@ -236,7 +236,7 @@ public class Miner extends RobotPlayer {
         // whatever targetloc is, try to go to it
         if (targetLoc != null) {
             Direction greedyDir = getGreedyMove(targetLoc); //TODO: should return a valid direction usually???
-            System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
+            if (debug) System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
             tryMove(greedyDir); // wasting bytecode probably here
         }
 

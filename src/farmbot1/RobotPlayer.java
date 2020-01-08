@@ -18,7 +18,7 @@ public strictfp class RobotPlayer {
     static MapLocation HQLocation;
     static LinkedList<MapLocation> enemyHQLocations =  new LinkedList<>();
     static int turnCount;
-    static final boolean debug = true;
+    static final boolean debug = false;
     static final int UNIQUEKEY = -92390123;
     static Team enemyTeam;
 
@@ -126,7 +126,7 @@ public strictfp class RobotPlayer {
         enemyHQLocations.add(new MapLocation(HQLocation.x, flippedY));
         enemyHQLocations.add(new MapLocation(flippedX, HQLocation.y));
         enemyHQLocations.add(new MapLocation(flippedX, flippedY));
-        System.out.println("Flipped enemy pos? [" + flippedX + ", " + flippedY + "]");
+        if (debug) System.out.println("Flipped enemy pos? [" + flippedX + ", " + flippedY + "]");
     }
 
     /**
@@ -244,7 +244,7 @@ public strictfp class RobotPlayer {
     // attempts to run out of the water if it was in it
     static void getOutOfWater() throws GameActionException {
         if (rc.senseFlooding(rc.getLocation())) {
-            System.out.println("About to drown, trying to jump out");
+            if (debug) System.out.println("About to drown, trying to jump out");
             for (int i = directions.length; --i >= 1; ) {
                 //MapLocation checkLoc = rc.adjacentLocation(directions[i]);
                 tryMove(directions[i]);
@@ -282,7 +282,7 @@ public strictfp class RobotPlayer {
     }
 
     static int hashLoc(MapLocation loc) {
-        return loc.x  + loc.y << 6;
+        return loc.x  + (loc.y << 6);
     }
     static MapLocation parseLoc(int hash) {
         return new MapLocation(hash % 64, hash >> 6);
