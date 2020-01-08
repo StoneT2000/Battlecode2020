@@ -44,7 +44,7 @@ public class Miner extends RobotPlayer {
 
         // always read last round's blocks
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
-        RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+
 
         // if mining, always try to mine
         if (role == MINER) {
@@ -75,7 +75,7 @@ public class Miner extends RobotPlayer {
             }
         }
 
-        // big BFS loop ish
+        /* BIG BFS LOOP ISH */
         // do everything needed with bfs here
         int soupNearbyCount = 0; // amount of soup nearby in BFS search range
         int minDistToNearestSoup = 99999999;
@@ -86,7 +86,7 @@ public class Miner extends RobotPlayer {
         if (SoupLocation != null) {
             minDistToNearestSoup = rc.getLocation().distanceSquaredTo(SoupLocation);
         }
-
+        int lastByteCode = Clock.getBytecodeNum();
         for (int i = 0; i < Constants.BFSDeltas35.length; i++) {
             int[] deltas = Constants.BFSDeltas35[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
@@ -101,7 +101,7 @@ public class Miner extends RobotPlayer {
                             if (!rc.senseFlooding(checkLoc) && dist < minDistToNearestSoup) {
                                 SoupLocation = checkLoc;
                                 minDistToNearestSoup = dist; // set this so we wont reset SoupLocation as we add soupNearbyCount
-                                if (debug) System.out.println("I found soup location at " + checkLoc);
+                                if (debug) System.out.println("Found soup location at " + checkLoc);
 
                             } else {
                                 // TODO: handle when we find a flooded patch, how do we mark it for clearing by landscapers?
@@ -121,8 +121,8 @@ public class Miner extends RobotPlayer {
             }
         }
 
-        // big friendly bots search ish loop thing
-        // Search sensor range friendly robots
+        /* BIG FRIENDLY BOTS SEARCH LOOP thing */
+        RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         int RefineryCount = 0;
         MapLocation nearestRefinery = HQLocation;
         int minDist = rc.getLocation().distanceSquaredTo(HQLocation);
@@ -164,7 +164,7 @@ public class Miner extends RobotPlayer {
             // EXPLORE if still no soup found
             if (SoupLocation == null) {
                 if (debug) System.out.println("Exploring");
-                explore();
+                targetLoc = rc.adjacentLocation(getExploreDir());
             }
             // otherwise we approach the soup location.
             else {
@@ -174,8 +174,7 @@ public class Miner extends RobotPlayer {
                     // if not close enough to soup location, move towards it as it still has soup there
                     if (SoupLocation.distanceSquaredTo(rc.getLocation()) > 1) {
                         if (debug) System.out.println("Heading to soup location " + SoupLocation);
-                        Direction greedyDir = getGreedyMove(SoupLocation);
-                        tryMove(greedyDir);
+                        targetLoc = SoupLocation;
                     } else {
                         // close enough...
                     }
@@ -190,9 +189,9 @@ public class Miner extends RobotPlayer {
             // targetLoc should be place miner tries to return to
             if (rc.getLocation().distanceSquaredTo(targetLoc) > 1) {
 
-                Direction greedyDir = getGreedyMove(targetLoc);
-                if (debug) System.out.println("Heading to soup depo at " + targetLoc + " by moving to " + rc.adjacentLocation(greedyDir));
-                tryMove(greedyDir);
+                //Direction greedyDir = getGreedyMove(targetLoc);
+                //if (debug) System.out.println("Heading to soup depo at " + targetLoc + " by moving to " + rc.adjacentLocation(greedyDir));
+                //tryMove(greedyDir);
             }
             else {
                 // else we are there, deposit and start mining again
@@ -209,6 +208,11 @@ public class Miner extends RobotPlayer {
         }
 
         // whatever targetloc is, try to go to it
+        if (targetLoc != null) {
+            Direction greedyDir = getGreedyMove(targetLoc); //TODO: should return a valid direction usually???
+            System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
+            tryMove(greedyDir); // wasting bytecode probably here
+        }
 
         if (debug) {
             System.out.println("Miner " + role + " - Bytecode used: " + Clock.getBytecodeNum() +
@@ -221,7 +225,7 @@ public class Miner extends RobotPlayer {
     // algorithm to allow miner to explore and attempt to generally move to new spaces
     // fuzzy pathing, go in general direction and sway side to side
     // general direction is direction away from HQ
-    static void explore() throws GameActionException {
+    static Direction getExploreDir() throws GameActionException {
         Direction generalDir = rc.getLocation().directionTo(HQLocation).opposite();
         if (rc.getLocation().x <= 5) {
 
@@ -240,10 +244,8 @@ public class Miner extends RobotPlayer {
             }
         }
         Direction dir = getGreedyMove(rc.adjacentLocation(generalDir));
-        // first try a good general direction
-        if (tryMove(dir));
-        // then try some other one
-        System.out.println("Attempted to move to " + rc.adjacentLocation(generalDir));
+
+        return dir;
     }
 
     static MapLocation getNearestDropsite() throws GameActionException {

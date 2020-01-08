@@ -6,6 +6,18 @@ Max 210/70 = 3 miners at start of game, first movement of first miner is at roun
 
 
 
+# Programming a bot and reducing bytecode
+
+Generally for bots that need to do a BFS search (or any search of every surrounding visible tile), or the search through the blockchain at round `n` or search through visible bots
+
+Have one general loop, and do a switch case inside to decide what to do at each iteration
+
+NOTE, the cost is approximately `162 * average bytecode cost per iteration` for miners as 162 tiles to search max
+
+# Movement
+
+All functions that should do movement, must return a VALID DIRECTION
+
 # Strategies
 
 ## Cheap strategies

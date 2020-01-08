@@ -80,25 +80,7 @@ public strictfp class RobotPlayer {
         }
     }
 
-    static void runDeliveryDrone() throws GameActionException {
-        Team enemy = rc.getTeam().opponent();
-        if (!rc.isCurrentlyHoldingUnit()) {
-            // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
-            RobotInfo[] robots = rc.senseNearbyRobots(GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED, enemy);
-
-            if (robots.length > 0) {
-                // Pick up a first robot within range
-                rc.pickUpUnit(robots[0].getID());
-                System.out.println("I picked up " + robots[0].getID() + "!");
-            }
-        } else {
-            // No close robots, so search for robots within sight radius
-            tryMove(randomDirection());
-        }
-    }
-
-
-    // returns best move to greedily move to target. Returns null if greedy move doesn't work
+    // returns best move to greedily move to target. ALWAYS returns some direction
     static Direction getGreedyMove(MapLocation target) throws GameActionException {
         Direction dir = rc.getLocation().directionTo(target);
         // FIXME: Remove senseFlooding in future
@@ -233,32 +215,6 @@ public strictfp class RobotPlayer {
     }
 
     /**
-     * Returns a random Direction.
-     *
-     * @return a random Direction
-     */
-    static Direction randomDirection() {
-        return directions[(int) (Math.random() * directions.length)];
-    }
-
-    // try to move regardless of direction
-    static boolean tryMove() throws GameActionException {
-        for (Direction dir : directions)
-            if (tryMove(dir))
-                return true;
-        return false;
-        // MapLocation loc = rc.getLocation();
-        // if (loc.x < 10 && loc.x < loc.y)
-        //     return tryMove(Direction.EAST);
-        // else if (loc.x < 10)
-        //     return tryMove(Direction.SOUTH);
-        // else if (loc.x > loc.y)
-        //     return tryMove(Direction.WEST);
-        // else
-        //     return tryMove(Direction.NORTH);
-    }
-
-    /**
      * Attempts to move in a given direction.
      *
      * @param dir The intended direction of movement
@@ -320,16 +276,5 @@ public strictfp class RobotPlayer {
     static MapLocation parseLoc(int hash) {
         return new MapLocation(hash % 64, hash >> 6);
     }
-
-
-    // stuff to do in a BFS, pass it a input target, and it will output nextBestLocation
-    static void pathTo(MapLocation target, MapLocation nextBestLoc) {
-
-    }
-    static void bfs() {
-        for (int i = 0; i < Constants.BFSDeltas35.length; i++) {
-            int[] deltas = Constants.BFSDeltas35[i];
-            MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
-        };
-    }
+    
 }
