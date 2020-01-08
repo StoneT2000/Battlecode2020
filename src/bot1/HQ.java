@@ -12,10 +12,33 @@ public class HQ extends RobotPlayer {
     public static void run() throws GameActionException {
         System.out.println("TEAM SOUP: " + rc.getTeamSoup());
 
+        // shoot nearest robot
+        RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
+        RobotInfo closestDroneBot = null;
+        int closestEnemyDroneDist = 99999999;
+        for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
+            RobotInfo info = nearbyEnemyRobots[i];
+            // TODO: Check if info.getLocation() vs info.location is more efficient?
+            int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
+            if (info.type == RobotType.DELIVERY_DRONE && dist < closestEnemyDroneDist) {
+                closestEnemyDroneDist = dist;
+                closestDroneBot = info;
+            }
+        }
+        // if we found a closest bot
+        if (closestDroneBot != null) {
+            if (rc.canShootUnit(closestDroneBot.getID())) {
+                rc.shootUnit(closestDroneBot.getID());
+                if (debug) rc.setIndicatorDot(closestDroneBot.location, 255, 50,190);
+            }
+        }
+
+        // decide on unit to build and set unitToBuild appropriately
         decideOnUnitToBuild();
         // if we are to build a unit, proceed
         if (unitToBuild != null) {
+            // proceed with building unit using default heurstics
             build();
         }
         // otherwise we don't build (stock up)
