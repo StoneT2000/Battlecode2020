@@ -9,6 +9,8 @@ public class Miner extends RobotPlayer {
     static final int MINER = 1; // default to go and mine nearest souplocation it knows
     static final int RETURNING = 2; // RETURNING TO SOME REFINERY OR HQ TO DEPOSIT
     static final int BUILDING = 3;
+    static MapLocation[] exploreLocs;
+    static int exploreLocIndex = 0;
     static RobotType unitToBuild;
     // if no soup location known, acts as scout
     static int role = MINER; // default ROLE
@@ -47,7 +49,7 @@ public class Miner extends RobotPlayer {
             }
             // else if we are near full, we go to nearest refinery known, otherwise go to HQ
             else {
-                targetLoc = getNearestDropsite();
+                targetLoc = HQLocation;
                 role = RETURNING;
             }
         }
@@ -242,6 +244,12 @@ public class Miner extends RobotPlayer {
             System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
             tryMove(greedyDir); // wasting bytecode probably here
         }
+        else {
+            // no targetLoc and is a miner, if on map edge,
+            if (role == MINER) {
+
+            }
+        }
 
         if (debug) {
             System.out.println("Miner " + role + " - Bytecode used: " + Clock.getBytecodeNum() +
@@ -251,14 +259,13 @@ public class Miner extends RobotPlayer {
         }
     }
 
+
     // algorithm to allow miner to explore and attempt to generally move to new spaces
     // fuzzy pathing, go in general direction and sway side to side
     // general direction is direction away from HQ
     static Direction getExploreDir() throws GameActionException {
         Direction generalDir = rc.getLocation().directionTo(HQLocation).opposite();
-        if (rc.getLocation().x <= 5) {
 
-        }
         double p = Math.random();
         if (p < 0.35) {
             generalDir = generalDir.rotateLeft();
@@ -277,17 +284,6 @@ public class Miner extends RobotPlayer {
         return dir;
     }
 
-    static MapLocation getNearestDropsite() throws GameActionException {
-        // TODO: add refineries
-        int minDist = rc.getLocation().distanceSquaredTo(HQLocation);
-        // for searching through known refineries, which might be constantly podcasting their location idk
-        // also use rc.getLocation().isWithinDistanceSquared(refinery.location, minDist);
-        // saves byte code instead of using if statement and wtv
-        targetLoc = HQLocation;
-
-        return targetLoc;
-    }
-
     // to be run in the BFS loop
     static void findClosestSoup() throws GameActionException {
 
@@ -297,5 +293,13 @@ public class Miner extends RobotPlayer {
         storeEnemyHQLocations();
         if (debug) System.out.println("HQ at " + HQLocation);
         // needs to determine a direction to go explore in
+
+        // 4 corners and center
+        exploreLocs = new MapLocation[] {
+                new MapLocation(0, 0),
+                new MapLocation(0, rc.getMapHeight()),
+                new MapLocation(rc.getMapWidth(), 0),
+                new MapLocation(rc.getMapWidth(), rc.getMapHeight())
+        };
     }
 }
