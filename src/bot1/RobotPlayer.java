@@ -175,11 +175,11 @@ public strictfp class RobotPlayer {
     }
 
     // announces the location with that cost.
-    static boolean announceSoupLocation(MapLocation loc, int cost, int soupCountApprox) throws GameActionException {
+    static boolean announceSoupLocation(MapLocation loc, int cost, int soupCountApprox, int minerCount) throws GameActionException {
         // announce x y coords and round number,
         // and how many miners are there already?
         // how much soup left?
-        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, hashLoc(loc), soupCountApprox};
+        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, hashLoc(loc), soupCountApprox, minerCount};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
 
@@ -189,39 +189,6 @@ public strictfp class RobotPlayer {
         }
         else {
             return false;
-        }
-    }
-
-    /**
-     * Read announcement code and store in SoupLocation the new soup location found
-     * Store closest one
-     */
-    static void checkBlockForSoupLocations(Transaction[] transactions) throws GameActionException {
-        int minDist = 99999;
-        if (SoupLocation != null) {
-            minDist = rc.getLocation().distanceSquaredTo(SoupLocation);
-        }
-        for (int i = transactions.length; --i >= 0;) {
-            int[] msg = transactions[i].getMessage();
-            decodeMsg(msg);
-            if (isOurMessage((msg))) {
-                // if it is announce SOUP location message
-                if ((msg[1] ^ ANNOUNCE_SOUP_LOCATION) == 0) {
-                    // TODO: do something with msg[4], the round number, determine outdatedness?
-                    MapLocation potentialLoc = parseLoc(msg[2]);
-                    int dist = rc.getLocation().distanceSquaredTo(potentialLoc);
-                    if (dist < minDist) {
-
-                        SoupLocation = potentialLoc;
-                        minDist = dist;
-                        if (debug) System.out.println("Found closer soup location in messages: " + SoupLocation + " msg: " + msg[2]);
-                    }
-                    else {
-                        // already have soup location target that still exists, continue with mining it
-                        // TODO: Do something about measuring how much soup is left, and announcing it.
-                    }
-                }
-            }
         }
     }
 

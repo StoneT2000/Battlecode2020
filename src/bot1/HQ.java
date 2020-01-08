@@ -45,7 +45,7 @@ public class HQ extends RobotPlayer {
 
         if (rc.getRoundNum() > 1) {
             Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
-            checkBlockForSoupLocations(lastRoundsBlocks);
+            //checkBlockForSoupLocations(lastRoundsBlocks);
         }
 
     }

@@ -9,13 +9,21 @@ public class Miner extends RobotPlayer {
     static final int MINER = 1; // default to go and mine nearest souplocation it knows
     static final int RETURNING = 2; // RETURNING TO SOME REFINERY OR HQ TO DEPOSIT
     static final int BUILDING = 3;
+
+    // score of the souplocation it is probably heading towards
+    static double soupLocScore = 0;
+
+    // exploration stuff
     static int timeSpentOnExploreLoc = 0;
     static MapLocation[] exploreLocs;
     static int exploreLocIndex = 0;
-    static RobotType unitToBuild;
-    // if no soup location known, acts as scout
+
+    static RobotType unitToBuild; // unit to build if role is building
+
+    static boolean blocked = false; // whether or not unit couldn't determine a path to goal last round
+
     static int role = MINER; // default ROLE
-    static int HQParity;
+    static int HQParity; // parity of HQLocation.x + HQLocation.y
     static LinkedList<MapLocation> RefineryLocations = new LinkedList<>();
     static MapLocation targetLoc; // location to head towards
     public static void run() throws GameActionException {
@@ -60,6 +68,7 @@ public class Miner extends RobotPlayer {
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         int RefineryCount = 0;
         int NetGunCount = 0;
+        int MinerCount = 0;
         int DesignSchoolCount = 0;
         MapLocation nearestRefinery = HQLocation;
         int minDist = rc.getLocation().distanceSquaredTo(HQLocation);
@@ -83,6 +92,8 @@ public class Miner extends RobotPlayer {
                 case DESIGN_SCHOOL:
                     DesignSchoolCount++;
                     break;
+                case MINER:
+                    MinerCount++;
             }
         }
         if (role == BUILDING) {
@@ -146,7 +157,7 @@ public class Miner extends RobotPlayer {
             if (SoupLocation != null && newLocation) {
                 // YELLOW means we found soup location, and we make announcement!
                 if (debug) rc.setIndicatorDot(SoupLocation, 255, 200, 20);
-                announceSoupLocation(SoupLocation, 0, soupNearbyCount);
+                announceSoupLocation(SoupLocation, 0, soupNearbyCount, MinerCount);
             }
 
 
@@ -296,10 +307,44 @@ public class Miner extends RobotPlayer {
         return dir;
     }
 
-    // to be run in the BFS loop
-    static void findClosestSoup() throws GameActionException {
+    /**
+     * Read announcement code and store in SoupLocation the new soup location found
+     * Store closest one
+     */
+    static void checkBlockForSoupLocations(Transaction[] transactions) throws GameActionException {
+        int minDist = 99999;
+        double highScore = soupLocScore; // choose the highest score to go to
+        // weights miner count and soup amount and distance. less distance, high soup, less miners
+        // 1/dist * soup * 1/ (miners) * k
+        if (SoupLocation != null) {
+           // highScore = (1 / rc.getLocation().distanceSquaredTo(SoupLocation);
+        }
+        for (int i = transactions.length; --i >= 0;) {
+            int[] msg = transactions[i].getMessage();
+            decodeMsg(msg);
+            if (isOurMessage((msg))) {
+                // if it is announce SOUP location message
+                if ((msg[1] ^ ANNOUNCE_SOUP_LOCATION) == 0) {
+                    int minersNearby = msg[4];
+                    int soupNearby = msg[3];
+                    MapLocation potentialLoc = parseLoc(msg[2]);
+                    int dist = rc.getLocation().distanceSquaredTo(potentialLoc);
+                    double score = (1/ dist) * soupNearby * (1 / minersNearby);
+                    if (score > highScore) {
 
+                        SoupLocation = potentialLoc;
+                        score = highScore;
+                        if (debug) System.out.println("Found soup location in messages: " + SoupLocation + " score: " + score);
+                    }
+                    else {
+                        // already have soup location target that still exists, continue with mining it
+                        // TODO: Do something about measuring how much soup is left, and announcing it.
+                    }
+                }
+            }
+        }
     }
+
     public static void setup() throws GameActionException {
         storeHQLocation();
         storeEnemyHQLocations();
