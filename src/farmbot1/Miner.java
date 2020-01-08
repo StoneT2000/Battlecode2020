@@ -1,4 +1,4 @@
-package bot1;
+package farmbot1;
 
 import battlecode.common.*;
 import bot1.utils.LinkedList;
@@ -9,8 +9,6 @@ public class Miner extends RobotPlayer {
     static final int MINER = 1; // default to go and mine nearest souplocation it knows
     static final int RETURNING = 2; // RETURNING TO SOME REFINERY OR HQ TO DEPOSIT
     static final int BUILDING = 3;
-    static MapLocation[] exploreLocs;
-    static int exploreLocIndex = 0;
     static RobotType unitToBuild;
     // if no soup location known, acts as scout
     static int role = MINER; // default ROLE
@@ -19,6 +17,31 @@ public class Miner extends RobotPlayer {
     public static void run() throws GameActionException {
         // try to get out of water, checks if in water for you
         getOutOfWater();
+
+        if (role == BUILDING) {
+            Direction buildDir = Direction.NORTH;
+            boolean builtUnit = false;
+            for (int i = 9; --i >= 1;) {
+                if (tryBuild(unitToBuild, buildDir)) {
+                    builtUnit = true;
+                    break;
+                }
+                else {
+                    buildDir = buildDir.rotateRight();
+                }
+            }
+            if (builtUnit) {
+                // add to refinery locations list
+                RefineryLocations.add(rc.adjacentLocation(buildDir));
+            }
+            // if we built a refinery, we also try and build a vaporator given funds
+
+            // go back to miner role
+            role = MINER;
+        }
+
+
+
 
         // always read last round's blocks
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
@@ -49,44 +72,8 @@ public class Miner extends RobotPlayer {
             }
             // else if we are near full, we go to nearest refinery known, otherwise go to HQ
             else {
-                targetLoc = HQLocation;
+                targetLoc = getNearestDropsite();
                 role = RETURNING;
-            }
-        }
-
-        /* BIG FRIENDLY BOTS SEARCH LOOP thing */
-        RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
-        int RefineryCount = 0;
-        int NetGunCount = 0;
-        int DesignSchoolCount = 0;
-        MapLocation nearestRefinery = HQLocation;
-        int minDist = rc.getLocation().distanceSquaredTo(HQLocation);
-        for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
-            RobotInfo info = nearbyFriendlyRobots[i];
-            switch (info.type) {
-                case REFINERY:
-                    RefineryCount++;
-                    // if bot is returning, locate nearest refinery as well
-                    if (role == RETURNING) {
-                        int dist = rc.getLocation().distanceSquaredTo(info.location);
-                        if (dist < minDist) {
-                            minDist = dist;
-                            targetLoc = info.location;
-                        }
-                    }
-                    break;
-                case NET_GUN:
-                    NetGunCount++;
-                    break;
-                case DESIGN_SCHOOL:
-                    DesignSchoolCount++;
-                    break;
-            }
-        }
-        if (role == BUILDING) {
-            // if we are trying to build but we already have one, stop
-            if (unitToBuild == RobotType.DESIGN_SCHOOL && DesignSchoolCount > 0) {
-                role = MINER;
             }
         }
 
@@ -126,15 +113,43 @@ public class Miner extends RobotPlayer {
                         }
                         break;
                     case RETURNING:
-                        break;
-                    case BUILDING:
-                        break;
+
                 }
 
             }
             else {
                 // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
                 break;
+            }
+        }
+
+        /* BIG FRIENDLY BOTS SEARCH LOOP thing */
+        RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+        int RefineryCount = 0;
+        int NetGunCount = 0;
+        int DesignSchoolCount = 0;
+        MapLocation nearestRefinery = HQLocation;
+        int minDist = rc.getLocation().distanceSquaredTo(HQLocation);
+        for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
+            RobotInfo info = nearbyFriendlyRobots[i];
+            switch (info.type) {
+                case REFINERY:
+                    RefineryCount++;
+                    // if bot is returning, locate nearest refinery as well
+                    if (role == RETURNING) {
+                        int dist = rc.getLocation().distanceSquaredTo(info.location);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            targetLoc = info.location;
+                        }
+                    }
+                    break;
+                case NET_GUN:
+                    NetGunCount++;
+                    break;
+                case DESIGN_SCHOOL:
+                    DesignSchoolCount++;
+                    break;
             }
         }
 
@@ -157,12 +172,13 @@ public class Miner extends RobotPlayer {
                 role = BUILDING;
                 unitToBuild = RobotType.REFINERY;
             }
+            /*
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
             else if ((mined || RefineryCount > 0) && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
-            }
-            else if (rc.getTeamSoup() >= 1100) {
+            }*/
+            else if (rc.getTeamSoup() >= 1500) {
                 role = BUILDING;
                 unitToBuild = RobotType.VAPORATOR;
             }
@@ -195,33 +211,6 @@ public class Miner extends RobotPlayer {
 
             }
         }
-        else if (role == BUILDING) {
-            Direction buildDir = Direction.NORTH;
-            // if building a vaporator, only build on odd x odd
-            boolean builtUnit = false;
-            for (int i = 9; --i >= 1;) {
-                MapLocation buildLoc = rc.adjacentLocation(buildDir);
-                if ((buildLoc.x + buildLoc.y) % 2 == 0) {
-                    if (tryBuild(unitToBuild, buildDir)) {
-                        builtUnit = true;
-                        break;
-                    } else {
-
-                        // TODO: optimize
-
-                    }
-                }
-                buildDir = buildDir.rotateRight();
-            }
-            if (builtUnit) {
-                // add to refinery locations list
-                RefineryLocations.add(rc.adjacentLocation(buildDir));
-            }
-            // if we built a refinery, we also try and build a vaporator given funds
-
-            // go back to miner role
-            role = MINER;
-        }
         else if (role == RETURNING) {
             // targetLoc should be place miner tries to return to
             if (rc.getLocation().distanceSquaredTo(targetLoc) > 1) {
@@ -250,12 +239,6 @@ public class Miner extends RobotPlayer {
             System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
             tryMove(greedyDir); // wasting bytecode probably here
         }
-        else {
-            // no targetLoc and is a miner, if on map edge,
-            if (role == MINER) {
-
-            }
-        }
 
         if (debug) {
             System.out.println("Miner " + role + " - Bytecode used: " + Clock.getBytecodeNum() +
@@ -265,13 +248,14 @@ public class Miner extends RobotPlayer {
         }
     }
 
-
     // algorithm to allow miner to explore and attempt to generally move to new spaces
     // fuzzy pathing, go in general direction and sway side to side
     // general direction is direction away from HQ
     static Direction getExploreDir() throws GameActionException {
         Direction generalDir = rc.getLocation().directionTo(HQLocation).opposite();
+        if (rc.getLocation().x <= 5) {
 
+        }
         double p = Math.random();
         if (p < 0.35) {
             generalDir = generalDir.rotateLeft();
@@ -290,6 +274,17 @@ public class Miner extends RobotPlayer {
         return dir;
     }
 
+    static MapLocation getNearestDropsite() throws GameActionException {
+        // TODO: add refineries
+        int minDist = rc.getLocation().distanceSquaredTo(HQLocation);
+        // for searching through known refineries, which might be constantly podcasting their location idk
+        // also use rc.getLocation().isWithinDistanceSquared(refinery.location, minDist);
+        // saves byte code instead of using if statement and wtv
+        targetLoc = HQLocation;
+
+        return targetLoc;
+    }
+
     // to be run in the BFS loop
     static void findClosestSoup() throws GameActionException {
 
@@ -299,13 +294,5 @@ public class Miner extends RobotPlayer {
         storeEnemyHQLocations();
         if (debug) System.out.println("HQ at " + HQLocation);
         // needs to determine a direction to go explore in
-
-        // 4 corners and center
-        exploreLocs = new MapLocation[] {
-                new MapLocation(0, 0),
-                new MapLocation(0, rc.getMapHeight()),
-                new MapLocation(rc.getMapWidth(), 0),
-                new MapLocation(rc.getMapWidth(), rc.getMapHeight())
-        };
     }
 }

@@ -1,4 +1,4 @@
-package bot1;
+package farmbot1;
 import battlecode.common.*;
 import bot1.utils.LinkedList;
 import sun.awt.SunToolkit;
@@ -19,7 +19,7 @@ public strictfp class RobotPlayer {
     static LinkedList<MapLocation> enemyHQLocations =  new LinkedList<>();
     static int turnCount;
     static final boolean debug = true;
-    static final int UNIQUEKEY = -92390122;
+    static final int UNIQUEKEY = -92390123;
     static Team enemyTeam;
 
     // signal codes
@@ -182,7 +182,6 @@ public strictfp class RobotPlayer {
         // how much soup left?
         int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, hashLoc(loc), soupCountApprox};
         encodeMsg(message);
-        System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
 
         if (rc.canSubmitTransaction(message, cost)) {
             rc.submitTransaction(message, cost);
@@ -215,7 +214,7 @@ public strictfp class RobotPlayer {
 
                         SoupLocation = potentialLoc;
                         minDist = dist;
-                        if (debug) System.out.println("Found closer soup location in messages: " + SoupLocation + " msg: " + msg[2]);
+                        if (debug) System.out.println("Found closer soup location in messages: " + SoupLocation);
                     }
                     else {
                         // already have soup location target that still exists, continue with mining it
@@ -283,7 +282,7 @@ public strictfp class RobotPlayer {
     }
 
     static int hashLoc(MapLocation loc) {
-        return loc.x  + (loc.y << 6);
+        return loc.x  + loc.y << 6;
     }
     static MapLocation parseLoc(int hash) {
         return new MapLocation(hash % 64, hash >> 6);
