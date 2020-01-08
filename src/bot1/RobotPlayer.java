@@ -57,7 +57,7 @@ public strictfp class RobotPlayer {
             try {
                 // Here, we've separated the controls into a different method for each RobotType.
                 // You can add the missing ones or rewrite this into your own control structure.
-                System.out.println("I'm a " + rc.getType() + "! Location " + rc.getLocation());
+                if (debug) System.out.println("I'm a " + rc.getType() + "! Location " + rc.getLocation());
                 switch (rc.getType()) {
                     case HQ:                 HQ.run();                break;
                     case MINER:              Miner.run();             break;
@@ -93,7 +93,7 @@ public strictfp class RobotPlayer {
                 if (dist < minDist && rc.canMove(directions[i]) && !rc.senseFlooding(rc.adjacentLocation(directions[i]))) {
                     dir = directions[i];
                     minDist = dist;
-                    System.out.println("I chose " + dir + " instead in order to go to " + target);
+                    if (debug) System.out.println("I chose " + dir + " instead in order to go to " + target);
                 }
             }
         }
@@ -276,5 +276,5 @@ public strictfp class RobotPlayer {
     static MapLocation parseLoc(int hash) {
         return new MapLocation(hash % 64, hash >> 6);
     }
-    
+
 }

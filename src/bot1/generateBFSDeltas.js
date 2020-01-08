@@ -37,4 +37,4 @@ function turnToJavaArray(arr) {
     }
     return "{" + str + "}";
 }
-turnToJavaArray(calculateManhattanDeltas(35));
+turnToJavaArray(calculateManhattanDeltas(24));
