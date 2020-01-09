@@ -72,15 +72,12 @@ public class DeliveryDrone extends RobotPlayer {
 
         // whatever targetloc is, try to go to it
         if (targetLoc != null) {
-            //Direction greedyDir = getGreedyMove(targetLoc); //TODO: should return a valid direction usually???
             Direction dir = rc.getLocation().directionTo(targetLoc);
-            // FIXME: Remove senseFlooding in future
             if (!rc.canMove(dir)) {
                 int minDist = 999999;
                 for (int i = directions.length; --i >= 0; ) {
                     // if distance to target from this potential direction is smaller, set it
                     int dist = targetLoc.distanceSquaredTo(rc.adjacentLocation(directions[i]));
-                    // FIXME: Remove sensefLooding in future
                     if (dist < minDist && rc.canMove(directions[i]) && !rc.senseFlooding(rc.adjacentLocation(directions[i]))) {
                         dir = directions[i];
                         minDist = dist;

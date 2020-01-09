@@ -90,13 +90,11 @@ public strictfp class RobotPlayer {
     // returns best move to greedily move to target. ALWAYS returns some direction
     static Direction getGreedyMove(MapLocation target) throws GameActionException {
         Direction dir = rc.getLocation().directionTo(target);
-        // FIXME: Remove senseFlooding in future
         if (!rc.canMove(dir) || rc.senseFlooding((rc.adjacentLocation((dir))))) {
             int minDist = 999999;
             for (int i = directions.length; --i >= 0; ) {
                 // if distance to target from this potential direction is smaller, set it
                 int dist = target.distanceSquaredTo(rc.adjacentLocation(directions[i]));
-                // FIXME: Remove sensefLooding in future
                 if (dist < minDist && rc.canMove(directions[i]) && !rc.senseFlooding(rc.adjacentLocation(directions[i]))) {
                     dir = directions[i];
                     minDist = dist;
@@ -208,8 +206,6 @@ public strictfp class RobotPlayer {
      * @throws GameActionException
      */
     static boolean tryMove(Direction dir) throws GameActionException {
-        // System.out.println("I am trying to move " + dir + "; " + rc.isReady() + " " + rc.getCooldownTurns() + " " + rc.canMove(dir));
-        // FIXME: Remove senseFlooding once API is fixed and canMove actually determines it
         if (rc.isReady() && rc.canMove(dir) && !rc.senseFlooding(rc.adjacentLocation(dir))) {
             rc.move(dir);
             return true;
