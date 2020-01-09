@@ -53,7 +53,7 @@ public class HQ extends RobotPlayer {
         }
         // announce drone attack sometime before we would get overwhelemed by flood
         if (surroundedByFlood) {
-            if (rc.getRoundNum() % 10 == 0 && rc.getRoundNum() >= surroundedByFloodRound + 50) {
+            if (rc.getRoundNum() % 10 == 0 && rc.getRoundNum() >= surroundedByFloodRound + 125) {
                 announceDroneAttack();
             }
             else if (rc.getRoundNum() % 50 == 0){

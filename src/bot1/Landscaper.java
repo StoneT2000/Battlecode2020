@@ -47,8 +47,14 @@ public class Landscaper extends RobotPlayer {
                         // TODO: reevaluate this method of defending
 
                         boolean occupied = true;
-                        if (!rc.isLocationOccupied(checkLoc) || rc.senseRobotAtLocation(checkLoc).ID == rc.getID() || rc.senseRobotAtLocation(checkLoc).type != RobotType.LANDSCAPER) {
+                        if (!rc.isLocationOccupied(checkLoc)) {
                             occupied = false;
+                        }
+                        else {
+                            RobotInfo senseRobot = rc.senseRobotAtLocation(checkLoc);
+                            if (senseRobot != null && (senseRobot.ID == rc.getID() || senseRobot.type != RobotType.LANDSCAPER)) {
+                                occupied = false;
+                            }
                         }
                         if (validBuildWallLoc(checkLoc) && !occupied) {
 
