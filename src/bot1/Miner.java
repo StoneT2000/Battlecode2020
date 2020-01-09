@@ -9,6 +9,10 @@ public class Miner extends RobotPlayer {
     static final int MINER = 1; // default to go and mine nearest souplocation it knows
     static final int RETURNING = 2; // RETURNING TO SOME REFINERY OR HQ TO DEPOSIT
     static final int BUILDING = 3;
+
+    static int FulfillmentCentersBuilt = 0;
+    static int DesignSchoolsBuilt = 0; // how many design schools this robot knows have been built ??
+
     static MapLocation enemyBaseLocation = null;
     // score of the souplocation it is probably heading towards
     static double soupLocScore = 0;
@@ -61,12 +65,23 @@ public class Miner extends RobotPlayer {
         }
 
         /* BIG FRIENDLY BOTS SEARCH LOOP thing */
-        //RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
+        int EnemyDroneCount = 0;
+        RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
+        for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
+            RobotInfo info = nearbyEnemyRobots[i];
+            switch (info.type) {
+                case DELIVERY_DRONE:
+                    EnemyDroneCount++;
+                    break;
+
+            }
+        }
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         int RefineryCount = 0;
         int NetGunCount = 0;
         int MinerCount = 0;
         int DesignSchoolCount = 0;
+        int VaporatorCount = 0;
         int FulfillmentCenterCount = 0;
         MapLocation nearestRefinery = HQLocation;
         int minDist = rc.getLocation().distanceSquaredTo(HQLocation);
@@ -96,11 +111,16 @@ public class Miner extends RobotPlayer {
                 case FULFILLMENT_CENTER:
                     FulfillmentCenterCount++;
                     break;
+                case VAPORATOR:
+                    VaporatorCount++;
             }
         }
         if (role == BUILDING) {
             // if we are trying to build but we already have one, stop
             if (unitToBuild == RobotType.DESIGN_SCHOOL && DesignSchoolCount > 0) {
+                role = MINER;
+            }
+            else if (unitToBuild == RobotType.FULFILLMENT_CENTER && FulfillmentCenterCount > 0) {
                 role = MINER;
             }
         }
@@ -189,20 +209,46 @@ public class Miner extends RobotPlayer {
                 role = BUILDING;
                 unitToBuild = RobotType.REFINERY;
             }
+            // early game
+            // TODO: TUNE PARAM!
+            else if (rc.getRoundNum() <= 300) {
+                if ((mined || RefineryCount > 0) && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
+                    unitToBuild = RobotType.DESIGN_SCHOOL;
+                    role = BUILDING;
+                }
+                else if (RefineryCount > 0 && FulfillmentCentersBuilt < 1 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4) {
+                    role = BUILDING;
+                    unitToBuild = RobotType.FULFILLMENT_CENTER;
+                }
+                else if (rc.getTeamSoup() >= 1000) {
+                    role = BUILDING;
+                    unitToBuild = RobotType.VAPORATOR;
+                }
+            }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if ((mined || RefineryCount > 0) && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
+            else if ((mined || RefineryCount > 0) && rc.getRoundNum() % 5 == 0 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4 + 1000) {
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
             }
-            else if (FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4) {
+            else if (RefineryCount > 0 && rc.getRoundNum() % 5 == 0 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4 + 1000) {
                 role = BUILDING;
                 unitToBuild = RobotType.FULFILLMENT_CENTER;
+            }
+            else if (NetGunCount == 0 && rc.getRoundNum() % 5 == 0 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + RobotType.MINER.cost * 4 + 1000) {
+                role = BUILDING;
+                unitToBuild = RobotType.NET_GUN;
+            }
 
+            // build netguns out of necessity to combat drones
+            else if (NetGunCount == 0 && EnemyDroneCount > 0 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 200) {
+                role = BUILDING;
+                unitToBuild = RobotType.NET_GUN;
             }
             else if (rc.getTeamSoup() >= 1100) {
                 role = BUILDING;
                 unitToBuild = RobotType.VAPORATOR;
             }
+
             // build net guns around enemy base!
             if (enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 24 && NetGunCount < 2 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 300) {
                role = BUILDING;
@@ -253,8 +299,16 @@ public class Miner extends RobotPlayer {
                 buildDir = buildDir.rotateRight();
             }
             if (builtUnit) {
+                switch (unitToBuild) {
+                    case DESIGN_SCHOOL:
+                        DesignSchoolsBuilt++;
+                        break;
+                    case FULFILLMENT_CENTER:
+                        FulfillmentCentersBuilt++;
+                        break;
+                }
                 // add to refinery locations list
-                RefineryLocations.add(rc.adjacentLocation(buildDir));
+                //RefineryLocations.add(rc.adjacentLocation(buildDir));
             }
             // if we built a refinery, we also try and build a vaporator given funds
 
@@ -309,7 +363,7 @@ public class Miner extends RobotPlayer {
     // fuzzy pathing, go in general direction and sway side to side
     // general direction is direction away from HQ
     static Direction getExploreDir() throws GameActionException {
-        if (timeSpentOnExploreLoc > 100) {
+        if (timeSpentOnExploreLoc > Math.max(rc.getMapHeight(), rc.getMapWidth()) + 5) {
             exploreLocIndex = (exploreLocIndex + 1) % exploreLocs.length;
             timeSpentOnExploreLoc = 0;
         }
