@@ -8,7 +8,6 @@ public class Landscaper extends RobotPlayer {
     static final int DEFEND_HQ = 1;
     static int role = DEFEND_HQ;
 
-    static MapLocation enemyBaseLocation = null;
     static MapLocation bestWallLocForDefend = null;
     static MapLocation closestWallLocForDefend = null;
     static MapLocation leastElevatedWallLocForDefend = null;
@@ -27,7 +26,8 @@ public class Landscaper extends RobotPlayer {
                     break;
             }
         }
-
+        Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
+        checkForEnemyBasesInBlocks(lastRoundsBlocks);
 
         /* BIG BFS LOOP ISH */
 
@@ -98,13 +98,15 @@ public class Landscaper extends RobotPlayer {
             }
         }
 
-
-        if (role == ATTACK) {
-            // find nearest enemy hq location to go and search and store map location
+        // always check for enemey base and do this recon
+        MapLocation closestMaybeHQ = null;
+        // dont know where base is, then look around for it.
+        if (enemyBaseLocation == null) {
             Node<MapLocation> node = enemyHQLocations.head;
+
             Node<MapLocation> closestMaybeHQNode = enemyHQLocations.head;
             int minDistToMaybeHQ = 9999999;
-            MapLocation closestMaybeHQ = null;
+
             if (node != null) {
                 closestMaybeHQ = node.val;
                 for (int i = 0; i++ < enemyHQLocations.size; ) {
@@ -117,8 +119,7 @@ public class Landscaper extends RobotPlayer {
                     node = node.next;
 
                 }
-            }
-            else {
+            } else {
                 // dont swarm?
             }
 
@@ -129,26 +130,37 @@ public class Landscaper extends RobotPlayer {
                     if (unit.type == RobotType.HQ && unit.team == enemyTeam) {
                         // FOUND HQ!
                         enemyBaseLocation = closestMaybeHQ;
+                        announceEnemyBase(enemyBaseLocation);
                         if (debug) System.out.println("FOUND ENEMY HQ AT " + closestMaybeHQ);
-                    }
-                    else {
+                        if (debug) rc.setIndicatorDot(enemyBaseLocation, 100, 29, 245);
+                    } else {
                         // remove this location from linked list
                         enemyHQLocations.remove(closestMaybeHQNode);
                     }
-                }
-                else {
+                } else {
                     enemyHQLocations.remove(closestMaybeHQNode);
                 }
             }
+        }
 
+        if (role == ATTACK) {
+            // find nearest enemy hq location to go and search and store map location
+
+            MapLocation attackLoc = null;
+            if (enemyBaseLocation == null) {
+                attackLoc = closestMaybeHQ;
+            }
+            else {
+                attackLoc = enemyBaseLocation;
+            }
             // move towards maybe enemy HQ if not next to it.
-            if (!rc.getLocation().isAdjacentTo(closestMaybeHQ)) {
-                targetLoc = closestMaybeHQ;
+            if (!rc.getLocation().isAdjacentTo(attackLoc)) {
+                targetLoc = attackLoc;
 
             }
             else {
                 // adjacent to HQ now
-                Direction dirToHQ = rc.getLocation().directionTo(closestMaybeHQ);
+                Direction dirToHQ = rc.getLocation().directionTo(attackLoc);
                 if (rc.getDirtCarrying() > 0) {
                     if (rc.canDepositDirt(dirToHQ)) {
                         rc.depositDirt(dirToHQ);

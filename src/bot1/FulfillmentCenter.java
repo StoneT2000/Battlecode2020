@@ -33,6 +33,9 @@ public class FulfillmentCenter extends RobotPlayer {
                 confirmBuild = true;
             }
         }
+        if (rc.getTeamSoup() >= 850 && rc.getRoundNum() % 30 == 29 && rc.getRoundNum() >= 500) {
+            confirmBuild = true;
+        }
         if (dronesBuilt < 1 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 100) {
             confirmBuild = true;
         }

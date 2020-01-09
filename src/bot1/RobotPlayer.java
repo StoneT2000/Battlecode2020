@@ -17,6 +17,7 @@ public strictfp class RobotPlayer {
     static MapLocation SoupLocation; // stores a target soup location to go and mine
     static MapLocation HQLocation;
     static LinkedList<MapLocation> enemyHQLocations =  new LinkedList<>();
+    static MapLocation enemyBaseLocation = null;
     static int turnCount;
     static final boolean debug = true;
     static final int UNIQUEKEY = -32310592;
@@ -32,6 +33,7 @@ public strictfp class RobotPlayer {
     static final int ANNOUNCE_SOUP_LOCATION = 10;
     static final int NEED_LANDSCAPERS_FOR_DEFENCE = 11;
     static final int DRONES_ATTACK = 12;
+    static final int ANNOUNCE_ENEMY_BASE_LOCATION = 13;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -217,6 +219,33 @@ public strictfp class RobotPlayer {
         }
         else {
             return false;
+        }
+    }
+
+    static boolean announceEnemyBase(MapLocation loc) throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_ENEMY_BASE_LOCATION, hashLoc(loc)};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
+
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    static void checkForEnemyBasesInBlocks(Transaction [] transactions) throws GameActionException {
+        for (int i = transactions.length; --i >= 0;) {
+            int[] msg = transactions[i].getMessage();
+            decodeMsg(msg);
+            if (isOurMessage((msg))) {
+                // if it is announce SOUP location message
+                if ((msg[1] ^ ANNOUNCE_ENEMY_BASE_LOCATION) == 0) {
+                    enemyBaseLocation = parseLoc(msg[2]);
+                }
+            }
         }
     }
 

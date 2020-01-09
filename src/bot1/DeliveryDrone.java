@@ -10,7 +10,24 @@ public class DeliveryDrone extends RobotPlayer {
     static MapLocation attackLoc;
     static MapLocation waterLoc;
     public static void run() throws GameActionException {
+        Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
+        for (int i = lastRoundsBlocks.length; --i >= 0; ) {
+            int[] msg = lastRoundsBlocks[i].getMessage();
+            decodeMsg(msg);
+            if (isOurMessage((msg))) {
+                if ((msg[1] ^ DRONES_ATTACK) == 0) {
+                    if (msg[2] != -1) {
+                        enemyBaseLocation = parseLoc(msg[2]);
+                        //role = ATTACK;
+                        attackLoc = enemyBaseLocation;
+                    }
+                }
+            }
+        }
+
+
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
+
 
         RobotInfo closestEnemyLandscaper = null;
         RobotInfo closestEnemyMiner = null;
@@ -41,6 +58,7 @@ public class DeliveryDrone extends RobotPlayer {
                     break;
             }
         }
+
 
 
         /* SCOUTING CODE */

@@ -42,24 +42,29 @@ public class HQ extends RobotPlayer {
             // proceed with building unit using default heurstics
             build();
         }
-        if (surroundedByFlood()) {
-            //announceDroneAttack();
+        if (rc.getRoundNum() % 10 == 0 && surroundedByFlood()) {
+            announceDroneAttack();
         }
         // otherwise we don't build (stock up)
 
         if (rc.getRoundNum() > 1) {
             Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
             //checkBlockForSoupLocations(lastRoundsBlocks);
+            checkForEnemyBasesInBlocks(lastRoundsBlocks);
         }
 
     }
     static void announceDroneAttack() throws GameActionException {
-        int[] message = new int[] {generateUNIQUEKEY(), DRONES_ATTACK};
+        int hashedLoc = -1;
+        if (enemyBaseLocation != null) {
+            hashedLoc = hashLoc(enemyBaseLocation);
+        }
+        int[] message = new int[] {generateUNIQUEKEY(), DRONES_ATTACK, hashedLoc};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING DRONE ATTACK ");
 
-        if (rc.canSubmitTransaction(message, 1)) {
-            rc.submitTransaction(message, 1);
+        if (rc.canSubmitTransaction(message, 10)) {
+            rc.submitTransaction(message, 10);
         }
     }
     static boolean surroundedByFlood() throws GameActionException {
