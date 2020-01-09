@@ -22,8 +22,13 @@ public strictfp class RobotPlayer {
     static final int UNIQUEKEY = -92390122;
     static Team enemyTeam;
 
+    // usually the position to move towards
+    static MapLocation targetLoc;
+
+
     // signal codes
     static final int ANNOUNCE_SOUP_LOCATION = 10;
+    static final int NEED_LANDSCAPERS_FOR_DEFENCE = 11;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -103,6 +108,9 @@ public strictfp class RobotPlayer {
         return dir;
     }
 
+    static Direction randomDirection() {
+        return directions[(int) (Math.random() * directions.length)];
+    }
     /**
      * Stores HQ location sent out by HQ earlier
      */
@@ -234,7 +242,12 @@ public strictfp class RobotPlayer {
         } else return false;
     }
 
-
+    static int calculateWaterLevels() {
+        int waterLevel = 0;
+        //e0.0028x − 1.38sin (0.00157x − 1.73) + 1.38sin ( − 1.73) − 1,
+        waterLevel = (int) Math.pow(Math.E, 0.0028 * rc.getRoundNum() - 1.38 * Math.sin(0.00157 * rc.getRoundNum() - 1.73) + 1.38*Math.sin(-1.73)) - 1;
+        return waterLevel;
+    }
     // location related
 
     // checks if unit is within unit distance away from map edge

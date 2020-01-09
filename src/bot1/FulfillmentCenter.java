@@ -3,6 +3,8 @@ package bot1;
 import battlecode.common.*;
 
 public class FulfillmentCenter extends RobotPlayer {
+    static Direction buildDir = Direction.NORTH;
+    static int dronesBuilt = 0;
     public static void run() throws GameActionException {
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
@@ -25,8 +27,41 @@ public class FulfillmentCenter extends RobotPlayer {
                 break;
             }
         }
+
+        if (rc.getRoundNum() % 5 == 0) {
+            if (rc.getTeamSoup() >= 1100) {
+                boolean builtUnit = false;
+                for (int i = 9; --i >= 1; ) {
+                    if (tryBuild(RobotType.DELIVERY_DRONE, buildDir)) {
+                        builtUnit = true;
+                        break;
+                    } else {
+                        buildDir = buildDir.rotateRight();
+                    }
+                }
+                if (builtUnit) {
+                    dronesBuilt++;
+                }
+                buildDir = buildDir.rotateRight();
+            }
+        }
     }
     public static void setup() throws GameActionException {
-
+        storeHQLocation();
+        if (rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + RobotType.MINER.cost * 2) {
+            boolean builtUnit = false;
+            for (int i = 9; --i >= 1; ) {
+                if (tryBuild(RobotType.DELIVERY_DRONE, buildDir)) {
+                    builtUnit = true;
+                    break;
+                } else {
+                    buildDir = buildDir.rotateRight();
+                }
+            }
+            if (builtUnit) {
+                dronesBuilt++;
+            }
+            buildDir = buildDir.rotateRight();
+        }
     }
 }

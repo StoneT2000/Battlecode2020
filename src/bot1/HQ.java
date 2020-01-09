@@ -108,7 +108,7 @@ public class HQ extends RobotPlayer {
                 unitToBuild = RobotType.MINER;
             }
         }
-        else if (rc.getRoundNum() % 10 == 0) {
+        else if (rc.getRoundNum() % ((int) (rc.getRoundNum() / 30 + 5)) == 0) {
             if (rc.getTeamSoup() >= RobotType.REFINERY.cost + 2 * RobotType.MINER.cost) {
                 unitToBuild = RobotType.MINER;
             }

@@ -25,7 +25,7 @@ public class Miner extends RobotPlayer {
     static int role = MINER; // default ROLE
     static int HQParity; // parity of HQLocation.x + HQLocation.y
     static LinkedList<MapLocation> RefineryLocations = new LinkedList<>();
-    static MapLocation targetLoc; // location to head towards
+
     public static void run() throws GameActionException {
         // try to get out of water, checks if in water for you
         getOutOfWater();
@@ -66,6 +66,7 @@ public class Miner extends RobotPlayer {
         int NetGunCount = 0;
         int MinerCount = 0;
         int DesignSchoolCount = 0;
+        int FulfillmentCenterCount = 0;
         MapLocation nearestRefinery = HQLocation;
         int minDist = rc.getLocation().distanceSquaredTo(HQLocation);
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
@@ -90,6 +91,10 @@ public class Miner extends RobotPlayer {
                     break;
                 case MINER:
                     MinerCount++;
+                    break;
+                case FULFILLMENT_CENTER:
+                    FulfillmentCenterCount++;
+                    break;
             }
         }
         if (role == BUILDING) {
@@ -167,9 +172,14 @@ public class Miner extends RobotPlayer {
                 unitToBuild = RobotType.REFINERY;
             }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if ((mined || RefineryCount > 0) && DesignSchoolCount == 999 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
+            else if ((mined || RefineryCount > 0) && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
+            }
+            else if (FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4) {
+                role = BUILDING;
+                unitToBuild = RobotType.FULFILLMENT_CENTER;
+
             }
             else if (rc.getTeamSoup() >= 1100) {
                 role = BUILDING;
