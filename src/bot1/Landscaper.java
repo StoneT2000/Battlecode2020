@@ -7,7 +7,7 @@ public class Landscaper extends RobotPlayer {
     static final int ATTACK = 0;
     static final int DEFEND_HQ = 1;
     static int role = DEFEND_HQ;
-    static final int BASE_WALL_DIST = 1;
+
     static MapLocation enemyBaseLocation = null;
     static MapLocation bestWallLocForDefend = null;
     static MapLocation closestWallLocForDefend = null;

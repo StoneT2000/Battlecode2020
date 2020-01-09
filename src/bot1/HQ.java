@@ -49,6 +49,10 @@ public class HQ extends RobotPlayer {
         }
 
     }
+    static boolean surroundedByFlood() {
+
+        return false;
+    }
     public static void build() throws GameActionException {
         // TODO: optimize bytecode here
         if (rc.getRoundNum() == 1) {
@@ -87,16 +91,7 @@ public class HQ extends RobotPlayer {
             return;
         }
 
-        // if soup was found early on...
-        if (rc.getRoundNum() < 60) {
-            if (SoupLocation != null) {
-                //unitToBuild = RobotType.MINER;
-            }
-            // if no early soup, stock up, wait for design school to be built
-            else {
 
-            }
-        }
 
         // limit miners to 1/100 of map size and then periodically build them
         if (minersBuilt <= mapSize / 100) {
