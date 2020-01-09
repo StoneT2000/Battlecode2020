@@ -16,6 +16,19 @@ public class Landscaper extends RobotPlayer {
         // atm, swarm at an enemy base or smth and just hella try to bury it
         // make a path as needed if short range path finding yields no good way to get around some wall
         int waterLevel = calculateWaterLevels();
+
+        int friendlyLandscaperCount = 0;
+        RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+        for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
+            RobotInfo info = nearbyFriendlyRobots[i];
+            switch (info.type) {
+                case LANDSCAPER:
+                    friendlyLandscaperCount++;
+                    break;
+            }
+        }
+
+
         /* BIG BFS LOOP ISH */
 
         int minDistToWall = 999999999;
@@ -182,6 +195,10 @@ public class Landscaper extends RobotPlayer {
                         targetLoc = null;
                     }
 
+                    // if there are wayy too many friendly landscapers, go on the attack
+                    if (friendlyLandscaperCount >= ((BASE_WALL_DIST + 1) * 4 + 4)/ 3) {
+                        role = ATTACK;
+                    }
 
 
                 }
