@@ -17,7 +17,8 @@ public strictfp class RobotPlayer {
     static LinkedList<MapLocation> enemyHQLocations =  new LinkedList<>();
     static int turnCount;
     static final boolean debug = false;
-    static final int UNIQUEKEY = -123923822;
+    static final int BASE_WALL_DIST = 1;
+    static final int UNIQUEKEY = -123921822;
     static Team enemyTeam;
 
     // usually the position to move towards
