@@ -189,19 +189,19 @@ public class Miner extends RobotPlayer {
                 role = BUILDING;
                 unitToBuild = RobotType.REFINERY;
             }
-            // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if ((mined || RefineryCount > 0) && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
-                unitToBuild = RobotType.DESIGN_SCHOOL;
-                role = BUILDING;
-            }
-            else if (FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4) {
-                role = BUILDING;
-                unitToBuild = RobotType.FULFILLMENT_CENTER;
+            else if (rc.getRoundNum() <= 300) {
+                // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
+                if ((mined || RefineryCount > 0) && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
+                    unitToBuild = RobotType.DESIGN_SCHOOL;
+                    role = BUILDING;
+                } else if (FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4) {
+                    role = BUILDING;
+                    unitToBuild = RobotType.FULFILLMENT_CENTER;
 
-            }
-            else if (rc.getTeamSoup() >= 1100) {
-                role = BUILDING;
-                unitToBuild = RobotType.VAPORATOR;
+                } else if (rc.getTeamSoup() >= 1100) {
+                    role = BUILDING;
+                    unitToBuild = RobotType.VAPORATOR;
+                }
             }
             // build net guns around enemy base!
             if (enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 24 && NetGunCount < 2 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 300) {
