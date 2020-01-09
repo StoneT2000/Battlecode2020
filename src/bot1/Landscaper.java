@@ -7,7 +7,7 @@ public class Landscaper extends RobotPlayer {
     static final int ATTACK = 0;
     static final int DEFEND_HQ = 1;
     static int role = DEFEND_HQ;
-    static final int BASE_WALL_DIST = 2;
+    static final int BASE_WALL_DIST = 1;
     static MapLocation enemyBaseLocation = null;
     static MapLocation bestWallLocForDefend = null;
     static MapLocation closestWallLocForDefend = null;
@@ -43,6 +43,8 @@ public class Landscaper extends RobotPlayer {
                     case DEFEND_HQ:
                         // find position in square around base to build wall
                         int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+                        // TODO: reevaluate this method of defending
+                        /*
                         if (bestWallLocForDefend == null && validBuildWallLoc(checkLoc)) {
 
                             // look for first elevation that is not good enough yet and higher than the water
@@ -59,11 +61,11 @@ public class Landscaper extends RobotPlayer {
                                 leastElevation = locElevation;
                             }
 
-                        }
+                        }*/
 
                         // find closest wall as well
-                        if (closestWallLocForDefend == null && validBuildWallLoc(checkLoc)) {
-
+                        // check if wall is valid and if its empty or its urself
+                        if (validBuildWallLoc(checkLoc) && (!rc.isLocationOccupied(checkLoc) || rc.senseRobotAtLocation(checkLoc).ID == rc.getID())) {
                             if (dist < minDistToWall) {
                                 closestWallLocForDefend = checkLoc;
                                 minDistToWall = dist;
@@ -120,9 +122,11 @@ public class Landscaper extends RobotPlayer {
                     enemyHQLocations.remove(closestMaybeHQNode);
                 }
             }
+
+            // move towards maybe enemy HQ if not next to it.
             if (!rc.getLocation().isAdjacentTo(closestMaybeHQ)) {
                 targetLoc = closestMaybeHQ;
-                // if can
+
             }
             else {
                 // adjacent to HQ now
@@ -141,7 +145,7 @@ public class Landscaper extends RobotPlayer {
             }
         }
         else if (role == DEFEND_HQ) {
-            if (debug) System.out.println("Best defend build loc " + bestWallLocForDefend + " | otherwise " + closestWallLocForDefend);
+            if (debug) System.out.println("Best defend build loc " + bestWallLocForDefend + " | closest wall loc " + closestWallLocForDefend);
             if (bestWallLocForDefend != null ||  leastElevatedWallLocForDefend != null || closestWallLocForDefend != null) {
 
                 // we prefer the bestBuildLoc first, then use closest one
@@ -151,11 +155,11 @@ public class Landscaper extends RobotPlayer {
                     targetLoc = closestWallLocForDefend;
                 }
                 // if adjacent to targetLoc, start digging at it
-                if (rc.getLocation().distanceSquaredTo(targetLoc) <= 2) {
+                if (rc.getLocation().distanceSquaredTo(targetLoc) == 0) {
 
                     // set to null so we can reevaluate next round where to build
-                    bestWallLocForDefend = null;
-                    closestWallLocForDefend = null;
+                   // bestWallLocForDefend = null;
+                    // closestWallLocForDefend = null;
 
                     if (debug) System.out.println("Close and building wall at " + targetLoc);
                     // deposit onto wall
@@ -180,15 +184,22 @@ public class Landscaper extends RobotPlayer {
                         }
                         // find point that is not on wall to take dirt from
                         else {
-                            Direction digDir = Direction.CENTER;
-                            for (Direction dir : directions) {
-                                MapLocation checkLoc = rc.adjacentLocation(dir);
-                                if (!validBuildWallLoc(checkLoc) && rc.canDigDirt(dir)) {
-                                    digDir = dir;
-                                }
-                            }
+                            // take from inside base
+                            Direction digDir = rc.getLocation().directionTo(HQLocation).opposite();
                             if (rc.canDigDirt(digDir)) {
                                 rc.digDirt((digDir));
+                            }
+                            // if for some reason u cant dig, go dig elsewhere...
+                            else {
+                                for (Direction dir : directions) {
+                                    MapLocation checkLoc = rc.adjacentLocation(dir);
+                                    if (!validBuildWallLoc(checkLoc) && rc.canDigDirt(dir)) {
+                                        digDir = dir;
+                                    }
+                                }
+                                if (rc.canDigDirt(digDir)) {
+                                    rc.digDirt((digDir));
+                                }
                             }
                         }
                         // set to null so we stop moving generally
@@ -197,7 +208,7 @@ public class Landscaper extends RobotPlayer {
 
                     // if there are wayy too many friendly landscapers, go on the attack
                     if (friendlyLandscaperCount >= ((BASE_WALL_DIST + 1) * 4 + 4)/ 3) {
-                        role = ATTACK;
+                        //role = ATTACK;
                     }
 
 
@@ -206,6 +217,11 @@ public class Landscaper extends RobotPlayer {
             // otherwise we aren't near enough to find a location to build the wall
             else {
                 targetLoc = HQLocation;
+                if (rc.getLocation().distanceSquaredTo(HQLocation) <= 8) {
+                    if (closestWallLocForDefend == null) {
+                        role = ATTACK;
+                    }
+                }
             }
 
         }
