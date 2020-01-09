@@ -49,10 +49,6 @@ public class Miner extends RobotPlayer {
                         if (debug) {
                             System.out.println("Turn: " + turnCount + " - I mined " + newLoc + "; Now have " + rc.getSoupCarrying());
                         }
-                        // if the location no longer has soup, set SoupLocation to null as we have no target
-                        if (rc.senseSoup(newLoc) <= 0) {
-                            SoupLocation = null;
-                        }
                         break;
                     }
                 }
@@ -196,7 +192,7 @@ public class Miner extends RobotPlayer {
                 if (!rc.canSenseLocation(SoupLocation) || rc.senseSoup(SoupLocation) > 0) {
                     // if not close enough to soup location, move towards it as it still has soup there
                     if (SoupLocation.distanceSquaredTo(rc.getLocation()) > 1) {
-                        if (debug) System.out.println("Heading to soup location " + SoupLocation);
+                        if (debug) System.out.println("Heading to soup location " + SoupLocation + " with score " + soupLocScore);
                         targetLoc = SoupLocation;
                     } else {
                         // close enough...
@@ -204,6 +200,7 @@ public class Miner extends RobotPlayer {
                 } else {
                     // no soup left at location
                     SoupLocation = null;
+                    soupLocScore = 0;
                 }
 
             }
@@ -315,7 +312,8 @@ public class Miner extends RobotPlayer {
         int minDist = 99999;
         double highScore = soupLocScore; // choose the highest score to go to
         // weights miner count and soup amount and distance. less distance, high soup, less miners
-        // 1/dist * soup * 1/ (miners) * k
+        // 1/dist + soup * 1/ (miners)
+        // distance function plus soup per miner
         if (SoupLocation != null) {
            // highScore = (1 / rc.getLocation().distanceSquaredTo(SoupLocation);
         }
@@ -329,12 +327,14 @@ public class Miner extends RobotPlayer {
                     int soupNearby = msg[3];
                     MapLocation potentialLoc = parseLoc(msg[2]);
                     int dist = rc.getLocation().distanceSquaredTo(potentialLoc);
-                    double score = (1/ dist) * soupNearby * (1 / minersNearby);
-                    if (score > highScore) {
 
+                    // weight soup per miner very high. We dont need too many miners per soup depo
+                    double score = -Math.pow((Math.sqrt(soupNearby)) * (dist + 1), 1.2) + Math.pow(soupNearby * (1.0 / (minersNearby + 1)), 1.5);
+                    if (debug) System.out.println("Found soup location in messages: " + potentialLoc + " score: " + score +
+                            " | NearbySoup: " + soupNearby + " | MinersNearby: " + minersNearby + " | Dist: "+ dist);
+                    if (score > highScore) {
                         SoupLocation = potentialLoc;
-                        score = highScore;
-                        if (debug) System.out.println("Found soup location in messages: " + SoupLocation + " score: " + score);
+                        highScore = score;
                     }
                     else {
                         // already have soup location target that still exists, continue with mining it
@@ -343,6 +343,7 @@ public class Miner extends RobotPlayer {
                 }
             }
         }
+        soupLocScore = highScore;
     }
 
     public static void setup() throws GameActionException {

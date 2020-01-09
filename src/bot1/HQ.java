@@ -4,7 +4,7 @@ import battlecode.common.*;
 public class HQ extends RobotPlayer {
     static Direction buildDir = Direction.NORTH;
     static RobotType unitToBuild;
-    static int[] BotCounts = new int[10];
+    static int minersBuilt = 0;
     static MapLocation SoupLocation;
     static MapLocation mapCenter;
     static int mapSize;
@@ -74,7 +74,7 @@ public class HQ extends RobotPlayer {
             }
         }
         if (builtUnit) {
-            BotCounts[unitToBuild.ordinal()] += 1;
+            minersBuilt++;
         }
         // make next turns build direction different
         buildDir = buildDir.rotateRight();
@@ -98,10 +98,18 @@ public class HQ extends RobotPlayer {
             }
         }
 
-        if (BotCounts[RobotType.MINER.ordinal()] <= mapSize / 100) {
+        // limit miners to 1/100 of map size and then periodically build them
+        if (minersBuilt <= mapSize / 100) {
+            // only produce miner if we have sufficient stock up and its early or if we have a lot of soup
+            // how to determine if there is still demand for soup though?
             if (rc.getTeamSoup() >= RobotType.REFINERY.cost + 2 * RobotType.MINER.cost && rc.getRoundNum() < 200) {
                 unitToBuild = RobotType.MINER;
             } else if (rc.getTeamSoup() >= 1100) {
+                unitToBuild = RobotType.MINER;
+            }
+        }
+        else if (rc.getRoundNum() % 10 == 0) {
+            if (rc.getTeamSoup() >= RobotType.REFINERY.cost + 2 * RobotType.MINER.cost) {
                 unitToBuild = RobotType.MINER;
             }
         }
