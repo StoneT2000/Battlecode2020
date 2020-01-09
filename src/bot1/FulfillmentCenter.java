@@ -27,23 +27,29 @@ public class FulfillmentCenter extends RobotPlayer {
                 break;
             }
         }
-
+        boolean confirmBuild = false;
         if (rc.getRoundNum() % 5 == 0) {
             if (rc.getTeamSoup() >= 1100) {
-                boolean builtUnit = false;
-                for (int i = 9; --i >= 1; ) {
-                    if (tryBuild(RobotType.DELIVERY_DRONE, buildDir)) {
-                        builtUnit = true;
-                        break;
-                    } else {
-                        buildDir = buildDir.rotateRight();
-                    }
-                }
-                if (builtUnit) {
-                    dronesBuilt++;
-                }
-                buildDir = buildDir.rotateRight();
+                confirmBuild = true;
             }
+        }
+        if (dronesBuilt < 1 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 100) {
+            confirmBuild = true;
+        }
+        if (confirmBuild) {
+            boolean builtUnit = false;
+            for (int i = 9; --i >= 1; ) {
+                if (tryBuild(RobotType.DELIVERY_DRONE, buildDir)) {
+                    builtUnit = true;
+                    break;
+                } else {
+                    buildDir = buildDir.rotateRight();
+                }
+            }
+            if (builtUnit) {
+                dronesBuilt++;
+            }
+            buildDir = buildDir.rotateRight();
         }
     }
     public static void setup() throws GameActionException {

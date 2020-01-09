@@ -226,11 +226,11 @@ public class Miner extends RobotPlayer {
                 }
             }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if ((mined || RefineryCount > 0) && rc.getRoundNum() % 5 == 0 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4 + 1000) {
+            else if ((mined || RefineryCount > 0) && rc.getRoundNum() % 5 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4 + 1000) {
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
             }
-            else if (RefineryCount > 0 && rc.getRoundNum() % 5 == 0 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4 + 1000) {
+            else if (RefineryCount > 0 && rc.getRoundNum() % 5 == 2 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4 + 1000) {
                 role = BUILDING;
                 unitToBuild = RobotType.FULFILLMENT_CENTER;
             }
@@ -238,7 +238,6 @@ public class Miner extends RobotPlayer {
                 role = BUILDING;
                 unitToBuild = RobotType.NET_GUN;
             }
-
             // build netguns out of necessity to combat drones
             else if (NetGunCount == 0 && EnemyDroneCount > 0 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 200) {
                 role = BUILDING;
