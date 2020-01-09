@@ -41,6 +41,9 @@ public class HQ extends RobotPlayer {
             // proceed with building unit using default heurstics
             build();
         }
+        if (surroundedByFlood()) {
+            //announceDroneAttack();
+        }
         // otherwise we don't build (stock up)
 
         if (rc.getRoundNum() > 1) {
@@ -49,9 +52,36 @@ public class HQ extends RobotPlayer {
         }
 
     }
-    static boolean surroundedByFlood() {
+    static void announceDroneAttack() throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), DRONES_ATTACK};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING DRONE ATTACK ");
 
-        return false;
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+        }
+    }
+    static boolean surroundedByFlood() throws GameActionException {
+        int sideLength = (BASE_WALL_DIST+1) * 2 + 1;
+        //int side2 = (BASE_WALL_DIST+1)*2 - 1;
+        for (int i = 0; i < sideLength; i++) {
+            if (!rc.senseFlooding(new MapLocation(rc.getLocation().x - BASE_WALL_DIST - 1 + i, rc.getLocation().y - BASE_WALL_DIST - 1))) {
+                return false;
+            }
+            if (!rc.senseFlooding(new MapLocation(rc.getLocation().x - BASE_WALL_DIST - 1 + i, rc.getLocation().y + BASE_WALL_DIST + 1))) {
+                return false;
+            }
+        }
+        //TODO OPTIMIZE BYTECODE
+        for (int i = 0; i < sideLength; i++) {
+            if (!rc.senseFlooding(new MapLocation(rc.getLocation().x - BASE_WALL_DIST - 1, rc.getLocation().y - BASE_WALL_DIST + i))) {
+                return false;
+            }
+            if (!rc.senseFlooding(new MapLocation(rc.getLocation().x + BASE_WALL_DIST + 1, rc.getLocation().y - BASE_WALL_DIST + i))) {
+                return false;
+            }
+        }
+        return true;
     }
     public static void build() throws GameActionException {
         // TODO: optimize bytecode here
@@ -116,6 +146,8 @@ public class HQ extends RobotPlayer {
     public static void setup() throws GameActionException {
         // announce self location on turn 1 (will always run)
         announceSelfLocation(0);
+        HQLocation = rc.getLocation();
+        storeEnemyHQLocations();
         mapSize = rc.getMapWidth() * rc.getMapHeight();
         mapCenter =  new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2);
         if (rc.getLocation().distanceSquaredTo(mapCenter) > 48) {
