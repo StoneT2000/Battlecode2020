@@ -34,6 +34,7 @@ public strictfp class RobotPlayer {
     static final int NEED_LANDSCAPERS_FOR_DEFENCE = 11;
     static final int DRONES_ATTACK = 12;
     static final int ANNOUNCE_ENEMY_BASE_LOCATION = 13;
+    static final int BUILD_DRONES = 14;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.

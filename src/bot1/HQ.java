@@ -8,6 +8,8 @@ public class HQ extends RobotPlayer {
     static MapLocation SoupLocation;
     static MapLocation mapCenter;
     static int mapSize;
+    static boolean surroundedByFlood = false;
+    static int surroundedByFloodRound = -1;
     static boolean nearCenter;
     public static void run() throws GameActionException {
         if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup());
@@ -42,9 +44,21 @@ public class HQ extends RobotPlayer {
             // proceed with building unit using default heurstics
             build();
         }
-        if (rc.getRoundNum() % 10 == 0 && surroundedByFlood()) {
+        if (!surroundedByFlood && surroundedByFlood()) {
+            surroundedByFlood = true;
+            surroundedByFloodRound = rc.getRoundNum();
+            announceBuildDrones();
             //TODO: once surrounded, announce to fulfillment centers to BUILD BUILD DRONES
-            announceDroneAttack();
+
+        }
+        // announce drone attack sometime before we would get overwhelemed by flood
+        if (surroundedByFlood) {
+            if (rc.getRoundNum() % 10 == 0 && rc.getRoundNum() >= surroundedByFloodRound + 50) {
+                announceDroneAttack();
+            }
+            else if (rc.getRoundNum() % 50 == 0){
+                announceBuildDrones();
+            }
         }
         // otherwise we don't build (stock up)
 
@@ -55,6 +69,15 @@ public class HQ extends RobotPlayer {
         }
 
     }
+    static void announceBuildDrones() throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), BUILD_DRONES};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING BUILD DRONES!!!");
+        // TODO: CHANGE COSTS HERE, put -1 and a max 50 or smth to get suggested cost
+        if (rc.canSubmitTransaction(message, 10)) {
+            rc.submitTransaction(message, 10);
+        }
+    }
     static void announceDroneAttack() throws GameActionException {
         int hashedLoc = -1;
         if (enemyBaseLocation != null) {
@@ -63,7 +86,7 @@ public class HQ extends RobotPlayer {
         int[] message = new int[] {generateUNIQUEKEY(), DRONES_ATTACK, hashedLoc};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING DRONE ATTACK ");
-
+        // TODO: CHANGE COSTS HERE, put -1 and a max 50 or smth to get suggested cost
         if (rc.canSubmitTransaction(message, 10)) {
             rc.submitTransaction(message, 10);
         }
