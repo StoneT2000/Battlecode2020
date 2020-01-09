@@ -1,7 +1,7 @@
 package bot1;
 
 import battlecode.common.*;
-import bot1.utils.LinkedList;
+import bot1.utils.*;
 import com.sun.org.apache.bcel.internal.generic.RETURN;
 
 public class Miner extends RobotPlayer {
@@ -9,7 +9,7 @@ public class Miner extends RobotPlayer {
     static final int MINER = 1; // default to go and mine nearest souplocation it knows
     static final int RETURNING = 2; // RETURNING TO SOME REFINERY OR HQ TO DEPOSIT
     static final int BUILDING = 3;
-
+    static MapLocation enemyBaseLocation = null;
     // score of the souplocation it is probably heading towards
     static double soupLocScore = 0;
 
@@ -61,6 +61,7 @@ public class Miner extends RobotPlayer {
         }
 
         /* BIG FRIENDLY BOTS SEARCH LOOP thing */
+        //RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         int RefineryCount = 0;
         int NetGunCount = 0;
@@ -152,13 +153,30 @@ public class Miner extends RobotPlayer {
             }
         }
 
+        if (enemyBaseLocation == null) {
+            Node<MapLocation> node = enemyHQLocations.head;
+            for (int i = 0; i++ < enemyHQLocations.size; ) {
+                // check if there is enemey base
+                if (rc.canSenseLocation(node.val) && rc.isLocationOccupied(node.val)) {
+                    RobotInfo maybeEnemyHQ = rc.senseRobotAtLocation(node.val);
+                    if (maybeEnemyHQ.type == RobotType.HQ && maybeEnemyHQ.team == enemyTeam) {
+                        if (debug) System.out.println("MINER FOUND ENEMY HQ at " + node.val);
+                        enemyBaseLocation = maybeEnemyHQ.location;
+                        break;
+                    }
+                }
+                node = node.next;
+
+            }
+        }
+
         if (role == MINER) {
             // TODO: cost of announcement should be upped in later rounds with many units.
             // announce soup location if we just made a new soup location
             if (SoupLocation != null && newLocation) {
                 // YELLOW means we found soup location, and we make announcement!
                 if (debug) rc.setIndicatorDot(SoupLocation, 255, 200, 20);
-                announceSoupLocation(SoupLocation, 0, soupNearbyCount, MinerCount);
+                announceSoupLocation(SoupLocation, 1, soupNearbyCount, MinerCount);
             }
 
 
@@ -185,9 +203,10 @@ public class Miner extends RobotPlayer {
                 role = BUILDING;
                 unitToBuild = RobotType.VAPORATOR;
             }
-            else if (NetGunCount == 0 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 300) {
-               // role = BUILDING;
-               // unitToBuild = RobotType.NET_GUN;
+            // build net guns around enemy base!
+            if (enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 24 && NetGunCount < 2 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 300) {
+               role = BUILDING;
+               unitToBuild = RobotType.NET_GUN;
             }
 
             // EXPLORE if still no soup found

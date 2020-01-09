@@ -13,7 +13,7 @@ public class DesignSchool extends RobotPlayer {
         }
 
         if ((rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + 100 && landscapersBuilt < 1) ||
-        (rc.getTeamSoup() >= 1600 && landscapersBuilt <= 4)) {
+        (rc.getTeamSoup() >= 800 && rc.getRoundNum() % 10 == 0)) {
             // should rely on some signal
             boolean builtUnit = false;
             for (int i = 9; --i >= 1; ) {

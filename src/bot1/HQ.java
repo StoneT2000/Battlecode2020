@@ -114,6 +114,10 @@ public class HQ extends RobotPlayer {
             }
         }
     }
+    public static boolean needWallBuilders() {
+        // measure elevation of things
+        return false;
+    }
     public static void setup() throws GameActionException {
         // announce self location on turn 1 (will always run)
         announceSelfLocation(0);

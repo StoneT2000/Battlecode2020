@@ -8,6 +8,7 @@ public class Landscaper extends RobotPlayer {
     static final int DEFEND_HQ = 1;
     static int role = DEFEND_HQ;
     static final int BASE_WALL_DIST = 2;
+    static MapLocation enemyBaseLocation = null;
     static MapLocation bestWallLocForDefend = null;
     static MapLocation closestWallLocForDefend = null;
     static MapLocation leastElevatedWallLocForDefend = null;
@@ -94,6 +95,7 @@ public class Landscaper extends RobotPlayer {
                     RobotInfo unit = rc.senseRobotAtLocation(closestMaybeHQ);
                     if (unit.type == RobotType.HQ && unit.team == enemyTeam) {
                         // FOUND HQ!
+                        enemyBaseLocation = closestMaybeHQ;
                         if (debug) System.out.println("FOUND ENEMY HQ AT " + closestMaybeHQ);
                     }
                     else {
