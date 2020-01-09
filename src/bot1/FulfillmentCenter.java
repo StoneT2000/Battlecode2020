@@ -29,7 +29,7 @@ public class FulfillmentCenter extends RobotPlayer {
         }
 
         if (rc.getRoundNum() % 5 == 0) {
-            if (rc.getTeamSoup() >= 1100) {
+            if (rc.getTeamSoup() >= 800) {
                 boolean builtUnit = false;
                 for (int i = 9; --i >= 1; ) {
                     if (tryBuild(RobotType.DELIVERY_DRONE, buildDir)) {
