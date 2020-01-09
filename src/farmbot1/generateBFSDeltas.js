@@ -6,7 +6,7 @@ function calculateManhattanDeltas(dist) {
     }
     return false;
   }
-  for (let k = 0; k <= Math.ceil(Math.sqrt(dist)); k++){
+  for (let k = 0; k <= dist; k++){
     for (let i = k; i >= 1; i--) {
     if(inDist(i, -k+i))
         manD.push([i, -k + i]);
@@ -37,4 +37,4 @@ function turnToJavaArray(arr) {
     }
     return "{" + str + "}";
 }
-turnToJavaArray(calculateManhattanDeltas(24));
+turnToJavaArray(calculateManhattanDeltas(35));

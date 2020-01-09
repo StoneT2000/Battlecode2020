@@ -328,8 +328,20 @@ public class Miner extends RobotPlayer {
                     MapLocation potentialLoc = parseLoc(msg[2]);
                     int dist = rc.getLocation().distanceSquaredTo(potentialLoc);
 
-                    // weight soup per miner very high. We dont need too many miners per soup depo
-                    double score = -Math.pow((Math.sqrt(soupNearby)) * (dist + 1), 1.2) + Math.pow(soupNearby * (1.0 / (minersNearby + 1)), 1.5);
+                    // weight soup per miner very high. We dont need too many miners per soup depo.
+                    // weight distance negatively early game, less over time,
+                    double score = 0;
+                    // TODO: the distWeight should change based on round num and map size,
+                    //  we approximate when our miners probably have explored the whole map and should now focus on
+                    //  mining more, using the weighted soup/miners value
+                    double distWeight = 1.2;
+                    if (rc.getRoundNum() <= 400) {
+                        score = -Math.pow((Math.sqrt(soupNearby)) * (dist + 1), distWeight) + Math.pow(soupNearby * (1.0 / (minersNearby + 1)), 1.5);
+                    }
+                    else {
+                        distWeight = 0.5;
+                        score = -Math.pow((Math.sqrt(soupNearby)) * (dist + 1), distWeight) + Math.pow(soupNearby * (1.0 / (minersNearby + 1)), 1.5);
+                    }
                     if (debug) System.out.println("Found soup location in messages: " + potentialLoc + " score: " + score +
                             " | NearbySoup: " + soupNearby + " | MinersNearby: " + minersNearby + " | Dist: "+ dist);
                     if (score > highScore) {
