@@ -2,7 +2,6 @@ package bot1;
 
 import battlecode.common.*;
 import bot1.utils.*;
-import com.sun.org.apache.bcel.internal.generic.RETURN;
 
 public class Miner extends RobotPlayer {
     static final int SCOUT = 0; // default to search for patches of soup and what not
@@ -243,7 +242,7 @@ public class Miner extends RobotPlayer {
                 role = BUILDING;
                 unitToBuild = RobotType.NET_GUN;
             }
-            else if (rc.getTeamSoup() >= 1100) {
+            else if (rc.getTeamSoup() >= 1200) {
                 role = BUILDING;
                 unitToBuild = RobotType.VAPORATOR;
             }
@@ -339,7 +338,7 @@ public class Miner extends RobotPlayer {
 
         // whatever targetloc is, try to go to it
         if (targetLoc != null) {
-            Direction greedyDir = getGreedyMove(targetLoc); //TODO: should return a valid direction usually???
+            Direction greedyDir = getBugPathMove(targetLoc); //TODO: should return a valid direction usually???
             if (debug) System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
             tryMove(greedyDir); // wasting bytecode probably here
         }
@@ -382,7 +381,7 @@ public class Miner extends RobotPlayer {
                 generalDir = generalDir.rotateRight();
             }
         }
-        Direction dir = getGreedyMove(rc.adjacentLocation(generalDir));
+        Direction dir = getBugPathMove(rc.adjacentLocation(generalDir));
         timeSpentOnExploreLoc++;
         return dir;
     }

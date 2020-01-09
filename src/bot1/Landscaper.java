@@ -33,6 +33,7 @@ public class Landscaper extends RobotPlayer {
 
         int minDistToWall = 999999999;
         int minDistToBestBuildLoc = 99999999;
+        //int farthestDistToBuildLoc
         int leastElevation = 999999999;
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
             int[] deltas = Constants.BFSDeltas24[i];
@@ -44,12 +45,16 @@ public class Landscaper extends RobotPlayer {
                         // find position in square around base to build wall
                         int dist = rc.getLocation().distanceSquaredTo(checkLoc);
                         // TODO: reevaluate this method of defending
-                        /*
-                        if (bestWallLocForDefend == null && validBuildWallLoc(checkLoc)) {
 
-                            // look for first elevation that is not good enough yet and higher than the water
+                        boolean occupied = true;
+                        if (!rc.isLocationOccupied(checkLoc) || rc.senseRobotAtLocation(checkLoc).ID == rc.getID() || rc.senseRobotAtLocation(checkLoc).type != RobotType.LANDSCAPER) {
+                            occupied = false;
+                        }
+                        if (validBuildWallLoc(checkLoc) && !occupied) {
+
+                            // look for first elevation that is not good enough yet and is not at least 3
                             int locElevation = rc.senseElevation(checkLoc);
-                            if (locElevation < waterLevel + 10) {
+                            if (locElevation <= 3) {
                                 if (dist < minDistToBestBuildLoc) {
                                     bestWallLocForDefend = checkLoc;
                                     minDistToBestBuildLoc = dist;
@@ -61,12 +66,14 @@ public class Landscaper extends RobotPlayer {
                                 leastElevation = locElevation;
                             }
 
-                        }*/
+                        }
 
                         // find closest wall as well
                         // check if wall is valid and if its empty or its urself
-                        if (validBuildWallLoc(checkLoc) && (!rc.isLocationOccupied(checkLoc) || rc.senseRobotAtLocation(checkLoc).ID == rc.getID())) {
+
+                        if (validBuildWallLoc(checkLoc) && !occupied) {
                             if (dist < minDistToWall) {
+                                if (debug) System.out.println(checkLoc);
                                 closestWallLocForDefend = checkLoc;
                                 minDistToWall = dist;
                             }
@@ -75,8 +82,19 @@ public class Landscaper extends RobotPlayer {
                 }
             }
             else {
+                switch(role) {
+                    case DEFEND_HQ:
+                        int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+                        if (validBuildWallLoc(checkLoc)) {
+                            if (dist < minDistToWall) {
+                                closestWallLocForDefend = checkLoc;
+                                minDistToWall = dist;
+                            }
+                        }
+                        break;
+                }
                 // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
-                break;
+
             }
         }
 
@@ -146,20 +164,19 @@ public class Landscaper extends RobotPlayer {
         }
         else if (role == DEFEND_HQ) {
             if (debug) System.out.println("Best defend build loc " + bestWallLocForDefend + " | closest wall loc " + closestWallLocForDefend);
-            if (bestWallLocForDefend != null ||  leastElevatedWallLocForDefend != null || closestWallLocForDefend != null) {
+            if (bestWallLocForDefend != null || closestWallLocForDefend != null) {
 
                 // we prefer the bestBuildLoc first, then use closest one
                 targetLoc = bestWallLocForDefend;
-                if (targetLoc == null) targetLoc = leastElevatedWallLocForDefend;
-                if (targetLoc == null) {
-                    targetLoc = closestWallLocForDefend;
-                }
+                if (targetLoc == null) targetLoc = closestWallLocForDefend;
                 // if adjacent to targetLoc, start digging at it
+                bestWallLocForDefend = null;
+                closestWallLocForDefend = null;
                 if (rc.getLocation().distanceSquaredTo(targetLoc) == 0) {
 
                     // set to null so we can reevaluate next round where to build
-                   // bestWallLocForDefend = null;
-                    // closestWallLocForDefend = null;
+
+
 
                     if (debug) System.out.println("Close and building wall at " + targetLoc);
                     // deposit onto wall
@@ -184,7 +201,7 @@ public class Landscaper extends RobotPlayer {
                         }
                         // find point that is not on wall to take dirt from
                         else {
-                            // take from inside base
+                            // take from right outside base
                             Direction digDir = rc.getLocation().directionTo(HQLocation).opposite();
                             if (rc.canDigDirt(digDir)) {
                                 rc.digDirt((digDir));
@@ -232,7 +249,7 @@ public class Landscaper extends RobotPlayer {
 
         // whatever targetloc is, try to go to it
         if (targetLoc != null) {
-            Direction greedyDir = getGreedyMove(targetLoc); //TODO: should return a valid direction usually???
+            Direction greedyDir = getBugPathMove(targetLoc); //TODO: should return a valid direction usually???
             if (debug) System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
             tryMove(greedyDir); // wasting bytecode probably here
         }

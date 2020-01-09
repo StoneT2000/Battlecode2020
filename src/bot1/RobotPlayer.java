@@ -109,6 +109,25 @@ public strictfp class RobotPlayer {
         return dir;
     }
 
+    //static boolean passableArea(MapLoc)
+    static Direction getBugPathMove(MapLocation target) throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(target);
+        if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.senseFlooding(rc.adjacentLocation(dir))) {
+            if (rc.canMove(dir)) {
+                return dir;
+            }
+        }
+        for (int i = 7; --i >= 0; ) {
+            dir = dir.rotateLeft();
+            if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.senseFlooding(rc.adjacentLocation(dir))) {
+                if (rc.canMove(dir)) {
+                    return dir;
+                }
+            }
+        }
+        return Direction.CENTER;
+    }
+
     static Direction randomDirection() {
         return directions[(int) (Math.random() * directions.length)];
     }
