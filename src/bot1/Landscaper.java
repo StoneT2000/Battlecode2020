@@ -77,6 +77,7 @@ public class Landscaper extends RobotPlayer {
                                 occupied = false;
                             }
                         }
+                        // only look at valid build locs and places not occupied by self or landscapers
                         if (validBuildWallLoc(checkLoc) && !occupied) {
 
                             // look for first elevation that is not good enough yet and is not at least 3
@@ -232,15 +233,14 @@ public class Landscaper extends RobotPlayer {
                 // we prefer the bestBuildLoc first, then use closest one
                 targetLoc = bestWallLocForDefend;
                 if (targetLoc == null) targetLoc = closestWallLocForDefend;
+                if (leastElevation < 1) {
+                    targetLoc = leastElevatedWallLocForDefend;
+                }
                 // if adjacent to targetLoc, start digging at it
                 bestWallLocForDefend = null;
                 closestWallLocForDefend = null;
                 int distToTarget = rc.getLocation().distanceSquaredTo(targetLoc);
                 if (distToTarget == 0) {
-
-                    // set to null so we can reevaluate next round where to build
-
-
 
                     if (debug) System.out.println("Close and building wall at " + targetLoc);
                     // deposit onto wall
@@ -248,7 +248,7 @@ public class Landscaper extends RobotPlayer {
                     // check if base is getting burried
                     Direction dirToBase = rc.getLocation().directionTo(HQLocation);
                     if (rc.canDigDirt(dirToBase)) {
-                        //targetLoc = null;
+                        // targetLoc = null;
                         if (debug) System.out.println("Digging base out");
                         rc.digDirt(dirToBase);
                     }
@@ -308,7 +308,7 @@ public class Landscaper extends RobotPlayer {
                 }
                 // if we havent reached the build place, check it out
                 else {
-                    // if adjacent..., BURY IT probably
+                    // if adjacent to occupied building, BURY IT probably
                     if (distToTarget <= 2 && rc.canSenseLocation(targetLoc) && rc.isLocationOccupied(targetLoc)) {
                         RobotInfo info = rc.senseRobotAtLocation(targetLoc);
                         if (info.type == RobotType.FULFILLMENT_CENTER || info.type == RobotType.DESIGN_SCHOOL || info.type == RobotType.NET_GUN) {
@@ -330,6 +330,30 @@ public class Landscaper extends RobotPlayer {
                                 }
                             }
                             targetLoc = null; // don't move, just try to bury
+                        }
+                    }
+                    // otherwise if its not occupied, fill it up if elevation is low
+                    else if (distToTarget <= 2) {
+                        if (rc.canSenseLocation(targetLoc)) {
+                            if (rc.senseElevation(targetLoc) < 1) {
+                                Direction dirToLowElevation = rc.getLocation().directionTo(targetLoc);
+                                if (rc.canDepositDirt(dirToLowElevation)) {
+                                    rc.depositDirt(dirToLowElevation);
+                                }
+                                else {
+                                    // otherwise find loc to dig out of
+                                    Direction digDir = null;
+                                    for (Direction dir : directions) {
+                                        MapLocation checkLoc = rc.adjacentLocation(dir);
+                                        if (!validBuildWallLoc(checkLoc) && rc.canDigDirt(dir)) {
+                                            digDir = dir;
+                                        }
+                                    }
+                                    if (digDir != null && rc.canDigDirt(digDir)) {
+                                        rc.digDirt((digDir));
+                                    }
+                                }
+                            }
                         }
                     }
                 }
