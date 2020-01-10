@@ -199,22 +199,34 @@ public class Landscaper extends RobotPlayer {
                     if (debug) System.out.println("Close and building wall at " + targetLoc);
                     // deposit onto wall
 
-                    int myElevation = rc.senseElevation(rc.getLocation());
-                    int targetElevation = rc.senseElevation(targetLoc);
-
-                    // see if we can move on top of wall we want to build on
-                    if (rc.getLocation().distanceSquaredTo(targetLoc) > 0 && myElevation <= targetElevation + 3 && myElevation >= targetElevation - 3) {
+                    // check if base is getting burried
+                    Direction dirToBase = rc.getLocation().directionTo(HQLocation);
+                    if (rc.canDigDirt(dirToBase)) {
                         //targetLoc = null;
-                        if (debug) System.out.println("Can still move to target wall loc " + targetLoc);
+                        if (debug) System.out.println("Digging base out");
+                        rc.digDirt(dirToBase);
                     }
-                    //if we can't move on top of wall
+                    // otherwise proceed with building wall nicely
                     else {
 
                         // now perform wall building maneuvers
                         if (rc.getDirtCarrying() > 0) {
-                            Direction depositDir = rc.getLocation().directionTo(targetLoc);
-                            if (rc.canDepositDirt(depositDir)) {
-                                rc.depositDirt(depositDir);
+                            // build on least elevated part that has unit on it
+                            Direction bestDepositDir = rc.getLocation().directionTo(targetLoc);
+                            int lowestElevation = rc.senseElevation(rc.getLocation());
+                            for (Direction depositDir: directions) {
+                                MapLocation loc = rc.adjacentLocation(depositDir);
+                                // must be a build wall loc, occupied, and have landscaper there
+                                if (rc.canSenseLocation(loc) && validBuildWallLoc(loc) && rc.isLocationOccupied(loc) && rc.senseRobotAtLocation(loc).type == RobotType.LANDSCAPER) {
+                                    int thisE = rc.senseElevation(loc);
+                                    if (thisE < lowestElevation) {
+                                        lowestElevation = thisE;
+                                        bestDepositDir = depositDir;
+                                    }
+                                }
+                            }
+                            if (rc.canDepositDirt(bestDepositDir)) {
+                                rc.depositDirt(bestDepositDir);
                             }
                         }
                         // find point that is not on wall to take dirt from

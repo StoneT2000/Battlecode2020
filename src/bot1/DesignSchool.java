@@ -15,7 +15,6 @@ public class DesignSchool extends RobotPlayer {
         boolean willBuild = false;
         if ((rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + 100 && landscapersBuilt < 1) || (rc.getTeamSoup() >= 1300 && rc.getRoundNum() % 10 == 0)
         || (rc.getTeamSoup() >= 700 && rc.getRoundNum() % 40 == 0)
-                || (rc.getRoundNum() < 300  && rc.getTeamSoup() >= 300)
         ) {
             willBuild = true;
         }
