@@ -162,7 +162,6 @@ public class Landscaper extends RobotPlayer {
             // move towards maybe enemy HQ if not next to it.
             if (!rc.getLocation().isAdjacentTo(attackLoc)) {
                 targetLoc = attackLoc;
-
             }
             else {
                 // adjacent to HQ now
