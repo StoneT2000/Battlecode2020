@@ -172,7 +172,8 @@ public class Landscaper extends RobotPlayer {
                     }
                 }
                 else {
-                    Direction digDir = dirToHQ.opposite();
+                    // dig down to make wall building harder
+                    Direction digDir = Direction.CENTER;//dirToHQ.opposite();
                     if (rc.canDigDirt(digDir)) {
                         rc.digDirt(digDir);
                     }
