@@ -16,7 +16,7 @@ public class HQ extends RobotPlayer {
 
         // shoot nearest robot
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
-
+        RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         RobotInfo closestDroneBot = null;
         int closestEnemyDroneDist = 99999999;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
@@ -28,6 +28,19 @@ public class HQ extends RobotPlayer {
                 closestDroneBot = info;
             }
         }
+
+        int wallBots = 0;
+        for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
+            RobotInfo info = nearbyFriendlyRobots[i];
+            int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
+            if (info.type == RobotType.LANDSCAPER && dist <= 2) {
+                wallBots ++;
+            }
+        }
+        if (wallBots < 8 && rc.getRoundNum() % 10 == 0) {
+            announceWantLandscapers(8 - wallBots);
+        }
+
         // TODO:, shoot closest one with our unit
         // if we found a closest bot
         if (closestDroneBot != null) {
@@ -89,6 +102,15 @@ public class HQ extends RobotPlayer {
         // TODO: CHANGE COSTS HERE, put -1 and a max 50 or smth to get suggested cost
         if (rc.canSubmitTransaction(message, 10)) {
             rc.submitTransaction(message, 10);
+        }
+    }
+    static void announceWantLandscapers(int amount) throws GameActionException {
+        // send teamsoup count to ensure we don't build too many landscapers
+        int [] message = new int[] {generateUNIQUEKEY(), NEED_LANDSCAPERS_FOR_DEFENCE, rc.getTeamSoup(), amount};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING WANT LANDSCAPERS ");
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
         }
     }
     static boolean surroundedByFlood() throws GameActionException {
@@ -165,7 +187,7 @@ public class HQ extends RobotPlayer {
         }
         // build less and less miners over time
         else if (rc.getRoundNum() % ((int) (rc.getRoundNum() / 20 + 5)) == 0) {
-            if (rc.getTeamSoup() >= RobotType.REFINERY.cost + 2 * RobotType.MINER.cost) {
+            if (rc.getTeamSoup() >= RobotType.REFINERY.cost + 2 * RobotType.MINER.cost + 500) {
                 unitToBuild = RobotType.MINER;
             }
         }

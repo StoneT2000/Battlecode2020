@@ -216,7 +216,7 @@ public class Miner extends RobotPlayer {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                 }
-                else if ((mined || RefineryCount > 0) && VaporatorCount > 0 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
+                else if ((mined || RefineryCount > 0) && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
                     unitToBuild = RobotType.DESIGN_SCHOOL;
                     role = BUILDING;
                 }
