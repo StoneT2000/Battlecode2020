@@ -112,6 +112,7 @@ public class Miner extends RobotPlayer {
                     break;
                 case VAPORATOR:
                     VaporatorCount++;
+                    break;
             }
         }
         if (role == BUILDING) {
@@ -226,20 +227,20 @@ public class Miner extends RobotPlayer {
 
             }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if ((mined || RefineryCount > 0) && rc.getRoundNum() % 5 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4 + 300) {
+            else if ((mined || RefineryCount > 0) && VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4 + 300) {
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
             }
-            else if (RefineryCount > 0 && rc.getRoundNum() % 5 == 2 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4 + 300) {
+            else if (RefineryCount > 0 && VaporatorCount > 0 && rc.getRoundNum() % 20 == 2 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4 + 300) {
                 role = BUILDING;
                 unitToBuild = RobotType.FULFILLMENT_CENTER;
             }
-            else if (NetGunCount == 0 && rc.getRoundNum() % 5 == 0 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + RobotType.MINER.cost * 4 + 300) {
+            else if (NetGunCount == 0 && rc.getRoundNum() % 5 == 0 && VaporatorCount > 0 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + RobotType.MINER.cost * 4 + 300) {
                 role = BUILDING;
                 unitToBuild = RobotType.NET_GUN;
             }
             // build netguns out of necessity to combat drones
-            else if (NetGunCount == 0 && EnemyDroneCount > 0 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 200) {
+            else if (NetGunCount == 0 && EnemyDroneCount > 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 200) {
                 role = BUILDING;
                 unitToBuild = RobotType.NET_GUN;
             }
@@ -247,12 +248,12 @@ public class Miner extends RobotPlayer {
                 role = BUILDING;
                 unitToBuild = RobotType.VAPORATOR;
             }
-
-            // build net guns around enemy base!
-            if (enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 24 && NetGunCount < 2 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 300) {
-               role = BUILDING;
-               unitToBuild = RobotType.NET_GUN;
+            if (enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 24 && NetGunCount < 1 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 400) {
+                role = BUILDING;
+                unitToBuild = RobotType.NET_GUN;
             }
+            // build net guns around enemy base!
+
 
             // EXPLORE if still no soup found
             if (SoupLocation == null) {
