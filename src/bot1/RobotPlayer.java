@@ -19,7 +19,7 @@ public strictfp class RobotPlayer {
     static LinkedList<MapLocation> enemyHQLocations =  new LinkedList<>();
     static MapLocation enemyBaseLocation = null;
     static int turnCount;
-    static final boolean debug = false;
+    static final boolean debug = true;
     static final int UNIQUEKEY = -1591459872;
     static Team enemyTeam;
 
@@ -141,24 +141,39 @@ public strictfp class RobotPlayer {
      */
     static void storeHQLocation() throws GameActionException {
         // gets the HQ of this unit;
-        Transaction[] first = rc.getBlock(1);
-        for (int i = first.length; --i >= 0;) {
-            int[] msg = first[i].getMessage();
-            decodeMsg(msg);
-            if (isOurMessage((msg))) {
-                HQLocation = new MapLocation(msg[2], msg[3]);
-                break;
+        int roundCheck = 1;
+        theLoop: {
+            while (HQLocation == null && roundCheck < 5) {
+                if (rc.getRoundNum() <= roundCheck) {
+                    break;
+                }
+                Transaction[] blocks = rc.getBlock(roundCheck);
+                for (int i = blocks.length; --i >= 0; ) {
+                    int[] msg = blocks[i].getMessage();
+                    decodeMsg(msg);
+                    if (isOurMessage((msg))) {
+                        if (msg[1] == 0) {
+                            // HQ!
+                            HQLocation = new MapLocation(msg[2], msg[3]);
+                            if (debug) System.out.println("Stored HQLOC " +HQLocation + " | len " + msg.length + " | round: " + roundCheck);
+                            break theLoop;
+                        }
+                    }
+                }
+                roundCheck++;
             }
         }
     }
     static void storeEnemyHQLocations() throws GameActionException {
         // flip vertical, horizontal, and both
 
-        int flippedY = rc.getMapHeight() - HQLocation.y - 1;
-        int flippedX = rc.getMapWidth() - HQLocation.x - 1;
-        enemyHQLocations.add(new MapLocation(HQLocation.x, flippedY));
-        enemyHQLocations.add(new MapLocation(flippedX, HQLocation.y));
-        enemyHQLocations.add(new MapLocation(flippedX, flippedY));
+        if (HQLocation != null) {
+            int flippedY = rc.getMapHeight() - HQLocation.y - 1;
+            int flippedX = rc.getMapWidth() - HQLocation.x - 1;
+            enemyHQLocations.add(new MapLocation(HQLocation.x, flippedY));
+            enemyHQLocations.add(new MapLocation(flippedX, HQLocation.y));
+            enemyHQLocations.add(new MapLocation(flippedX, flippedY));
+        }
     }
 
     /**

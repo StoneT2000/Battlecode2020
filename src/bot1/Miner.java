@@ -468,6 +468,20 @@ public class Miner extends RobotPlayer {
 
     public static void setup() throws GameActionException {
         storeHQLocation();
+
+        // if null cuz too early in the game, find by search
+        if (HQLocation == null) {
+            // find by searching. NOTE MINERS ARE THE ONLY ONES WHO CAN FIND HQ ON THEIR OWN
+            RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+            for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
+                RobotInfo info = nearbyFriendlyRobots[i];
+                switch (info.type) {
+                    case HQ:
+                        HQLocation = info.location;
+                        break;
+                }
+            }
+        }
         storeEnemyHQLocations();
         HQParity = (HQLocation.x + HQLocation.y) % 2;
         if (debug) System.out.println("HQ at " + HQLocation);

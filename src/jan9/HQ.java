@@ -199,7 +199,7 @@ public class HQ extends RobotPlayer {
 
     public static void setup() throws GameActionException {
         // announce self location on turn 1 (will always run)
-        announceSelfLocation(0);
+        announceSelfLocation(1);
         HQLocation = rc.getLocation();
         storeEnemyHQLocations();
         mapSize = rc.getMapWidth() * rc.getMapHeight();
