@@ -6,9 +6,10 @@ public class FulfillmentCenter extends RobotPlayer {
     static Direction buildDir = Direction.NORTH;
     static boolean inEndGame = false;
     static int dronesBuilt = 0;
+    static boolean confirmBuild = false;
     public static void run() throws GameActionException {
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
-        checkIfEndGame(lastRoundsBlocks);
+        checkForBuildInfo(lastRoundsBlocks);
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
@@ -30,7 +31,7 @@ public class FulfillmentCenter extends RobotPlayer {
                 break;
             }
         }
-        boolean confirmBuild = false;
+
         if (rc.getRoundNum() % 5 == 0) {
             if (rc.getTeamSoup() >= 1100) {
                 confirmBuild = true;
@@ -39,7 +40,7 @@ public class FulfillmentCenter extends RobotPlayer {
         if (rc.getTeamSoup() >= 850 && rc.getRoundNum() % 30 == 29 && rc.getRoundNum() >= 500) {
             confirmBuild = true;
         }
-        if (dronesBuilt < 1 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 100) {
+        if (dronesBuilt < 1 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
             confirmBuild = true;
         }
         if (inEndGame && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 200) {
@@ -60,8 +61,10 @@ public class FulfillmentCenter extends RobotPlayer {
             }
             buildDir = buildDir.rotateRight();
         }
+        // make false for next round
+        confirmBuild = false;
     }
-    static void checkIfEndGame(Transaction[] transactions) {
+    static void checkForBuildInfo(Transaction[] transactions) {
         for (int i = transactions.length; --i >= 0;) {
             int[] msg = transactions[i].getMessage();
             decodeMsg(msg);
@@ -70,11 +73,21 @@ public class FulfillmentCenter extends RobotPlayer {
                 if ((msg[1] ^ BUILD_DRONES) == 0) {
                     inEndGame = true;
                 }
+                else if ((msg[1] ^ BUILD_DRONE_NOW) == 0) {
+                    int origSoup = msg[2];
+                    int soupSpent = origSoup - rc.getTeamSoup();
+                    // if soup spent / number of landscapers needed is greater than cost
+                    if (soupSpent / msg[3] < RobotType.DELIVERY_DRONE.cost) {
+                        confirmBuild = true;
+                    }
+
+                }
             }
         }
     }
     public static void setup() throws GameActionException {
         storeHQLocation();
+        announceSelfLocation(1);
         if (rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + RobotType.MINER.cost * 2) {
             boolean builtUnit = false;
             for (int i = 9; --i >= 1; ) {

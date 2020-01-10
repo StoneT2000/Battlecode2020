@@ -5,6 +5,7 @@ public class HQ extends RobotPlayer {
     static Direction buildDir = Direction.NORTH;
     static RobotType unitToBuild;
     static int minersBuilt = 0;
+    static int FulfillmentCentersBuilt = 0;
     static MapLocation SoupLocation;
     static MapLocation mapCenter;
     static int mapSize;
@@ -12,12 +13,13 @@ public class HQ extends RobotPlayer {
     static int surroundedByFloodRound = -1;
     static boolean nearCenter;
     public static void run() throws GameActionException {
-        if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup());
+        if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup() + " | Miners Built: " + minersBuilt + " FulfillmentCenters Built: " + FulfillmentCentersBuilt);
 
         // shoot nearest robot
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         RobotInfo closestDroneBot = null;
+        int enemyLandscapers = 0;
         int closestEnemyDroneDist = 99999999;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
@@ -27,7 +29,13 @@ public class HQ extends RobotPlayer {
                 closestEnemyDroneDist = dist;
                 closestDroneBot = info;
             }
+            // nearby landscaper? RUSH, GET HELP!
+            if (info.type == RobotType.LANDSCAPER) {
+                enemyLandscapers++;
+            }
         }
+
+
 
         int wallBots = 0;
         int myDrones = 0;
@@ -43,6 +51,17 @@ public class HQ extends RobotPlayer {
         }
         if (wallBots < 8 && rc.getRoundNum() % 10 == 0) {
             announceWantLandscapers(8 - wallBots);
+        }
+        // if we see an enemy landscaper
+        if (enemyLandscapers > 0) {
+            // announce I want drones and fulfillment center to build them if we have no drones and we dont know a center was built or every 20 turns
+            if (myDrones == 0 && (FulfillmentCentersBuilt < 1 || rc.getRoundNum() % 20 == 0)) {
+                announceWantDronesForDefence();
+            }
+            // not enough drones to combat, ask for more drones
+            else if (myDrones < enemyLandscapers) {
+                announceBuildDronesNow(enemyLandscapers - myDrones);
+            }
         }
 
         // TODO:, shoot closest one with our unit
@@ -86,6 +105,27 @@ public class HQ extends RobotPlayer {
         }
 
     }
+    static void checkTransactionsForBuildCounts(Transaction[] transactions) throws GameActionException {
+        for (int i = transactions.length; --i >= 0;) {
+            int[] msg = transactions[i].getMessage();
+            decodeMsg(msg);
+            if (isOurMessage((msg))) {
+
+                if (msg[1] == RobotType.FULFILLMENT_CENTER.ordinal()) {
+                    FulfillmentCentersBuilt++;
+                }
+            }
+        }
+    }
+    static void announceBuildDronesNow(int amount) throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), BUILD_DRONE_NOW, rc.getTeamSoup(), amount};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING BUILD DRONES!!!");
+        // TODO: CHANGE COSTS HERE, put -1 and a max 50 or smth to get suggested cost
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+        }
+    }
     static void announceBuildDrones() throws GameActionException {
         int[] message = new int[] {generateUNIQUEKEY(), BUILD_DRONES};
         encodeMsg(message);
@@ -106,6 +146,15 @@ public class HQ extends RobotPlayer {
         // TODO: CHANGE COSTS HERE, put -1 and a max 50 or smth to get suggested cost
         if (rc.canSubmitTransaction(message, 10)) {
             rc.submitTransaction(message, 10);
+        }
+    }
+    static void announceWantDronesForDefence() throws GameActionException {
+        // send teamsoup count to ensure we don't build too many drones?
+        int [] message = new int[] {generateUNIQUEKEY(), NEED_DRONES_FOR_DEFENCE, rc.getTeamSoup()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING WANT DRONES ");
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
         }
     }
     static void announceWantLandscapers(int amount) throws GameActionException {
@@ -171,8 +220,13 @@ public class HQ extends RobotPlayer {
     }
     public static void decideOnUnitToBuild() throws GameActionException {
         unitToBuild = null;
-        // produce 2 miners at start, leaving 200 - 140 = 60 soup left
-        if (rc.getRoundNum() <= 20) {
+
+
+        if (rc.getRoundNum() <= 15) {
+            unitToBuild = RobotType.MINER;
+            return;
+        }
+        if (rc.getRoundNum() <= 20 && rc.getTeamSoup() >= 400) {
             unitToBuild = RobotType.MINER;
             return;
         }
@@ -183,7 +237,10 @@ public class HQ extends RobotPlayer {
         if (minersBuilt <= mapSize / 100) {
             // only produce miner if we have sufficient stock up and its early or if we have a lot of soup
             // how to determine if there is still demand for soup though?
-            if (rc.getTeamSoup() >= RobotType.REFINERY.cost + 1.5 * RobotType.MINER.cost && rc.getRoundNum() < 300) {
+
+            // keep producing miners early on, after producing minimum 3, stock up 150 + 150 = 300 ~ 400 for drone + fulfillment center
+            // in the event that enemy goes like yeah we rushing you
+            if (rc.getTeamSoup() >= 400 && rc.getRoundNum() < 300) {
                 unitToBuild = RobotType.MINER;
             } else if (rc.getTeamSoup() >= 1100) {
                 unitToBuild = RobotType.MINER;

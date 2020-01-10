@@ -37,6 +37,9 @@ public class Miner extends RobotPlayer {
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         boolean mined = false;
 
+        // if getting build information, use it
+        checkBlockForBuildInfo(lastRoundsBlocks);
+
         // if mining, always try to mine
         if (role == MINER) {
             // Strat: MINE if possible!
@@ -388,6 +391,27 @@ public class Miner extends RobotPlayer {
         return dir;
     }
 
+    static void checkBlockForBuildInfo(Transaction[] transactions) throws GameActionException {
+        for (int i = transactions.length; --i >= 0;) {
+            int[] msg = transactions[i].getMessage();
+            decodeMsg(msg);
+            if (isOurMessage((msg))) {
+                // if it is announce SOUP location message
+                if ((msg[1] ^ NEED_DRONES_FOR_DEFENCE) == 0) {
+                    //int origSoup = msg[2];
+                    //int soupSpent = origSoup - rc.getTeamSoup();
+                    //if (debug) System.out.println("Building drone because HQ said so? Soup spent so far since message " + soupSpent);
+                    // if soup spent / number of landscapers needed is greater than cost
+
+                    // ensure we have enough soup to build fulfillment center
+                    if (rc.getTeamSoup() > RobotType.DELIVERY_DRONE.cost + RobotType.FULFILLMENT_CENTER.cost) {
+                        role = BUILDING;
+                        unitToBuild = RobotType.FULFILLMENT_CENTER;
+                    }
+                }
+            }
+        }
+    }
     /**
      * Read announcement code and store in SoupLocation the new soup location found
      * Store closest one
