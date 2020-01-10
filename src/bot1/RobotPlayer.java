@@ -20,7 +20,7 @@ public strictfp class RobotPlayer {
     static MapLocation enemyBaseLocation = null;
     static int turnCount;
     static final boolean debug = true;
-    static final int UNIQUEKEY = -32310592;
+    static final int UNIQUEKEY = -1231059472;
     static Team enemyTeam;
 
     static final int BASE_WALL_DIST = 1;

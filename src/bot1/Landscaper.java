@@ -26,6 +26,24 @@ public class Landscaper extends RobotPlayer {
                     break;
             }
         }
+        RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
+        RobotInfo nearestEnemy = null;
+        int nearestEnemyDist = 9999999;
+        for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
+            RobotInfo info = nearbyEnemyRobots[i];
+            switch (info.type) {
+                case DESIGN_SCHOOL:
+                case FULFILLMENT_CENTER:
+                case NET_GUN:
+                case VAPORATOR:
+                    int dist = rc.getLocation().distanceSquaredTo(info.location);
+                    if  (dist < nearestEnemyDist) {
+                        nearestEnemy = info;
+                        nearestEnemyDist = dist;
+                    }
+                    break;
+            }
+        }
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         checkForEnemyBasesInBlocks(lastRoundsBlocks);
 
@@ -104,7 +122,7 @@ public class Landscaper extends RobotPlayer {
             }
         }
 
-        // always check for enemey base and do this recon
+        // always check for enemy base and do this recon
         MapLocation closestMaybeHQ = null;
         // dont know where base is, then look around for it.
         if (enemyBaseLocation == null) {
@@ -158,6 +176,10 @@ public class Landscaper extends RobotPlayer {
             }
             else {
                 attackLoc = enemyBaseLocation;
+            }
+            // prioritize destructing buildings
+            if (nearestEnemy != null) {
+
             }
             // move towards maybe enemy HQ if not next to it.
             if (!rc.getLocation().isAdjacentTo(attackLoc)) {

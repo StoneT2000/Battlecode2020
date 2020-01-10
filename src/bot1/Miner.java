@@ -204,8 +204,8 @@ public class Miner extends RobotPlayer {
             // check messages for soup locations, possibly closer
             checkBlockForSoupLocations(lastRoundsBlocks);
 
-            // set up for building refinery next turn
-            if (soupNearbyCount > 500 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
+            // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
+            if (mined && soupNearbyCount > 800 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
                 role = BUILDING;
                 unitToBuild = RobotType.REFINERY;
             }
