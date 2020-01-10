@@ -211,29 +211,30 @@ public class Miner extends RobotPlayer {
             // early game
             // TODO: TUNE PARAM!
             else if (rc.getRoundNum() <= 300) {
-                if ((mined || RefineryCount > 0) && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
-                    unitToBuild = RobotType.DESIGN_SCHOOL;
-                    role = BUILDING;
-                }
-                else if (RefineryCount > 0 && FulfillmentCentersBuilt < 1 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4) {
-                    role = BUILDING;
-                    unitToBuild = RobotType.FULFILLMENT_CENTER;
-                }
-                else if (rc.getTeamSoup() >= 1000) {
+                if (rc.getTeamSoup() >= 1000) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                 }
+                else if ((mined || RefineryCount > 0) && VaporatorCount > 0 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4) {
+                    unitToBuild = RobotType.DESIGN_SCHOOL;
+                    role = BUILDING;
+                }
+                else if (RefineryCount > 0 && VaporatorCount > 0 && FulfillmentCentersBuilt < 1 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4) {
+                    role = BUILDING;
+                    unitToBuild = RobotType.FULFILLMENT_CENTER;
+                }
+
             }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if ((mined || RefineryCount > 0) && rc.getRoundNum() % 5 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4 + 1000) {
+            else if ((mined || RefineryCount > 0) && rc.getRoundNum() % 5 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4 + 300) {
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
             }
-            else if (RefineryCount > 0 && rc.getRoundNum() % 5 == 2 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4 + 1000) {
+            else if (RefineryCount > 0 && rc.getRoundNum() % 5 == 2 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4 + 300) {
                 role = BUILDING;
                 unitToBuild = RobotType.FULFILLMENT_CENTER;
             }
-            else if (NetGunCount == 0 && rc.getRoundNum() % 5 == 0 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + RobotType.MINER.cost * 4 + 1000) {
+            else if (NetGunCount == 0 && rc.getRoundNum() % 5 == 0 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + RobotType.MINER.cost * 4 + 300) {
                 role = BUILDING;
                 unitToBuild = RobotType.NET_GUN;
             }

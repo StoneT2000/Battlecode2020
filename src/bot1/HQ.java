@@ -146,7 +146,7 @@ public class HQ extends RobotPlayer {
     public static void decideOnUnitToBuild() throws GameActionException {
         unitToBuild = null;
         // produce 2 miners at start, leaving 200 - 140 = 60 soup left
-        if (rc.getRoundNum() <= 3) {
+        if (rc.getRoundNum() <= 20) {
             unitToBuild = RobotType.MINER;
             return;
         }
@@ -157,22 +157,20 @@ public class HQ extends RobotPlayer {
         if (minersBuilt <= mapSize / 100) {
             // only produce miner if we have sufficient stock up and its early or if we have a lot of soup
             // how to determine if there is still demand for soup though?
-            if (rc.getTeamSoup() >= RobotType.REFINERY.cost + 1.5 * RobotType.MINER.cost && rc.getRoundNum() < 200) {
+            if (rc.getTeamSoup() >= RobotType.REFINERY.cost + 1.5 * RobotType.MINER.cost && rc.getRoundNum() < 300) {
                 unitToBuild = RobotType.MINER;
             } else if (rc.getTeamSoup() >= 1100) {
                 unitToBuild = RobotType.MINER;
             }
         }
+        // build less and less miners over time
         else if (rc.getRoundNum() % ((int) (rc.getRoundNum() / 20 + 5)) == 0) {
             if (rc.getTeamSoup() >= RobotType.REFINERY.cost + 2 * RobotType.MINER.cost) {
                 unitToBuild = RobotType.MINER;
             }
         }
     }
-    public static boolean needWallBuilders() {
-        // measure elevation of things
-        return false;
-    }
+
     public static void setup() throws GameActionException {
         // announce self location on turn 1 (will always run)
         announceSelfLocation(0);
