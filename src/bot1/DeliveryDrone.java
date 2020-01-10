@@ -72,7 +72,7 @@ public class DeliveryDrone extends RobotPlayer {
             if (rc.canSenseLocation(checkLoc)) {
                 if (rc.senseFlooding(checkLoc)) {
                     int dist = rc.getLocation().distanceSquaredTo(checkLoc);
-                    if (dist < minDistToFlood) {
+                    if (dist < minDistToFlood && dist != 0) {
                         minDistToFlood = dist;
                         waterLoc = checkLoc;
                     }
@@ -86,7 +86,7 @@ public class DeliveryDrone extends RobotPlayer {
 
         if (role == DUMP_BAD_GUY) {
             // if currently holding unit, it should be a bad guy
-            if (debug) System.out.println("DUMPING BAD UNIT");
+            if (debug) System.out.println("DUMPING BAD UNIT to " + waterLoc);
             if (rc.isCurrentlyHoldingUnit()) {
                 // find water and drop that thing
                 if (waterLoc != null) {
@@ -146,24 +146,39 @@ public class DeliveryDrone extends RobotPlayer {
         }
 
         // whatever targetloc is, try to go to it
-        if (targetLoc != null) {
-            Direction dir = rc.getLocation().directionTo(targetLoc);
-            if (!rc.canMove(dir)) {
-                int minDist = 999999;
-                for (int i = directions.length; --i >= 0; ) {
-                    // if distance to target from this potential direction is smaller, set it
-                    int dist = targetLoc.distanceSquaredTo(rc.adjacentLocation(directions[i]));
-                    if (dist < minDist && rc.canMove(directions[i]) && !rc.senseFlooding(rc.adjacentLocation(directions[i]))) {
-                        dir = directions[i];
-                        minDist = dist;
-                        if (debug) System.out.println("I chose " + dir + " instead in order to go to " + targetLoc);
+        movement:
+        {
+            if (targetLoc != null && rc.isReady()) {
+                Direction dir = rc.getLocation().directionTo(targetLoc);
+                if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.isLocationOccupied((rc.adjacentLocation(dir)))) {
+                    rc.move(dir);
+                    break movement;
+                } else {
+                    int minDist = 999999;
+                    for (int i = directions.length; --i >= 0; ) {
+                        // if distance to target from this potential direction is smaller, set it
+                        int dist = targetLoc.distanceSquaredTo(rc.adjacentLocation(directions[i]));
+                        if (dist < minDist && rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.isLocationOccupied((rc.adjacentLocation(dir)))) {
+                            dir = directions[i];
+                            minDist = dist;
+                            if (debug) System.out.println("I chose " + dir + " instead in order to go to " + targetLoc);
+                        }
                     }
                 }
-            }
 
-            if (debug) System.out.println("Moving to " + rc.adjacentLocation((dir)) + " to get to " + targetLoc);
-            if (rc.canMove(dir)) {
-                rc.move(dir);
+                if (debug) System.out.println("Moving to " + rc.adjacentLocation((dir)) + " to get to " + targetLoc);
+                if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.isLocationOccupied((rc.adjacentLocation(dir)))) {
+                    rc.move(dir);
+                    break movement;
+                } else {
+                    for (int i = 7; --i >= 0; ) {
+                        dir = dir.rotateLeft();
+                        if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.isLocationOccupied((rc.adjacentLocation(dir)))) {
+                            rc.move(dir);
+                            break movement;
+                        }
+                    }
+                }
             }
         }
     }

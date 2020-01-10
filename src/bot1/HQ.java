@@ -30,11 +30,15 @@ public class HQ extends RobotPlayer {
         }
 
         int wallBots = 0;
+        int myDrones = 0;
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
             if (info.type == RobotType.LANDSCAPER && dist <= 2) {
                 wallBots ++;
+            }
+            if (info.type == RobotType.DELIVERY_DRONE) {
+                myDrones++;
             }
         }
         if (wallBots < 8 && rc.getRoundNum() % 10 == 0) {
@@ -66,7 +70,7 @@ public class HQ extends RobotPlayer {
         }
         // announce drone attack sometime before we would get overwhelemed by flood
         if (surroundedByFlood) {
-            if (rc.getRoundNum() % 10 == 0 && rc.getRoundNum() >= surroundedByFloodRound + 125) {
+            if (myDrones >= 40 && rc.getRoundNum() >= surroundedByFloodRound + 125) {
                 announceDroneAttack();
             }
             else if (rc.getRoundNum() % 50 == 0){

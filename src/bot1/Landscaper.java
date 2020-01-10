@@ -190,7 +190,8 @@ public class Landscaper extends RobotPlayer {
                 // if adjacent to targetLoc, start digging at it
                 bestWallLocForDefend = null;
                 closestWallLocForDefend = null;
-                if (rc.getLocation().distanceSquaredTo(targetLoc) == 0) {
+                int distToTarget = rc.getLocation().distanceSquaredTo(targetLoc);
+                if (distToTarget == 0) {
 
                     // set to null so we can reevaluate next round where to build
 
@@ -259,6 +260,33 @@ public class Landscaper extends RobotPlayer {
                     }
 
 
+                }
+                // if we havent reached the build place, check it out
+                else {
+                    // if adjacent..., BURY IT probably
+                    if (distToTarget <= 2 && rc.canSenseLocation(targetLoc) && rc.isLocationOccupied(targetLoc)) {
+                        RobotInfo info = rc.senseRobotAtLocation(targetLoc);
+                        if (info.type == RobotType.FULFILLMENT_CENTER || info.type == RobotType.DESIGN_SCHOOL || info.type == RobotType.NET_GUN) {
+                            if (debug) System.out.println("Found building on wall loc, trying to bury " + targetLoc);
+                            Direction dirToBuilding = rc.getLocation().directionTo(targetLoc);
+                            if (rc.canDepositDirt(dirToBuilding)) {
+                                rc.depositDirt(dirToBuilding);
+                            }
+                            else {
+                                Direction digDir = null;
+                                for (Direction dir : directions) {
+                                    MapLocation checkLoc = rc.adjacentLocation(dir);
+                                    if (!validBuildWallLoc(checkLoc) && rc.canDigDirt(dir)) {
+                                        digDir = dir;
+                                    }
+                                }
+                                if (digDir != null && rc.canDigDirt(digDir)) {
+                                    rc.digDirt((digDir));
+                                }
+                            }
+                            targetLoc = null; // don't move, just try to bury
+                        }
+                    }
                 }
             }
             // otherwise we aren't near enough to find a location to build the wall
