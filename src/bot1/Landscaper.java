@@ -11,6 +11,8 @@ public class Landscaper extends RobotPlayer {
     static MapLocation bestWallLocForDefend = null;
     static MapLocation closestWallLocForDefend = null;
     static MapLocation leastElevatedWallLocForDefend = null;
+    static RobotInfo nearestEnemy = null;
+    static int nearestEnemyDist = 9999999;
     public static void run() throws GameActionException {
         // atm, swarm at an enemy base or smth and just hella try to bury it
         // make a path as needed if short range path finding yields no good way to get around some wall
@@ -27,15 +29,16 @@ public class Landscaper extends RobotPlayer {
             }
         }
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
-        RobotInfo nearestEnemy = null;
-        int nearestEnemyDist = 9999999;
+
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
             switch (info.type) {
                 case DESIGN_SCHOOL:
                 case FULFILLMENT_CENTER:
                 case NET_GUN:
+                case REFINERY:
                 case VAPORATOR:
+                    // TODO, USE A SCORE FUNCTION TO WEIGHT SOME BUILDINGS HIGHER THAN OTHERS
                     int dist = rc.getLocation().distanceSquaredTo(info.location);
                     if  (dist < nearestEnemyDist) {
                         nearestEnemy = info;
@@ -179,24 +182,44 @@ public class Landscaper extends RobotPlayer {
             }
             // prioritize destructing buildings
             if (nearestEnemy != null) {
+                attackLoc = nearestEnemy.location;
 
             }
+            if (debug) rc.setIndicatorLine(rc.getLocation(), attackLoc, 130, 20, 240);
             // move towards maybe enemy HQ if not next to it.
             if (!rc.getLocation().isAdjacentTo(attackLoc)) {
                 targetLoc = attackLoc;
             }
             else {
-                // adjacent to HQ now
-                Direction dirToHQ = rc.getLocation().directionTo(attackLoc);
+                // adjacent to attack loc now
+                Direction dirToAttack = rc.getLocation().directionTo(attackLoc);
                 if (rc.getDirtCarrying() > 0) {
-                    if (rc.canDepositDirt(dirToHQ)) {
-                        rc.depositDirt(dirToHQ);
+                    if (rc.canDepositDirt(dirToAttack)) {
+                        rc.depositDirt(dirToAttack);
+                        // after depositing, if building robot is gone, we reset nearestEnemy if we used that
+                        if (!rc.isLocationOccupied(attackLoc) && nearestEnemy != null) {
+                            nearestEnemy = null;
+                        }
                     }
                 }
                 else {
                     // dig down to make wall building harder
-                    Direction digDir = Direction.CENTER;//dirToHQ.opposite();
-                    if (rc.canDigDirt(digDir)) {
+                    Direction digDir = Direction.CENTER; //dirToHQ.opposite();
+                    // if we are attacking a normal building, take dirt from elsewhere
+                    if (nearestEnemy != null) {
+                        // loop to 1 so we don't include center
+                        for (int i = directions.length; --i>=1; ) {
+                            Direction testDir = directions[i];
+                            MapLocation testLoc = rc.adjacentLocation(testDir);
+                            // dig out from location that is not occupied, and if it is, it is occupied by enemy bot
+                            if (rc.canDigDirt(testDir) && (!rc.isLocationOccupied(testLoc) || rc.senseRobotAtLocation(testLoc).team == enemyTeam)) {
+                                rc.digDirt(directions[i]);
+                                break;
+                            }
+                        }
+                    }
+                    // otherwise proceed to dig down as we are digging enemy HQ
+                    else if (rc.canDigDirt(digDir)) {
                         rc.digDirt(digDir);
                     }
                 }
