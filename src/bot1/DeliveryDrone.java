@@ -19,6 +19,7 @@ public class DeliveryDrone extends RobotPlayer {
                     if (msg[2] != -1) {
                         enemyBaseLocation = parseLoc(msg[2]);
                         //role = ATTACK;
+                        // TODO: handle case when we dont knowenemy base location
                         attackLoc = enemyBaseLocation;
                     }
                 }
@@ -52,6 +53,12 @@ public class DeliveryDrone extends RobotPlayer {
                                 closestEnemyMinerDist = dist2;
                                 closestEnemyMiner = info;
                                 if (debug) System.out.println("Found closer enemy miner at " + info.location);
+                            }
+                            break;
+                        case HQ:
+                            if (enemyBaseLocation == null) {
+                                announceEnemyBase(info.location);
+                                enemyBaseLocation = info.location;
                             }
                             break;
                     }

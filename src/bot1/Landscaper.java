@@ -93,18 +93,13 @@ public class Landscaper extends RobotPlayer {
                                 leastElevatedWallLocForDefend = checkLoc;
                                 leastElevation = locElevation;
                             }
-
-                        }
-
-                        // find closest wall as well
-                        // check if wall is valid and if its empty or its urself
-
-                        if (validBuildWallLoc(checkLoc) && !occupied) {
+                            // find closest wall
                             if (dist < minDistToWall) {
                                 if (debug) System.out.println(checkLoc);
                                 closestWallLocForDefend = checkLoc;
                                 minDistToWall = dist;
                             }
+
                         }
                         break;
                 }
