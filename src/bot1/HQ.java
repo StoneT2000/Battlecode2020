@@ -13,6 +13,7 @@ public class HQ extends RobotPlayer {
     static int surroundedByFloodRound = -1;
     static boolean nearCenter;
     static int MIN_DRONE_FOR_ATTACK = 20;
+    static boolean criedForDroneHelp = false;
     public static void run() throws GameActionException {
         if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup() + " | Miners Built: " + minersBuilt + " FulfillmentCenters Built: " + FulfillmentCentersBuilt);
 
@@ -56,8 +57,10 @@ public class HQ extends RobotPlayer {
         // if we see an enemy landscaper
         if (enemyLandscapers > 0) {
             // announce I want drones and fulfillment center to build them if we have no drones and we dont know a center was built or every 20 turns
-            if (myDrones == 0 && (FulfillmentCentersBuilt < 1 || rc.getRoundNum() % 20 == 0)) {
+            // announce asap and then every 10 rounds
+            if ((!criedForDroneHelp || rc.getRoundNum() % 10 == 0) && myDrones == 0 && (FulfillmentCentersBuilt < 1 || rc.getRoundNum() % 20 == 0)) {
                 announceWantDronesForDefence();
+                criedForDroneHelp = true;
             }
             // not enough drones to combat, ask for more drones
             else if (myDrones < enemyLandscapers) {

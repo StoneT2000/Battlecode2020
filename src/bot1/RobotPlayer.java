@@ -19,7 +19,7 @@ public strictfp class RobotPlayer {
     static LinkedList<MapLocation> enemyHQLocations =  new LinkedList<>();
     static MapLocation enemyBaseLocation = null;
     static int turnCount;
-    static final boolean debug = false;
+    static final boolean debug = true;
     static final int UNIQUEKEY = -1523349822;
     static Team enemyTeam;
 

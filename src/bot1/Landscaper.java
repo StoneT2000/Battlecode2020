@@ -56,6 +56,7 @@ public class Landscaper extends RobotPlayer {
         int minDistToBestBuildLoc = 99999999;
         //int farthestDistToBuildLoc
         int leastElevation = 999999999;
+        if (debug) System.out.println("BFS start: " + Clock.getBytecodeNum());
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
             int[] deltas = Constants.BFSDeltas24[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
@@ -120,6 +121,7 @@ public class Landscaper extends RobotPlayer {
 
             }
         }
+        if (debug) System.out.println("BFS end: " + Clock.getBytecodeNum());
 
         // always check for enemy base and do this recon
         MapLocation closestMaybeHQ = null;
@@ -229,21 +231,24 @@ public class Landscaper extends RobotPlayer {
                 // we prefer the bestBuildLoc first, then use closest one
                 targetLoc = bestWallLocForDefend;
                 if (targetLoc == null) targetLoc = closestWallLocForDefend;
+                boolean diggingUpLowPlace = false;
                 if (leastElevation < 1) {
                     targetLoc = leastElevatedWallLocForDefend;
+                    diggingUpLowPlace = true;
                 }
                 // if adjacent to targetLoc, start digging at it
                 bestWallLocForDefend = null;
                 closestWallLocForDefend = null;
                 int distToTarget = rc.getLocation().distanceSquaredTo(targetLoc);
-                if (distToTarget == 0) {
+                // if on target or (near it and its flooded)
+                if (distToTarget == 0 || (distToTarget <= 2 && diggingUpLowPlace)) {
 
                     if (debug) System.out.println("Close and building wall at " + targetLoc);
                     // deposit onto wall
 
                     // check if base is getting burried
                     Direction dirToBase = rc.getLocation().directionTo(HQLocation);
-                    if (rc.canDigDirt(dirToBase)) {
+                    if (rc.getLocation().isAdjacentTo(HQLocation) && rc.canDigDirt(dirToBase)) {
                         // targetLoc = null;
                         if (debug) System.out.println("Digging base out");
                         rc.digDirt(dirToBase);
@@ -294,7 +299,7 @@ public class Landscaper extends RobotPlayer {
                         // set to null so we stop moving generally
                         targetLoc = null;
                     }
-                    
+
 
                 }
                 // if we havent reached the build place, check it out
