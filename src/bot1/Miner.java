@@ -243,7 +243,7 @@ public class Miner extends RobotPlayer {
                 unitToBuild = RobotType.NET_GUN;
             }
             // build netguns out of necessity to combat drones
-            else if (NetGunCount == 0 && EnemyDroneCount > 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 200) {
+            else if (NetGunCount == 0 && EnemyDroneCount > 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost) {
                 role = BUILDING;
                 unitToBuild = RobotType.NET_GUN;
             }

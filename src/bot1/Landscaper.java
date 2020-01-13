@@ -221,6 +221,7 @@ public class Landscaper extends RobotPlayer {
                 }
             }
         }
+        // TODO: THIS NEEDS REDESIGNING!!!
         else if (role == DEFEND_HQ) {
             if (debug) System.out.println("Best defend build loc " + bestWallLocForDefend + " | closest wall loc " + closestWallLocForDefend);
             if (bestWallLocForDefend != null || closestWallLocForDefend != null) {
