@@ -1,7 +1,6 @@
 package jan9;
 import battlecode.common.*;
-import bot1.utils.LinkedList;
-import sun.awt.SunToolkit;
+import Chow.utils.LinkedList;
 
 public strictfp class RobotPlayer {
     static RobotController rc;

@@ -1,28 +1,13 @@
-package bot1;
+package Chow;
 
 import battlecode.common.*;
 
-public class NetGun extends RobotPlayer {
+public class Refinery extends RobotPlayer {
     public static void run() throws GameActionException {
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
-        RobotInfo closestDroneBot = null;
-        int closestEnemyDroneDist = 99999999;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
-            // TODO: Check if info.getLocation() vs info.location is more efficient?
-            int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
-            if (info.type == RobotType.DELIVERY_DRONE && dist < closestEnemyDroneDist) {
-                closestEnemyDroneDist = dist;
-                closestDroneBot = info;
-            }
-        }
-        // if we found a closest bot
-        if (closestDroneBot != null) {
-            if (rc.canShootUnit(closestDroneBot.getID())) {
-                rc.shootUnit(closestDroneBot.getID());
-                if (debug) rc.setIndicatorDot(closestDroneBot.location, 255, 50,190);
-            }
         }
 
         /* SCOUTING CODE */
@@ -42,6 +27,6 @@ public class NetGun extends RobotPlayer {
         }
     }
     public static void setup() throws GameActionException {
-        storeHQLocation();
+        announceSelfLocation(2);
     }
 }

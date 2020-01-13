@@ -1,4 +1,4 @@
-package bot1.utils;
+package Chow.utils;
 
 public class LinkedList<T> {
     public int size = 0;

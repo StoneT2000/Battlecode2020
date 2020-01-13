@@ -1,4 +1,4 @@
-package bot1;
+package Chow;
 
 import battlecode.common.*;
 

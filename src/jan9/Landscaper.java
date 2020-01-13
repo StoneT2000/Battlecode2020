@@ -1,7 +1,7 @@
 package jan9;
 
 import battlecode.common.*;
-import bot1.utils.*;
+import Chow.utils.*;
 
 public class Landscaper extends RobotPlayer {
     static final int ATTACK = 0;
