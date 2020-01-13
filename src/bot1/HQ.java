@@ -89,7 +89,7 @@ public class HQ extends RobotPlayer {
 
         }
         // announce drone attack sometime before we would get overwhelemed by flood
-        if (true) {
+        if (wallBots >= 8) {
             if (debug) System.out.println("myDrones: " + myDrones);
             if (myDrones >= MIN_DRONE_FOR_ATTACK && rc.getRoundNum() >= surroundedByFloodRound) {
                 announceDroneAttack();
