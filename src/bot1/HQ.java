@@ -12,6 +12,7 @@ public class HQ extends RobotPlayer {
     static boolean surroundedByFlood = false;
     static int surroundedByFloodRound = -1;
     static boolean nearCenter;
+    static int MIN_DRONE_FOR_ATTACK = 20;
     public static void run() throws GameActionException {
         if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup() + " | Miners Built: " + minersBuilt + " FulfillmentCenters Built: " + FulfillmentCentersBuilt);
 
@@ -88,8 +89,9 @@ public class HQ extends RobotPlayer {
 
         }
         // announce drone attack sometime before we would get overwhelemed by flood
-        if (surroundedByFlood) {
-            if (myDrones >= 40 && rc.getRoundNum() >= surroundedByFloodRound + 125) {
+        if (true) {
+            if (debug) System.out.println("myDrones: " + myDrones);
+            if (myDrones >= MIN_DRONE_FOR_ATTACK && rc.getRoundNum() >= surroundedByFloodRound) {
                 announceDroneAttack();
             }
             else if (rc.getRoundNum() % 50 == 0){
