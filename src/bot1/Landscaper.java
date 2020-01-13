@@ -294,12 +294,7 @@ public class Landscaper extends RobotPlayer {
                         // set to null so we stop moving generally
                         targetLoc = null;
                     }
-
-                    // if there are wayy too many friendly landscapers, go on the attack
-                    if (friendlyLandscaperCount >= ((BASE_WALL_DIST + 1) * 4 + 4)/ 3) {
-                        //role = ATTACK;
-                    }
-
+                    
 
                 }
                 // if we havent reached the build place, check it out
