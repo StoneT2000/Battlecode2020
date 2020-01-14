@@ -15,6 +15,7 @@ public class HQ extends RobotPlayer {
     static boolean nearCenter;
     static int MIN_DRONE_FOR_ATTACK = 20;
     static boolean criedForDroneHelp = false;
+    static int vaporatorsBuilt = 0;
     public static void run() throws GameActionException {
         if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup() + " | Miners Built: " + minersBuilt + " FulfillmentCenters Built: " + FulfillmentCentersBuilt);
 
@@ -98,7 +99,7 @@ public class HQ extends RobotPlayer {
             if (myDrones >= MIN_DRONE_FOR_ATTACK && rc.getRoundNum() >= surroundedByFloodRound) {
                 announceDroneAttack();
             }
-            else if (rc.getRoundNum() % 50 == 0){
+            else if (surroundedByFlood && rc.getRoundNum() % 50 == 0){
                 announceBuildDrones();
             }
         }
@@ -108,6 +109,16 @@ public class HQ extends RobotPlayer {
             Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
             //checkBlockForSoupLocations(lastRoundsBlocks);
             checkForEnemyBasesInBlocks(lastRoundsBlocks);
+            for (int i = lastRoundsBlocks.length; --i >= 0; ) {
+                Transaction block = lastRoundsBlocks[i];
+                int[] msg = block.getMessage();
+                decodeMsg(msg);
+                if (isOurMessage((msg))) {
+                    if (msg[1] == RobotType.VAPORATOR.ordinal()) {
+                        vaporatorsBuilt++;
+                    }
+                }
+            }
         }
 
     }
@@ -169,7 +180,7 @@ public class HQ extends RobotPlayer {
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING WANT LANDSCAPERS ");
         if (rc.canSubmitTransaction(message, 1)) {
-            rc.submitTransaction(message, 1);
+           rc.submitTransaction(message, 1);
         }
     }
     static boolean surroundedByFlood() throws GameActionException {
@@ -229,35 +240,17 @@ public class HQ extends RobotPlayer {
 
 
         if (rc.getRoundNum() <= 15) {
+            // build first 3 miners right away
             unitToBuild = RobotType.MINER;
             return;
         }
-        if (rc.getRoundNum() <= 20 && rc.getTeamSoup() >= 400) {
+        if (vaporatorsBuilt * 4 + 4 >= minersBuilt) {
             unitToBuild = RobotType.MINER;
             return;
         }
 
 
 
-        // limit miners to 1/100 of map size and then periodically build them
-        if (minersBuilt <= mapSize / 100) {
-            // only produce miner if we have sufficient stock up and its early or if we have a lot of soup
-            // how to determine if there is still demand for soup though?
-
-            // keep producing miners early on, after producing minimum 3, stock up 150 + 150 = 300 ~ 400 for drone + fulfillment center
-            // in the event that enemy goes like yeah we rushing you
-            if (rc.getTeamSoup() >= 400 && rc.getRoundNum() < 300) {
-                unitToBuild = RobotType.MINER;
-            } else if (rc.getTeamSoup() >= 1100) {
-                unitToBuild = RobotType.MINER;
-            }
-        }
-        // build less and less miners over time
-        else if (rc.getRoundNum() % ((int) (rc.getRoundNum() / 20 + 5)) == 0) {
-            if (rc.getTeamSoup() >= RobotType.REFINERY.cost + 2 * RobotType.MINER.cost + 500) {
-                unitToBuild = RobotType.MINER;
-            }
-        }
     }
 
     public static void setup() throws GameActionException {

@@ -6,14 +6,26 @@ public class FulfillmentCenter extends RobotPlayer {
     static Direction buildDir = Direction.NORTH;
     static boolean inEndGame = false;
     static int dronesBuilt = 0;
+    static int vaporatorsBuilt = 0;
     static boolean confirmBuild = false;
     public static void run() throws GameActionException {
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         checkForBuildInfo(lastRoundsBlocks);
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
-
+        RobotInfo[] nearbyFriendRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+        int nearbyEnemyLandscapers = 0;
+        int dronesNearby = 0;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
+            if (info.getType() == RobotType.LANDSCAPER) {
+                nearbyEnemyLandscapers++;
+            }
+        }
+        for (int i = nearbyFriendRobots.length; --i >= 0; ) {
+            RobotInfo info = nearbyFriendRobots[i];
+            if (info.getType() == RobotType.DELIVERY_DRONE) {
+                dronesNearby++;
+            }
         }
 
         /* SCOUTING CODE */
@@ -31,19 +43,19 @@ public class FulfillmentCenter extends RobotPlayer {
                 break;
             }
         }
-
-        if (rc.getRoundNum() % 5 == 0) {
-            if (rc.getTeamSoup() >= 1100) {
-                confirmBuild = true;
-            }
-        }
-        if (rc.getTeamSoup() >= 850 && rc.getRoundNum() % 30 == 29 && rc.getRoundNum() >= 500) {
-            confirmBuild = true;
-        }
+        // build one asap
         if (dronesBuilt < 1 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
             confirmBuild = true;
         }
+        // in end game keep building
         if (inEndGame && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 200) {
+            confirmBuild = true;
+        }
+        // build if there are enemy landscapers nearby
+        if (nearbyEnemyLandscapers > dronesNearby) {
+            confirmBuild = true;
+        }
+        if (vaporatorsBuilt * 3 + 3 > dronesBuilt) {
             confirmBuild = true;
         }
         if (confirmBuild) {
@@ -80,7 +92,9 @@ public class FulfillmentCenter extends RobotPlayer {
                     if (soupSpent / msg[3] < RobotType.DELIVERY_DRONE.cost) {
                         confirmBuild = true;
                     }
-
+                }
+                else if (msg[1] == RobotType.VAPORATOR.ordinal()) {
+                    vaporatorsBuilt++;
                 }
             }
         }

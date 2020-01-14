@@ -29,6 +29,6 @@ public class Vaporator extends RobotPlayer {
         }
     }
     public static void setup() throws GameActionException {
-
+        announceSelfLocation(1);
     }
 }

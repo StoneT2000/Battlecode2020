@@ -32,19 +32,26 @@ public class Landscaper extends RobotPlayer {
 
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
+            int dist = rc.getLocation().distanceSquaredTo(info.location);
             switch (info.type) {
                 case DESIGN_SCHOOL:
                 case FULFILLMENT_CENTER:
-                case NET_GUN:
+
                 case REFINERY:
                 case VAPORATOR:
                     // TODO, USE A SCORE FUNCTION TO WEIGHT SOME BUILDINGS HIGHER THAN OTHERS
-                    int dist = rc.getLocation().distanceSquaredTo(info.location);
                     if  (dist < nearestEnemyDist) {
                         nearestEnemy = info;
                         nearestEnemyDist = dist;
                     }
                     break;
+                case NET_GUN:
+                    if  (dist/2 < nearestEnemyDist) {
+                        nearestEnemy = info;
+                        nearestEnemyDist = dist;
+                    }
+                    break;
+
             }
         }
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
@@ -74,7 +81,7 @@ public class Landscaper extends RobotPlayer {
                         }
                         else {
                             RobotInfo senseRobot = rc.senseRobotAtLocation(checkLoc);
-                            if (senseRobot != null && (senseRobot.ID == rc.getID() || senseRobot.type != RobotType.LANDSCAPER)) {
+                            if (senseRobot != null && (senseRobot.ID == rc.getID() || senseRobot.type != RobotType.LANDSCAPER || senseRobot.team != rc.getTeam())) {
                                 occupied = false;
                             }
                         }
@@ -183,7 +190,7 @@ public class Landscaper extends RobotPlayer {
                 attackLoc = nearestEnemy.location;
 
             }
-            if (debug) rc.setIndicatorLine(rc.getLocation(), attackLoc, 130, 20, 240);
+
             // move towards maybe enemy HQ if not next to it.
             if (!rc.getLocation().isAdjacentTo(attackLoc)) {
                 targetLoc = attackLoc;

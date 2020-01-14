@@ -46,6 +46,10 @@ public class DeliveryDrone extends RobotPlayer {
 
                     }
                 }
+                else if ((msg[1] ^ BUILD_DRONE_NOW) == 0) {
+                    attackLoc = HQLocation;
+
+                }
             }
         }
 
@@ -57,6 +61,7 @@ public class DeliveryDrone extends RobotPlayer {
         RobotInfo closestEnemyMiner = null;
         int closestEnemyLandscaperDist = 99999999;
         int closestEnemyMinerDist = 999999;
+
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
             switch (role) {
@@ -83,6 +88,9 @@ public class DeliveryDrone extends RobotPlayer {
                                 announceEnemyBase(info.location);
                                 enemyBaseLocation = info.location;
                             }
+                            break;
+                        case NET_GUN:
+
                             break;
                     }
                     break;
@@ -172,6 +180,24 @@ public class DeliveryDrone extends RobotPlayer {
                     } else {
                         targetLoc = attackLoc; // move towards attack loc first if not near it yet.
                         //rc.setIndicatorLine(rc.getLocation(), targetLoc, 200, 200, 10);
+                    }
+
+                    // check if we should still hover around this location
+                    if (rc.canSenseLocation(attackLoc)) {
+                        if (rc.isLocationOccupied(attackLoc)) {
+                            RobotInfo info = rc.senseRobotAtLocation(attackLoc);
+                            if (info.team == rc.getTeam()) {
+                                // if my team, proceed
+                            }
+                            else {
+                                // go back to base cuz enemy bot
+                                attackLoc = HQLocation;
+                            }
+                        }
+                        else {
+                            if (debug) System.out.println("Not occupied! going to HQ");
+                            attackLoc = HQLocation;
+                        }
                     }
                 }
             }
@@ -304,5 +330,15 @@ public class DeliveryDrone extends RobotPlayer {
         storeHQLocation();
         storeEnemyHQLocations();
         attackLoc = HQLocation;
+        for (Direction dir: directions) {
+            MapLocation potentialCenterLoc = rc.adjacentLocation(dir);
+            if (rc.canSenseLocation(potentialCenterLoc) && rc.isLocationOccupied(potentialCenterLoc)) {
+                RobotInfo info = rc.senseRobotAtLocation(potentialCenterLoc);
+                if (info.type == RobotType.FULFILLMENT_CENTER && info.team == rc.getTeam()) {
+                    attackLoc = potentialCenterLoc;
+                    break;
+                }
+            }
+        }
     }
 }

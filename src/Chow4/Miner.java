@@ -177,6 +177,7 @@ public class Miner extends RobotPlayer {
             }
         }
 
+        // look for enemey location and see if its there
         if (enemyBaseLocation == null) {
             Node<MapLocation> node = enemyHQLocations.head;
             for (int i = 0; i++ < enemyHQLocations.size; ) {
@@ -203,13 +204,11 @@ public class Miner extends RobotPlayer {
                 announceSoupLocation(SoupLocation, 1, soupNearbyCount, MinerCount);
             }
 
-
-            if (debug) System.out.println(soupNearbyCount + " soup nearby");
             // check messages for soup locations, possibly closer
             checkBlockForSoupLocations(lastRoundsBlocks);
 
             // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
-            if (mined && soupNearbyCount > 800 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
+            if (mined && soupNearbyCount > 1250 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
                 role = BUILDING;
                 unitToBuild = RobotType.REFINERY;
             }
@@ -220,7 +219,7 @@ public class Miner extends RobotPlayer {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                 }
-                else if ((mined || RefineryCount > 0) && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 350) {
+                else if ((mined || RefineryCount > 0) && VaporatorCount > 0 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 350) {
                     unitToBuild = RobotType.DESIGN_SCHOOL;
                     role = BUILDING;
                 }
@@ -244,7 +243,7 @@ public class Miner extends RobotPlayer {
                 role = BUILDING;
                 unitToBuild = RobotType.NET_GUN;
             }
-            else if (rc.getTeamSoup() >= 1200) {
+            else if (rc.getTeamSoup() >= 1000) {
                 role = BUILDING;
                 unitToBuild = RobotType.VAPORATOR;
             }

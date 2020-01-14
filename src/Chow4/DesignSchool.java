@@ -5,6 +5,8 @@ import battlecode.common.*;
 public class DesignSchool extends RobotPlayer {
     static Direction buildDir = Direction.NORTH;
     static int landscapersBuilt = 0;
+    static int vaporatorsBuilt = 0;
+    static boolean needLandscaper = false;
     public static void run() throws GameActionException {
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
@@ -13,12 +15,18 @@ public class DesignSchool extends RobotPlayer {
         }
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         boolean willBuild = false;
-        if ((rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + 100 && landscapersBuilt < 1) || (rc.getTeamSoup() >= 1300 && rc.getRoundNum() % 10 == 0)
-        || (rc.getTeamSoup() >= 700 && rc.getRoundNum() % 40 == 0)
-        ) {
+        if (rc.getTeamSoup() >= RobotType.LANDSCAPER.cost && landscapersBuilt < 1) {
             willBuild = true;
         }
-        if (checkForBuildRequestFromHQ(lastRoundsBlocks)) {
+        checkMessages(lastRoundsBlocks);
+        if (needLandscaper) {
+            willBuild = true;
+            needLandscaper = false;
+        }
+        if (vaporatorsBuilt * 3 + 3 > landscapersBuilt) {
+            willBuild = true;
+        }
+        if (rc.getRoundNum() % 30 == 0 && rc.getTeamSoup() > 500) {
             willBuild = true;
         }
 
@@ -40,7 +48,7 @@ public class DesignSchool extends RobotPlayer {
         }
 
     }
-    static boolean checkForBuildRequestFromHQ(Transaction[] transactions) throws GameActionException {
+    static void checkMessages(Transaction[] transactions) throws GameActionException {
         for (int i = transactions.length; --i >= 0;) {
             int[] msg = transactions[i].getMessage();
             decodeMsg(msg);
@@ -51,12 +59,15 @@ public class DesignSchool extends RobotPlayer {
                     int soupSpent = origSoup - rc.getTeamSoup();
                     // if soup spent / number of landscapers needed is greater than cost
                     if (soupSpent / msg[3] < RobotType.LANDSCAPER.cost) {
-                        return true;
+                        needLandscaper = true;
                     }
+                }
+                else if (msg[1] == RobotType.LANDSCAPER.ordinal()) {
+                    vaporatorsBuilt++;
                 }
             }
         }
-        return false;
+
     }
     public static void setup() throws GameActionException {
         storeHQLocation();
