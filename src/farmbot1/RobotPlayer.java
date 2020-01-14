@@ -1,6 +1,6 @@
 package farmbot1;
 import battlecode.common.*;
-import Chow.utils.LinkedList;
+import Chow3.utils.LinkedList;
 
 public strictfp class RobotPlayer {
     static RobotController rc;

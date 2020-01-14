@@ -1,7 +1,7 @@
 package farmbot1;
 
 import battlecode.common.*;
-import Chow.utils.LinkedList;
+import Chow3.utils.LinkedList;
 
 public class Miner extends RobotPlayer {
     static final int SCOUT = 0; // default to search for patches of soup and what not

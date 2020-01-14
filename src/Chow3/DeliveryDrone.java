@@ -1,7 +1,7 @@
-package Chow;
+package Chow3;
 
 import battlecode.common.*;
-import Chow.utils.Node;
+import Chow3.utils.Node;
 
 public class DeliveryDrone extends RobotPlayer {
     static final int DEFEND = 1;

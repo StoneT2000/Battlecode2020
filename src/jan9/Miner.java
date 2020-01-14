@@ -1,7 +1,7 @@
 package jan9;
 
 import battlecode.common.*;
-import Chow.utils.*;
+import Chow3.utils.*;
 
 public class Miner extends RobotPlayer {
     static final int SCOUT = 0; // default to search for patches of soup and what not

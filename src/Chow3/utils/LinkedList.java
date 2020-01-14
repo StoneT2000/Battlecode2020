@@ -1,4 +1,4 @@
-package Chow.utils;
+package Chow3.utils;
 
 public class LinkedList<T> {
     public int size = 0;

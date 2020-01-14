@@ -1,4 +1,4 @@
-package Chow;
+package Chow3;
 
 import battlecode.common.*;
 public class HQ extends RobotPlayer {

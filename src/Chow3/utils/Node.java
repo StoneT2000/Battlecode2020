@@ -1,4 +1,4 @@
-package Chow.utils;
+package Chow3.utils;
 
 public class Node<T> {
     public Node next;
