@@ -56,6 +56,7 @@ public class Landscaper extends RobotPlayer {
         }
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         checkForEnemyBasesInBlocks(lastRoundsBlocks);
+        checkBlockForActions(lastRoundsBlocks);
 
         /* BIG BFS LOOP ISH */
 
@@ -271,7 +272,7 @@ public class Landscaper extends RobotPlayer {
                             for (Direction depositDir: directions) {
                                 MapLocation loc = rc.adjacentLocation(depositDir);
                                 // must be a build wall loc, occupied, and have landscaper there
-                                if (rc.canSenseLocation(loc) && validBuildWallLoc(loc) && rc.isLocationOccupied(loc) && rc.senseRobotAtLocation(loc).type == RobotType.LANDSCAPER) {
+                                if (rc.canSenseLocation(loc) && validBuildWallLoc(loc)) {
                                     int thisE = rc.senseElevation(loc);
                                     if (thisE < lowestElevation) {
                                         lowestElevation = thisE;
@@ -286,7 +287,7 @@ public class Landscaper extends RobotPlayer {
                         // find point that is not on wall to take dirt from
                         else {
                             // take from right outside base
-                            Direction digDir = rc.getLocation().directionTo(HQLocation).opposite();
+                            Direction digDir = bestDigDir();
                             if (rc.canDigDirt(digDir)) {
                                 rc.digDirt((digDir));
                             }
@@ -408,7 +409,10 @@ public class Landscaper extends RobotPlayer {
     }
     // locatio is ok to dig at if no units on it, not on hq build wall, is not occupied by our landscaper
     static boolean okToDig(MapLocation loc) throws GameActionException {
-        if (!validBuildWallLoc(loc) && rc.canSenseLocation(loc)) {
+        if (validBuildWallLoc(loc)) {
+            return false;
+        }
+        if (rc.canSenseLocation(loc)) {
             if (rc.isLocationOccupied(loc)) {
                 RobotInfo info = rc.senseRobotAtLocation(loc);
                 if (info.type != RobotType.LANDSCAPER || info.team == enemyTeam) {
@@ -447,6 +451,13 @@ public class Landscaper extends RobotPlayer {
                     // go run to HQ
                     role = DEFEND_HQ;
                     targetLoc = HQLocation;
+                }
+                else if ((msg[1] ^ NO_MORE_LANDSCAPERS_NEEDED) == 0) {
+
+                    // go away and attack if not near HQ
+                    if (rc.getLocation().distanceSquaredTo(HQLocation) > 16) {
+                        role = ATTACK;
+                    }
                 }
             }
         };

@@ -15,6 +15,7 @@ public class HQ extends RobotPlayer {
     static boolean nearCenter;
     static int MIN_DRONE_FOR_ATTACK = 20;
     static boolean criedForDroneHelp = false;
+    static boolean saidNoMoreLandscapersNeeded = false;
     static int vaporatorsBuilt = 0;
     public static void run() throws GameActionException {
         if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup() + " | Miners Built: " + minersBuilt + " FulfillmentCenters Built: " + FulfillmentCentersBuilt);
@@ -50,7 +51,7 @@ public class HQ extends RobotPlayer {
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
-            if (info.type == RobotType.LANDSCAPER && dist <= 2) {
+            if (info.type == RobotType.LANDSCAPER && dist <= 16) {
                 wallBots ++;
             }
             if (info.type == RobotType.DELIVERY_DRONE) {
@@ -106,6 +107,9 @@ public class HQ extends RobotPlayer {
             if (surroundedByFlood && rc.getRoundNum() % 50 == 0){
                 announceBuildDrones();
             }
+            if (!saidNoMoreLandscapersNeeded || rc.getRoundNum() % 50 == 0) {
+                //announceNoMoreLandscapersNeeded();
+            }
         }
         // otherwise we don't build (stock up)
 
@@ -154,6 +158,14 @@ public class HQ extends RobotPlayer {
         // TODO: CHANGE COSTS HERE, put -1 and a max 50 or smth to get suggested cost
         if (rc.canSubmitTransaction(message, 10)) {
             rc.submitTransaction(message, 10);
+        }
+    }
+    static void announceNoMoreLandscapersNeeded() throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), NO_MORE_LANDSCAPERS_NEEDED};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING NO MORE SCAPERS NEEDED!!!");
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
         }
     }
     static void announceDroneAttack() throws GameActionException {
