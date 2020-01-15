@@ -154,10 +154,12 @@ public class Miner extends RobotPlayer {
                             soupNearbyCount += rc.senseSoup(checkLoc);
                             int dist = rc.getLocation().distanceSquaredTo(checkLoc);
                             // BUG FIXME: Dont check if flooding, check if flooding and not surrounded by empty reachable tile
-                            if (!rc.senseFlooding(checkLoc) && dist < minDistToNearestSoup) {
-                                SoupLocation = checkLoc;
-                                minDistToNearestSoup = dist; // set this so we wont reset SoupLocation as we add soupNearbyCount
-                                if (debug) System.out.println("Found soup location at " + checkLoc);
+                            if (!rc.senseFlooding(checkLoc) || hasEmptyTileAround(checkLoc)){
+                                if (dist < minDistToNearestSoup){
+                                    SoupLocation = checkLoc;
+                                    minDistToNearestSoup = dist; // set this so we wont reset SoupLocation as we add soupNearbyCount
+                                    if (debug) System.out.println("Found soup location at " + checkLoc);
+                                }
 
                             } else {
                                 // TODO: handle when we find a flooded patch, how do we mark it for clearing by landscapers?
@@ -480,6 +482,15 @@ public class Miner extends RobotPlayer {
             }
         }
         soupLocScore = highScore;
+    }
+    static boolean hasEmptyTileAround(MapLocation loc) throws GameActionException {
+        for (Direction dir: directions) {
+            MapLocation checkLoc = loc.add(dir);
+            if (rc.canSenseLocation(checkLoc) && !rc.senseFlooding(checkLoc)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void setup() throws GameActionException {
