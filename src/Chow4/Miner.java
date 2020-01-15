@@ -330,7 +330,7 @@ public class Miner extends RobotPlayer {
         }
         else if (role == RETURNING) {
             // targetLoc should be place miner tries to return to
-            if (rc.getLocation().distanceSquaredTo(targetLoc) > 1) {
+            if (rc.getLocation().distanceSquaredTo(targetLoc) > 2) {
 
                 //Direction greedyDir = getGreedyMove(targetLoc);
                 //if (debug) System.out.println("Heading to soup depo at " + targetLoc + " by moving to " + rc.adjacentLocation(greedyDir));

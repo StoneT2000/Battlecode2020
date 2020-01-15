@@ -13,7 +13,7 @@ public class HQ extends RobotPlayer {
     static boolean surroundedByFlood = false;
     static int surroundedByFloodRound = -1;
     static boolean nearCenter;
-    static int MIN_DRONE_FOR_ATTACK = 20;
+    static int MIN_DRONE_FOR_ATTACK = 14;
     static boolean criedForDroneHelp = false;
     static boolean saidNoMoreLandscapersNeeded = false;
     static int vaporatorsBuilt = 0;

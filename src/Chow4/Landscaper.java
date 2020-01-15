@@ -249,7 +249,7 @@ public class Landscaper extends RobotPlayer {
                 closestWallLocForDefend = null;
                 int distToTarget = rc.getLocation().distanceSquaredTo(targetLoc);
                 // if on target or (near it and its flooded)
-                if (distToTarget == 0 || (distToTarget <= 2 && diggingUpLowPlace)) {
+                if (distToTarget == 0) {
 
                     if (debug) System.out.println("Close and building wall at " + targetLoc);
                     // deposit onto wall
@@ -271,8 +271,22 @@ public class Landscaper extends RobotPlayer {
                             int lowestElevation = rc.senseElevation(rc.getLocation());
                             for (Direction depositDir: directions) {
                                 MapLocation loc = rc.adjacentLocation(depositDir);
-                                // must be a build wall loc, occupied, and have landscaper there
+                                // must be a build wall loc that is not occupied ( if occupied then it is self )
+                                boolean validBuildLoc = false;
                                 if (rc.canSenseLocation(loc) && validBuildWallLoc(loc)) {
+                                    if (!rc.isLocationOccupied(loc)) {
+
+                                    }
+                                    // if it is occupied and it is our own team but not self or landscaper, dont build
+                                    else {
+                                        RobotInfo info = rc.senseRobotAtLocation(loc);
+                                        if (info.getID() == rc.getID() || info.type == RobotType.LANDSCAPER) {
+                                            validBuildLoc = true;
+                                        }
+
+                                    }
+                                }
+                                if (validBuildLoc) {
                                     int thisE = rc.senseElevation(loc);
                                     if (thisE < lowestElevation) {
                                         lowestElevation = thisE;
