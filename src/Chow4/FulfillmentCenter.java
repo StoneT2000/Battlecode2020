@@ -15,6 +15,8 @@ public class FulfillmentCenter extends RobotPlayer {
         RobotInfo[] nearbyFriendRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         int nearbyEnemyLandscapers = 0;
         int dronesNearby = 0;
+
+        // count bots nearby
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
             if (info.getType() == RobotType.LANDSCAPER) {

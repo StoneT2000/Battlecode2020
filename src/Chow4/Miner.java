@@ -10,6 +10,7 @@ public class Miner extends RobotPlayer {
     static final int RETURNING = 2; // RETURNING TO SOME REFINERY OR HQ TO DEPOSIT
     static final int BUILDING = 3;
 
+    static Direction minedDirection;
     static int FulfillmentCentersBuilt = 0;
     static int DesignSchoolsBuilt = 0; // how many design schools this robot knows have been built ??
 
@@ -52,6 +53,7 @@ public class Miner extends RobotPlayer {
                     MapLocation newLoc = rc.adjacentLocation(dir);
                     if (rc.canMineSoup(dir)) {
                         rc.mineSoup(dir);
+                        minedDirection = dir;
                         mined = true;
                         if (debug) {
                             System.out.println("Turn: " + turnCount + " - I mined " + newLoc + "; Now have " + rc.getSoupCarrying());
@@ -140,7 +142,6 @@ public class Miner extends RobotPlayer {
         if (SoupLocation != null) {
             minDistToNearestSoup = rc.getLocation().distanceSquaredTo(SoupLocation);
         }
-        int lastByteCode = Clock.getBytecodeNum();
         for (int i = 0; i < Constants.BFSDeltas35.length; i++) {
             int[] deltas = Constants.BFSDeltas35[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
@@ -230,29 +231,30 @@ public class Miner extends RobotPlayer {
 
             }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if ((mined || RefineryCount > 0) && VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + RobotType.MINER.cost * 4 + 300) {
+            else if ((mined || RefineryCount > 0) && VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 300) {
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
             }
-            else if (RefineryCount > 0 && VaporatorCount > 0 && rc.getRoundNum() % 20 == 2 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + RobotType.MINER.cost * 4 + 300) {
+            else if (RefineryCount > 0 && VaporatorCount > 0 && rc.getRoundNum() % 20 == 2 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 300) {
                 role = BUILDING;
                 unitToBuild = RobotType.FULFILLMENT_CENTER;
             }
-            // build netguns out of necessity to combat drones
-            else if (NetGunCount == 0 && EnemyDroneCount > 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost) {
-                role = BUILDING;
-                unitToBuild = RobotType.NET_GUN;
-            }
+
             else if (rc.getTeamSoup() >= 1000) {
                 role = BUILDING;
                 unitToBuild = RobotType.VAPORATOR;
             }
+            // build net guns around enemy base!
             if (enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 24 && NetGunCount < 1 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 400) {
                 role = BUILDING;
                 unitToBuild = RobotType.NET_GUN;
             }
-            // build net guns around enemy base!
 
+            // build netguns out of necessity to combat drones
+            if (NetGunCount == 0 && EnemyDroneCount > 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost) {
+                role = BUILDING;
+                unitToBuild = RobotType.NET_GUN;
+            }
 
             // EXPLORE if still no soup found
             if (SoupLocation == null) {
@@ -281,7 +283,15 @@ public class Miner extends RobotPlayer {
         }
         else if (role == BUILDING) {
             Direction buildDir = Direction.NORTH;
-            // if building a vaporator, only build on odd x odd
+            if (minedDirection != null) {
+                if (unitToBuild == RobotType.REFINERY) {
+                    buildDir = minedDirection;
+                }
+                else {
+                    buildDir = minedDirection.opposite();
+                }
+            }
+            // if building a building, only build on odd x odd
             boolean builtUnit = false;
             for (int i = 9; --i >= 1;) {
                 MapLocation buildLoc = rc.adjacentLocation(buildDir);
@@ -335,6 +345,15 @@ public class Miner extends RobotPlayer {
                     targetLoc = null;
                 }
             }
+            /*
+            for (Direction dir : directions) {
+                if (rc.canDepositSoup(dir)) {
+                    rc.depositSoup(dir, rc.getSoupCarrying());
+                    if (debug) System.out.println("Deposited soup to " + targetLoc);
+                    role = MINER;
+                    targetLoc = null;
+                };
+            }*/
         }
 
         // whatever targetloc is, try to go to it

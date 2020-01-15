@@ -22,12 +22,11 @@ public class DeliveryDrone extends RobotPlayer {
                 if ((msg[1] ^ DRONES_ATTACK) == 0) {
                     if (msg[2] != -1) {
                         enemyBaseLocation = parseLoc(msg[2]);
-                        //role = ATTACK;
                         // TODO: handle case when we dont know enemy base location
                         attackLoc = enemyBaseLocation;
                         attackHQ = true;
                         receivedAttackHQMessageRound = rc.getRoundNum();
-                        // + 50 turns to wait for drones to reform a circle around ENEMY
+                        // + 70 turns to wait for drones to reform a circle around ENEMY
                         roundsToWaitBeforeAttack = (int) (2 * Math.max(Math.abs(attackLoc.x - HQLocation.x), Math.abs(HQLocation.y - attackLoc.y))) + 70;
                     }
                     else {
@@ -38,7 +37,7 @@ public class DeliveryDrone extends RobotPlayer {
                 }
                 else if ((msg[1] ^ ANNOUNCE_ENEMY_BASE_LOCATION) == 0) {
                     enemyBaseLocation = parseLoc(msg[2]);
-                    // if we foudn enemy base and we are attackiong HQ but dont know where HQ is
+                    // if we found enemy base and we are attacking HQ but don't know where HQ is
                     if (attackHQ && attackLoc == null) {
                         attackLoc = enemyBaseLocation;
                         receivedAttackHQMessageRound = rc.getRoundNum();
@@ -150,6 +149,7 @@ public class DeliveryDrone extends RobotPlayer {
         // if attacking, move towards nearest enemy
         else if (role == ATTACK) {
 
+            // if not ordered to attack enemy HQ, do normal defending and attack
             if (attackHQ == false) {
                 // if there is enemy, engage!
                 if (closestEnemyMiner != null || closestEnemyLandscaper != null) {
@@ -174,7 +174,7 @@ public class DeliveryDrone extends RobotPlayer {
                 else {
                     int distToAttackLoc = rc.getLocation().distanceSquaredTo(attackLoc);
                     // stick around, don't move in
-                    if (distToAttackLoc <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + 2) {
+                    if (distToAttackLoc <= RobotType.DELIVERY_DRONE.sensorRadiusSquared) {
                         //fuzzy
                         targetLoc = rc.adjacentLocation(randomDirection());
                     } else {
@@ -201,6 +201,7 @@ public class DeliveryDrone extends RobotPlayer {
                     }
                 }
             }
+            // otherwise we are ordered to try and attack enemy HQ
             else {
                 if (attackLoc != null) {
                     int distToAttackLoc = rc.getLocation().distanceSquaredTo(attackLoc);
@@ -208,7 +209,7 @@ public class DeliveryDrone extends RobotPlayer {
                     if (distToAttackLoc > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + 10) {
                         //move to just edge of base attack range.
                         targetLoc = attackLoc;
-                        rc.setIndicatorDot(rc.getLocation(), 10, 20,200);
+                        if (debug) rc.setIndicatorDot(rc.getLocation(), 10, 20,200);
                     } else {
                         targetLoc = null; // don't move there if it isn't time yet
                         if (roundsToWaitBeforeAttack <= rc.getRoundNum() - receivedAttackHQMessageRound) {
