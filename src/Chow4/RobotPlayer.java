@@ -142,7 +142,7 @@ public strictfp class RobotPlayer {
         // gets the HQ of this unit;
         int roundCheck = 1;
         theLoop: {
-            while (HQLocation == null && roundCheck < 5) {
+            while (HQLocation == null && roundCheck < 10) {
                 if (rc.getRoundNum() <= roundCheck) {
                     break;
                 }

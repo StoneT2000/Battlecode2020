@@ -253,7 +253,7 @@ public class Landscaper extends RobotPlayer {
                     if (debug) System.out.println("Close and building wall at " + targetLoc);
                     // deposit onto wall
 
-                    // check if base is getting burried
+                    // check if base is getting buried
                     Direction dirToBase = rc.getLocation().directionTo(HQLocation);
                     if (rc.getLocation().isAdjacentTo(HQLocation) && rc.canDigDirt(dirToBase)) {
                         // targetLoc = null;
@@ -335,25 +335,36 @@ public class Landscaper extends RobotPlayer {
                             targetLoc = null; // don't move, just try to bury
                         }
                     }
-                    // otherwise if its not occupied, fill it up if elevation is low
+                    // otherwise if its not occupied, and elevation is too high, move self up
                     else if (distToTarget <= 2) {
                         if (rc.canSenseLocation(targetLoc)) {
-                            if (rc.senseElevation(targetLoc) < 1) {
-                                Direction dirToLowElevation = rc.getLocation().directionTo(targetLoc);
-                                if (rc.canDepositDirt(dirToLowElevation)) {
-                                    rc.depositDirt(dirToLowElevation);
-                                }
-                                else {
-                                    // otherwise find loc to dig out of
-                                    Direction digDir = null;
-                                    for (Direction dir : directions) {
-                                        MapLocation checkLoc = rc.adjacentLocation(dir);
-                                        if (!validBuildWallLoc(checkLoc) && rc.canDigDirt(dir)) {
-                                            digDir = dir;
-                                        }
+                            int thatElevation = rc.senseElevation(targetLoc);
+                            int myElevation = rc.senseElevation(rc.getLocation());
+                            if (thatElevation > myElevation + 3) {
+                                // otherwise its normal, no unit on it, we are next to it, build up
+                                if (rc.getDirtCarrying() > 0) {
+                                    if (rc.canDepositDirt(Direction.CENTER)) {
+                                        rc.depositDirt(Direction.CENTER);
                                     }
-                                    if (digDir != null && rc.canDigDirt(digDir)) {
-                                        rc.digDirt((digDir));
+                                } else {
+                                    Direction digDir = bestDigDir();
+                                    if (rc.canDigDirt(digDir)) {
+                                        rc.digDirt(digDir);
+                                    }
+                                }
+                            }
+                            // if too low, fill that low place up
+                            else if (thatElevation < thatElevation - 3) {
+                                if (rc.getDirtCarrying() > 0) {
+                                    Direction dirToLowElevation = rc.getLocation().directionTo(targetLoc);
+                                    if (rc.canDepositDirt(dirToLowElevation)) {
+                                        rc.depositDirt(dirToLowElevation);
+                                    }
+                                // otherwise get more dirt
+                                } else {
+                                    Direction digDir = bestDigDir();
+                                    if (rc.canDigDirt(digDir)) {
+                                        rc.digDirt(digDir);
                                     }
                                 }
                             }
@@ -383,10 +394,36 @@ public class Landscaper extends RobotPlayer {
             if (debug) System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
             tryMove(greedyDir); // wasting bytecode probably here
         }
-
+        if (debug) System.out.println(" Carrying " + rc.getDirtCarrying() + " dirt | Cooldown: " + rc.getCooldownTurns());
 
     }
-
+    static Direction bestDigDir() throws GameActionException {
+        for (Direction dir : directions) {
+            MapLocation checkLoc = rc.adjacentLocation(dir);
+            if (okToDig(checkLoc)) {
+                return dir;
+            }
+        }
+        return Direction.CENTER;
+    }
+    // locatio is ok to dig at if no units on it, not on hq build wall, is not occupied by our landscaper
+    static boolean okToDig(MapLocation loc) throws GameActionException {
+        if (!validBuildWallLoc(loc) && rc.canSenseLocation(loc)) {
+            if (rc.isLocationOccupied(loc)) {
+                RobotInfo info = rc.senseRobotAtLocation(loc);
+                if (info.type != RobotType.LANDSCAPER || info.team == enemyTeam) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
+                return true;
+            }
+        }
+        return true;
+    }
     // determine if a position is a valid place to build a wall for HQ
     static boolean validBuildWallLoc(MapLocation loc) {
         if (loc.y == HQLocation.y - BASE_WALL_DIST || loc.y == HQLocation.y + BASE_WALL_DIST) {
