@@ -24,6 +24,7 @@ public class HQ extends RobotPlayer {
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         RobotInfo closestDroneBot = null;
         int enemyLandscapers = 0;
+        int enemyMiners = 0;
         int closestEnemyDroneDist = 99999999;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
@@ -36,6 +37,9 @@ public class HQ extends RobotPlayer {
             // nearby landscaper? RUSH, GET HELP!
             if (info.type == RobotType.LANDSCAPER) {
                 enemyLandscapers++;
+            }
+            if (info.type == RobotType.MINER) {
+                enemyMiners++;
             }
         }
 
@@ -56,8 +60,8 @@ public class HQ extends RobotPlayer {
         if (wallBots < 8 && rc.getRoundNum() % 10 == 0) {
             announceWantLandscapers(8 - wallBots);
         }
-        // if we see an enemy landscaper
-        if (enemyLandscapers > 0) {
+        // if we see an enemy landscaper or enemy miner
+        if (enemyLandscapers > 0 || enemyMiners > 0) {
             // announce I want drones and fulfillment center to build them if we have no drones and we dont know a center was built or every 20 turns
             // announce asap and then every 10 rounds
             if ((!criedForDroneHelp || rc.getRoundNum() % 10 == 0) && myDrones == 0 && (FulfillmentCentersBuilt < 1 || rc.getRoundNum() % 20 == 0)) {
@@ -93,13 +97,13 @@ public class HQ extends RobotPlayer {
             //TODO: once surrounded, announce to fulfillment centers to BUILD BUILD DRONES
 
         }
-        // announce drone attack sometime before we would get overwhelemed by flood
+        if (myDrones >= MIN_DRONE_FOR_ATTACK) {
+            announceDroneAttack();
+        }
+        // announce drone attack sometime before we would get overwhelmed by flood
         if (wallBots >= 8) {
             if (debug) System.out.println("myDrones: " + myDrones);
-            if (myDrones >= MIN_DRONE_FOR_ATTACK && rc.getRoundNum() >= surroundedByFloodRound) {
-                announceDroneAttack();
-            }
-            else if (surroundedByFlood && rc.getRoundNum() % 50 == 0){
+            if (surroundedByFlood && rc.getRoundNum() % 50 == 0){
                 announceBuildDrones();
             }
         }

@@ -153,6 +153,7 @@ public class Miner extends RobotPlayer {
                         if (rc.senseSoup(checkLoc) > 0) {
                             soupNearbyCount += rc.senseSoup(checkLoc);
                             int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+                            // BUG FIXME: Dont check if flooding, check if flooding and not surrounded by empty reachable tile
                             if (!rc.senseFlooding(checkLoc) && dist < minDistToNearestSoup) {
                                 SoupLocation = checkLoc;
                                 minDistToNearestSoup = dist; // set this so we wont reset SoupLocation as we add soupNearbyCount
@@ -231,11 +232,11 @@ public class Miner extends RobotPlayer {
 
             }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if ((mined || RefineryCount > 0) && VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 300) {
+            else if (VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 300) {
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
             }
-            else if (RefineryCount > 0 && VaporatorCount > 0 && rc.getRoundNum() % 20 == 2 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 300) {
+            else if (VaporatorCount > 0 && rc.getRoundNum() % 20 == 2 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 300) {
                 role = BUILDING;
                 unitToBuild = RobotType.FULFILLMENT_CENTER;
             }
