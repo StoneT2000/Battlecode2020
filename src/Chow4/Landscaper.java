@@ -129,6 +129,52 @@ public class Landscaper extends RobotPlayer {
                 }
             }
         }
+        // when do we protect?, when to attack??
+        // if we have nearby enemy,
+        if (nearestEnemy != null) {
+            // if adjacent, proceed with dump procedure
+            if (rc.getLocation().isAdjacentTo(nearestEnemy.location)) {
+                if (debug) rc.setIndicatorLine(rc.getLocation(), nearestEnemy.location, 100, 10, 240);
+                if (rc.getDirtCarrying() > 0) {
+                    Direction dirToAttack = rc.getLocation().directionTo(nearestEnemy.location);
+
+                    if (rc.canDepositDirt(dirToAttack)) {
+                        rc.depositDirt(dirToAttack);
+                        // after depositing, if building robot is gone, we reset nearestEnemy if we used that
+                        if (!rc.isLocationOccupied(nearestEnemy.location) && nearestEnemy != null) {
+                            nearestEnemy = null;
+                        }
+                    }
+                }
+                else {
+                    // loop to 1 so we don't include center
+                    for (int i = directions.length; --i>=1; ) {
+                        Direction testDir = directions[i];
+                        MapLocation testLoc = rc.adjacentLocation(testDir);
+                        // dig out from location that is not occupied, and if it is, it is occupied by enemy bot
+                        if (rc.isLocationOccupied(testLoc)) {
+                            RobotInfo info = rc.senseRobotAtLocation(testLoc);
+                            if (info.team == enemyTeam) {
+                                if (!isBuilding(info)) {
+                                    if (rc.canDigDirt(testDir)) {
+                                        rc.digDirt(testDir);
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                        else {
+                            if (rc.canDigDirt(testDir)) {
+                                rc.digDirt(testDir);
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                targetLoc = nearestEnemy.location;
+            }
+        }
 
         if (role == ATTACK) {
             // find nearest enemy hq location to go and search and store map location
@@ -412,8 +458,6 @@ public class Landscaper extends RobotPlayer {
                     }
                 }
             }
-
-
             // if no build loc is found, go away
             if (targetLoc == null) {
                 role = ATTACK;
@@ -430,6 +474,24 @@ public class Landscaper extends RobotPlayer {
             Direction greedyDir = getBugPathMove(targetLoc); //TODO: should return a valid direction usually???
             if (debug) System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
             tryMove(greedyDir); // wasting bytecode probably here
+
+            // if didnt work, probably dig myself out
+            // PRIORITy, dig self out
+            int myElevation = rc.senseElevation(rc.getLocation());
+            boolean digSelfOut = true;
+            for (int i = directions.length; --i >= 0; ) {
+                Direction dir = directions[i];
+                int thatElevation = rc.senseElevation(rc.adjacentLocation(dir));
+                if (thatElevation <= myElevation + 3 && thatElevation >= myElevation - 3) {
+                    digSelfOut = false;
+                    break;
+                }
+            }
+            if (digSelfOut) {
+                if (rc.canDigDirt(Direction.CENTER)) {
+                    rc.digDirt(Direction.CENTER);
+                }
+            }
         }
         if (debug) System.out.println(" Carrying " + rc.getDirtCarrying() + " dirt | Cooldown: " + rc.getCooldownTurns());
 
