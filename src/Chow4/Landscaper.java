@@ -197,22 +197,24 @@ public class Landscaper extends RobotPlayer {
                 // valid build location if we can't see it
                 // valid if we see it and there's no friendly landscaper on it (or if there is one its not self)
                 boolean valid = false;
-                if (rc.canSenseLocation(checkLoc)) {
-                    if (rc.isLocationOccupied(checkLoc)) {
-                        RobotInfo info = rc.senseRobotAtLocation(checkLoc);
-                        if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam() && rc.getID() != info.getID()) {
-                            valid = false;
-                        }
-                        else {
+                if (rc.onTheMap(checkLoc)) {
+                    if (rc.canSenseLocation(checkLoc)) {
+                        if (rc.isLocationOccupied(checkLoc)) {
+                            RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                            if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam() && rc.getID() != info.getID()) {
+                                valid = false;
+                            } else {
+                                valid = true;
+                            }
+                        } else {
                             valid = true;
                         }
-                    }
-                    else {
+                    } else {
                         valid = true;
                     }
                 }
                 else {
-                    valid = true;
+                    valid = false;
                 }
                 // if build location is buildable, and closer
                 if (valid && dist < minDist) {
@@ -232,17 +234,19 @@ public class Landscaper extends RobotPlayer {
                     // valid build location if we can't see it
                     // valid if we see it and there's no friendly landscaper on it (or if there is one its not self)
                     boolean valid = false;
-                    if (rc.canSenseLocation(checkLoc)) {
-                        if (rc.isLocationOccupied(checkLoc)) {
-                            RobotInfo info = rc.senseRobotAtLocation(checkLoc);
-                            if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam() && rc.getID() != info.getID()) {
-                                valid = false;
-                            }
-                            else {
+                    if (rc.onTheMap(checkLoc)) {
+                        if (rc.canSenseLocation(checkLoc)) {
+                            if (rc.isLocationOccupied(checkLoc)) {
+                                RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                                if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam() && rc.getID() != info.getID()) {
+                                    valid = false;
+                                } else {
+                                    valid = true;
+                                }
+                            } else {
                                 valid = true;
                             }
-                        }
-                        else {
+                        } else {
                             valid = true;
                         }
                     }
@@ -277,27 +281,28 @@ public class Landscaper extends RobotPlayer {
                     for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
                         int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
                         MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
-                        if (rc.getLocation().isAdjacentTo(checkLoc)) {
-                            boolean spread = false;
-                            if (rc.isLocationOccupied(checkLoc)) {
-                                RobotInfo info = rc.senseRobotAtLocation(checkLoc);
-                                if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) {
-                                    // one of us?, spread the dirt
-                                    spread = true;
+                        if (rc.onTheMap(checkLoc)) {
+                            if (rc.getLocation().isAdjacentTo(checkLoc)) {
+                                boolean spread = false;
+                                if (rc.isLocationOccupied(checkLoc)) {
+                                    RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                                    if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) {
+                                        // one of us?, spread the dirt
+                                        spread = true;
+                                    }
+                                } else {
+                                    if (waterLevel + 1 > rc.senseElevation(checkLoc)) {
+                                        spread = true;
+                                    }
                                 }
-                            }
-                            else {
-                                if (waterLevel + 1 > rc.senseElevation(checkLoc)) {
-                                    spread = true;
+                                if (spread) {
+                                    if (rc.senseElevation(checkLoc) < lowestElevation) {
+                                        lowestElevation = rc.senseElevation(checkLoc);
+                                        depositDir = rc.getLocation().directionTo(checkLoc);
+                                    }
                                 }
-                            }
-                            if (spread) {
-                                if (rc.senseElevation(checkLoc) < lowestElevation) {
-                                    lowestElevation = rc.senseElevation(checkLoc);
-                                    depositDir = rc.getLocation().directionTo(checkLoc);
-                                }
-                            }
 
+                            }
                         }
                     }
                     if (debug) System.out.println("Trying to deposit at " + depositDir);
@@ -310,6 +315,61 @@ public class Landscaper extends RobotPlayer {
                     if (debug) System.out.println("Trying to dig at " + digDir);
                     if (rc.canDigDirt(digDir)) {
                         rc.digDirt(digDir);
+                    }
+                }
+            }
+            // we are adjacent to our intended build location. Now we figure out why we aren't there yet
+            else if (distToBuildLoc <= 2) {
+                if (rc.getDirtCarrying() <= 0) {
+                    Direction digDir = getDigDirectionForDefending();
+                    if (rc.canDigDirt(digDir)) {
+                        rc.digDirt(digDir);
+                    }
+                }
+                else {
+                    // otherwise we have dirt on us to use
+
+                    if (rc.canSenseLocation(targetLoc)) {
+                        // if occupied
+                        if (rc.isLocationOccupied(targetLoc)) {
+                            RobotInfo info = rc.senseRobotAtLocation(targetLoc);
+                            // if this is some stupid friendly unit, DISINTEGRATE IT?
+                            // if it is a building, BURY IT if possible
+                            if (isBuilding(info)) {
+                                Direction depositDir = rc.getLocation().directionTo(targetLoc);
+                                if (rc.canDepositDirt(depositDir)) {
+                                    rc.depositDirt(depositDir);
+                                }
+                            }
+                        }
+
+                        // not occupied?, build up to location or build location up
+                        else {
+
+                            int thatElevation = rc.senseElevation(targetLoc);
+                            int myElevation = rc.senseElevation(rc.getLocation());
+                            if (debug)
+                                System.out.println("My elevation: " + myElevation + " Intended elevation: " + thatElevation);
+                            // if my elevation is too low, build myself upwards
+                            if (thatElevation > myElevation + 3) {
+                                // otherwise its normal, no unit on it, we are next to it, build up
+                                if (debug) System.out.println("depositing on self");
+                                if (rc.getDirtCarrying() > 0) {
+                                    if (rc.canDepositDirt(Direction.CENTER)) {
+                                        rc.depositDirt(Direction.CENTER);
+                                    }
+                                }
+                            }
+                            // if too low, fill that low place up
+                            else if (thatElevation < thatElevation - 3) {
+                                if (rc.getDirtCarrying() > 0) {
+                                    Direction dirToLowElevation = rc.getLocation().directionTo(targetLoc);
+                                    if (rc.canDepositDirt(dirToLowElevation)) {
+                                        rc.depositDirt(dirToLowElevation);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -375,8 +435,15 @@ public class Landscaper extends RobotPlayer {
 
     }
 
+    static boolean isBuilding(RobotInfo info) {
+        if (info.type == RobotType.FULFILLMENT_CENTER || info.type == RobotType.NET_GUN || info.type == RobotType.REFINERY || info.type == RobotType.DESIGN_SCHOOL || info.type == RobotType.VAPORATOR) {
+            return true;
+        }
+        return false;
+    }
     // heuristic
 
+    // dig in targeted areas around HQ. don't dig enemy buildings
     static Direction getDigDirectionForDefending() throws GameActionException {
         for (int i = Constants.DigDeltasAroundHQ.length; --i >= 0; ) {
             int[] deltas = Constants.DigDeltasAroundHQ[i];
@@ -384,9 +451,23 @@ public class Landscaper extends RobotPlayer {
             Direction testDir = rc.getLocation().directionTo(checkLoc);
             // try the targeted dig sites, dig if its empty or is enemy team
             if (rc.getLocation().distanceSquaredTo(checkLoc) <= 2 && rc.canSenseLocation(checkLoc)) {
-                if (!rc.isLocationOccupied(checkLoc) || rc.senseRobotAtLocation(checkLoc).team == enemyTeam) {
+                if (!rc.isLocationOccupied(checkLoc)) {
                     if (rc.canDigDirt(testDir)) {
                         return testDir;
+                    }
+                }
+                else {
+                    RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                    if (info.type == RobotType.DELIVERY_DRONE) {
+                        if (rc.canDigDirt(testDir)) {
+                            return testDir;
+                        }
+                    }
+                    // if enemy and not building, dig from it
+                    else if (info.team == enemyTeam && !isBuilding(info)) {
+                        if (rc.canDigDirt(testDir)) {
+                            return testDir;
+                        }
                     }
                 }
             }
@@ -394,7 +475,9 @@ public class Landscaper extends RobotPlayer {
         return bestDigDir();
     }
     static Direction bestDigDir() throws GameActionException {
-        for (Direction dir : directions) {
+        Direction dir = rc.getLocation().directionTo(HQLocation).opposite();
+        int i =0;
+        while(++i < 8) {
             MapLocation checkLoc = rc.adjacentLocation(dir);
             if (okToDig(checkLoc)) {
                 return dir;
@@ -402,15 +485,20 @@ public class Landscaper extends RobotPlayer {
         }
         return Direction.CENTER;
     }
-    // locatio is ok to dig at if no units on it, not on hq build wall, is not occupied by our landscaper
+    // location is ok to dig at if no units on it, not on hq build wall, is not occupied by our landscaper
+    // and not enemy building
     static boolean okToDig(MapLocation loc) throws GameActionException {
         if (validBuildWallLoc(loc)) {
+            // replace with hashmap
             return false;
         }
         if (rc.canSenseLocation(loc)) {
             if (rc.isLocationOccupied(loc)) {
                 RobotInfo info = rc.senseRobotAtLocation(loc);
-                if (info.type != RobotType.LANDSCAPER || info.team == enemyTeam) {
+                if (info.team == rc.getTeam() && info.type != RobotType.LANDSCAPER) {
+                    return true;
+                }
+                else if (info.team == enemyTeam && !isBuilding(info)) {
                     return true;
                 }
                 else {
