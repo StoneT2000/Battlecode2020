@@ -4,18 +4,14 @@ import Chow5.utils.Node;
 import battlecode.common.*;
 
 public class Landscaper extends RobotPlayer {
+    // roles
     static final int ATTACK = 0;
     static final int DEFEND_HQ = 1;
     static int role = DEFEND_HQ;
 
-    static MapLocation bestWallLocForDefend = null;
-    static MapLocation closestWallLocForDefend = null;
-    static MapLocation leastElevatedWallLocForDefend = null;
     static RobotInfo nearestEnemy = null;
     static int nearestEnemyDist = 9999999;
     public static void run() throws GameActionException {
-        // atm, swarm at an enemy base or smth and just hella try to bury it
-        // make a path as needed if short range path finding yields no good way to get around some wall
         int waterLevel = calculateWaterLevels();
 
         int friendlyLandscaperCount = 0;
@@ -68,7 +64,6 @@ public class Landscaper extends RobotPlayer {
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
             int[] deltas = Constants.BFSDeltas24[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
-            // TODO: instead of canSenseLocation, maybe do the math and choose the right BFS deltas to iterate over
             if (rc.canSenseLocation(checkLoc)) {
                 switch(role) {
                     case DEFEND_HQ:
@@ -86,7 +81,8 @@ public class Landscaper extends RobotPlayer {
 
         // always check for enemy base and do this recon
         MapLocation closestMaybeHQ = null;
-        // dont know where base is, then look around for it.
+
+        // If we don't know where base is, then look around for it.
         if (enemyBaseLocation == null) {
             Node<MapLocation> node = enemyHQLocations.head;
 
@@ -120,14 +116,19 @@ public class Landscaper extends RobotPlayer {
                         if (debug) System.out.println("FOUND ENEMY HQ AT " + closestMaybeHQ);
                         if (debug) rc.setIndicatorDot(enemyBaseLocation, 100, 29, 245);
                     } else {
+                        // announce to everyone its not an HQ
+                        announceNotEnemyBase(closestMaybeHQNode.val);
                         // remove this location from linked list
                         enemyHQLocations.remove(closestMaybeHQNode);
                     }
                 } else {
+                    // announce to everyone its not an HQ
+                    announceNotEnemyBase(closestMaybeHQNode.val);
                     enemyHQLocations.remove(closestMaybeHQNode);
                 }
             }
         }
+
         // when do we protect?, when to attack??
         // if we have nearby enemy,
         if (nearestEnemy != null) {
@@ -145,15 +146,17 @@ public class Landscaper extends RobotPlayer {
                         }
                     }
                 }
+                // otherwise if not enough dirt, collect some
                 else {
-                    // loop to 1 so we don't include center
+                    // loop to 1 so we don't include Direction.CENTER;
                     for (int i = directions.length; --i>=1; ) {
                         Direction testDir = directions[i];
                         MapLocation testLoc = rc.adjacentLocation(testDir);
-                        // dig out from location that is not occupied, and if it is, it is occupied by enemy bot
+                        // dig out from location that is not occupied or occupied by enemy bot
                         if (rc.isLocationOccupied(testLoc)) {
                             RobotInfo info = rc.senseRobotAtLocation(testLoc);
                             if (info.team == enemyTeam) {
+                                // only dig out non buildings
                                 if (!isBuilding(info)) {
                                     if (rc.canDigDirt(testDir)) {
                                         rc.digDirt(testDir);
