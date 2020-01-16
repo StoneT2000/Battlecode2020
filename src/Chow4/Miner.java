@@ -13,7 +13,9 @@ public class Miner extends RobotPlayer {
     static Direction minedDirection;
     static int FulfillmentCentersBuilt = 0;
     static int DesignSchoolsBuilt = 0; // how many design schools this robot knows have been built ??
+    static boolean firstDesignSchoolBuilt = false;
 
+    static MapLocation lastDepositedRefinery;
     static MapLocation enemyBaseLocation = null;
     // score of the souplocation it is probably heading towards
     static double soupLocScore = 0;
@@ -64,7 +66,7 @@ public class Miner extends RobotPlayer {
             }
             // else if we are near full, we go to nearest refinery known, otherwise go to HQ
             else {
-                targetLoc = HQLocation;
+                targetLoc = lastDepositedRefinery;
                 role = RETURNING;
             }
         }
@@ -211,8 +213,16 @@ public class Miner extends RobotPlayer {
             // check messages for soup locations, possibly closer
             checkBlockForSoupLocations(lastRoundsBlocks);
 
+
+            // haven't built design school yet? BUILDDDDD
+            /*
+            if (!firstDesignSchoolBuilt && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost) {
+                role = BUILDING;
+                unitToBuild = RobotType.DESIGN_SCHOOL;
+            }*/
             // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
-            if (mined && soupNearbyCount > 1250 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
+            // 800 - something, subtract distance. Subtract less for the higher amount soup mined
+            if (mined && soupNearbyCount > 800 - Math.sqrt(rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
                 role = BUILDING;
                 unitToBuild = RobotType.REFINERY;
             }
@@ -234,7 +244,7 @@ public class Miner extends RobotPlayer {
 
             }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if (VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 300) {
+            else if (VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 200) {
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
             }
@@ -330,22 +340,19 @@ public class Miner extends RobotPlayer {
         }
         else if (role == RETURNING) {
             // targetLoc should be place miner tries to return to
-            if (rc.getLocation().distanceSquaredTo(targetLoc) > 2) {
-
-                //Direction greedyDir = getGreedyMove(targetLoc);
-                //if (debug) System.out.println("Heading to soup depo at " + targetLoc + " by moving to " + rc.adjacentLocation(greedyDir));
-                //tryMove(greedyDir);
-            }
-            else {
+            if (rc.getLocation().isAdjacentTo(targetLoc)) {
                 // else we are there, deposit and start mining again
                 Direction depositDir = rc.getLocation().directionTo(targetLoc);
                 // TODO: do something if we can't deposit for some reason despite already next to refinery/HQ and right direction
                 if (rc.canDepositSoup(depositDir)) {
                     rc.depositSoup(depositDir, rc.getSoupCarrying());
                     if (debug) System.out.println("Deposited soup to " + targetLoc);
+                    lastDepositedRefinery = targetLoc;
+
                     // reset roles
                     role = MINER;
                     targetLoc = null;
+
                 }
             }
             /*
@@ -427,6 +434,9 @@ public class Miner extends RobotPlayer {
                         unitToBuild = RobotType.FULFILLMENT_CENTER;
                     }
                 }
+                else if (msg[1] == RobotType.DESIGN_SCHOOL.ordinal()) {
+                    firstDesignSchoolBuilt = true;
+                }
             }
         }
     }
@@ -460,12 +470,12 @@ public class Miner extends RobotPlayer {
                     // TODO: the distWeight should change based on round num and map size,
                     //  we approximate when our miners probably have explored the whole map and should now focus on
                     //  mining more, using the weighted soup/miners value
-                    double distWeight = 1.2;
+                    double distWeight = 0.2;
                     if (rc.getRoundNum() <= 400) {
                         score = -Math.pow((Math.sqrt(soupNearby)) * (dist + 1), distWeight) + Math.pow(soupNearby * (1.0 / (minersNearby + 1)), 1.5);
                     }
                     else {
-                        distWeight = 0.5;
+                        distWeight = 0.2;
                         score = -Math.pow((Math.sqrt(soupNearby)) * (dist + 1), distWeight) + Math.pow(soupNearby * (1.0 / (minersNearby + 1)), 1.5);
                     }
                     if (debug) System.out.println("Found soup location in messages: " + potentialLoc + " score: " + score +
@@ -514,6 +524,7 @@ public class Miner extends RobotPlayer {
         if (debug) System.out.println("HQ at " + HQLocation);
         // needs to determine a direction to go explore in
 
+        lastDepositedRefinery = HQLocation;
         // 4 corners and center
         exploreLocs = new MapLocation[] {
                 new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2),

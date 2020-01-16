@@ -314,8 +314,8 @@ public class Landscaper extends RobotPlayer {
             if (targetLoc != null) {
                 distToBuildLoc = rc.getLocation().distanceSquaredTo(targetLoc);
             }
-
-            if (debug) System.out.println("Going to build loc " + closestBuildLoc + " | closest support loc " + closestSupportLoc);
+            double waterChangeRate = calculateWaterLevelChangeRate();
+            if (debug) System.out.println("Going to build loc " + closestBuildLoc + " | closest support loc " + closestSupportLoc + " | water change rate: " + waterChangeRate + " | levels: " + calculateWaterLevels());
             // if landscaper is on top of build loc
             if (distToBuildLoc == 0) {
                 if (rc.getDirtCarrying() > 0) {
@@ -337,7 +337,8 @@ public class Landscaper extends RobotPlayer {
                                         spread = true;
                                     }
                                 } else {
-                                    if (waterLevel + 1 > rc.senseElevation(checkLoc)) {
+                                    // if its too low or high rounds, spread
+                                    if (waterLevel + 2 + waterChangeRate > rc.senseElevation(checkLoc) || rc.getRoundNum() > 2000) {
                                         spread = true;
                                     }
                                 }
