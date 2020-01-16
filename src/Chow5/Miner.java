@@ -124,11 +124,12 @@ public class Miner extends RobotPlayer {
             }
         }
         if (role == BUILDING) {
-            // if we are trying to build but we already have one, stop
-            if (unitToBuild == RobotType.DESIGN_SCHOOL && DesignSchoolCount > 0) {
+            // if we are trying to build but we already have one, stop, or if we already built it cuz soup went down, STOP
+            if (debug) System.out.println("Trying to build " + unitToBuild +" | soup rn: "+ rc.getTeamSoup());
+            if (unitToBuild == RobotType.DESIGN_SCHOOL && (DesignSchoolCount > 0 || rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost + 250)) {
                 role = MINER;
             }
-            else if (unitToBuild == RobotType.FULFILLMENT_CENTER && FulfillmentCenterCount > 0) {
+            else if (unitToBuild == RobotType.FULFILLMENT_CENTER && (FulfillmentCenterCount > 0 || rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost + 300)) {
                 role = MINER;
             }
         }
@@ -254,6 +255,7 @@ public class Miner extends RobotPlayer {
             }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
             else if (VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 250) {
+                if (debug) System.out.println("Soup rn: " + rc.getTeamSoup());
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
             }

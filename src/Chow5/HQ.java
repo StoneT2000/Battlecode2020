@@ -13,6 +13,7 @@ public class HQ extends RobotPlayer {
     static boolean surroundedByFlood = false;
     static int surroundedByFloodRound = -1;
     static boolean nearCenter;
+    static boolean existsSoup = false;
     static int MIN_DRONE_FOR_ATTACK = 14;
     static boolean criedForDroneHelp = false;
     static boolean saidNoMoreLandscapersNeeded = false;
@@ -113,8 +114,7 @@ public class HQ extends RobotPlayer {
                 }
             }
         }
-        // otherwise we don't build (stock up)
-
+        existsSoup = false;
         if (rc.getRoundNum() > 1) {
             Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
             //checkBlockForSoupLocations(lastRoundsBlocks);
@@ -126,6 +126,9 @@ public class HQ extends RobotPlayer {
                 if (isOurMessage((msg))) {
                     if (msg[1] == RobotType.VAPORATOR.ordinal()) {
                         vaporatorsBuilt++;
+                    }
+                    else if ((msg[1] ^ ANNOUNCE_SOUP_LOCATION) == 0) {
+                        existsSoup = true;
                     }
                 }
             }
@@ -262,7 +265,7 @@ public class HQ extends RobotPlayer {
             unitToBuild = RobotType.MINER;
             return;
         }
-        if (vaporatorsBuilt * 4 + 4 >= minersBuilt) {
+        if (vaporatorsBuilt * 4 + 4 >= minersBuilt && existsSoup) {
             unitToBuild = RobotType.MINER;
             return;
         }
