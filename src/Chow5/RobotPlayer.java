@@ -8,20 +8,22 @@ public strictfp class RobotPlayer {
 
     static final Direction[] simpleDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
     static final Direction[] directions = {Direction.CENTER, Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
-    static RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
-            RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
+
     // maps ordinals to their robot types, 10 robot types, takes up 0-9
     static final RobotType[] ordinalToType = {RobotType.HQ, RobotType.MINER, RobotType.REFINERY, RobotType.VAPORATOR,
             RobotType.DESIGN_SCHOOL, RobotType.FULFILLMENT_CENTER, RobotType.LANDSCAPER, RobotType.DELIVERY_DRONE, RobotType.NET_GUN, RobotType.COW};
-    // static MapLocation[] SoupLocations = new MapLocation[100];
+
     static MapLocation SoupLocation; // stores a target soup location to go and mine
-    static MapLocation HQLocation;
-    static LinkedList<MapLocation> enemyHQLocations =  new LinkedList<>();
-    static MapLocation enemyBaseLocation = null;
+
+    static MapLocation HQLocation; // our HQ location
+
+    static LinkedList<MapLocation> enemyHQLocations =  new LinkedList<>(); // list of possibly enemy HQ locations
+    static MapLocation enemyBaseLocation = null; // the enemy HQ location
+
     static int turnCount;
     static final boolean debug = true;
     static final int UNIQUEKEY = -123399469;
-    static Team enemyTeam;
+    static Team enemyTeam; // enemy team enum
 
     static final int BASE_WALL_DIST = 1;
 
@@ -29,7 +31,8 @@ public strictfp class RobotPlayer {
     static MapLocation targetLoc;
 
 
-    // signal codes
+    // SIGNAL Codes
+    // 0 - 9 are for announcing what robot type was just created
     static final int ANNOUNCE_SOUP_LOCATION = 10;
     static final int NEED_LANDSCAPERS_FOR_DEFENCE = 11;
     static final int DRONES_ATTACK = 12;
@@ -40,11 +43,6 @@ public strictfp class RobotPlayer {
     static final int NO_MORE_LANDSCAPERS_NEEDED = 17;
     static final int ANNOUNCE_NOT_ENEMY_BASE = 18;
 
-    /**
-     * run() is the method that is called when a robot is instantiated in the Battlecode world.
-     * If this method returns, the robot dies!
-     **/
-    @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
 
         // This is the RobotController object. You use it to perform actions from this robot,
@@ -97,26 +95,6 @@ public strictfp class RobotPlayer {
         }
     }
 
-    // returns best move to greedily move to target. ALWAYS returns some direction
-    static Direction getGreedyMove(MapLocation target) throws GameActionException {
-        Direction dir = rc.getLocation().directionTo(target);
-        if (!rc.canMove(dir) || rc.senseFlooding((rc.adjacentLocation((dir))))) {
-            int minDist = 999999;
-            for (int i = directions.length; --i >= 0; ) {
-                // if distance to target from this potential direction is smaller, set it
-                int dist = target.distanceSquaredTo(rc.adjacentLocation(directions[i]));
-                if (dist < minDist && rc.canMove(directions[i]) && !rc.senseFlooding(rc.adjacentLocation(directions[i]))) {
-                    dir = directions[i];
-                    minDist = dist;
-                    if (debug) System.out.println("I chose " + dir + " instead in order to go to " + target);
-                }
-            }
-        }
-
-        return dir;
-    }
-
-    //static boolean passableArea(MapLoc)
     static Direction getBugPathMove(MapLocation target) throws GameActionException {
         Direction dir = rc.getLocation().directionTo(target);
         if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.senseFlooding(rc.adjacentLocation(dir))) {
@@ -138,11 +116,9 @@ public strictfp class RobotPlayer {
     static Direction randomDirection() {
         return directions[(int) (Math.random() * directions.length)];
     }
-    /**
-     * Stores HQ location sent out by HQ earlier
-     */
+
+    // store hq location
     static void storeHQLocation() throws GameActionException {
-        // gets the HQ of this unit;
         int roundCheck = 1;
         theLoop: {
             while (HQLocation == null && roundCheck < 10) {
@@ -155,9 +131,8 @@ public strictfp class RobotPlayer {
                     decodeMsg(msg);
                     if (isOurMessage((msg))) {
                         if (msg[1] == 0) {
-                            // HQ!
                             HQLocation = parseLoc(msg[2]);
-                            if (debug) System.out.println("Stored HQLOC " +HQLocation + " | len " + msg.length + " | round: " + roundCheck);
+                            if (debug) System.out.println("Stored HQ Location: " +HQLocation + " | len " + msg.length + " | round: " + roundCheck);
                             break theLoop;
                         }
                     }
@@ -166,6 +141,8 @@ public strictfp class RobotPlayer {
             }
         }
     }
+
+    // store possible enemy hq positions into list
     static void storeEnemyHQLocations() throws GameActionException {
         // flip vertical, horizontal, and both
 
@@ -201,20 +178,14 @@ public strictfp class RobotPlayer {
     static int generateUNIQUEKEY() {
         return UNIQUEKEY;
     }
-    /**
-        Announcement code
-     */
-    // announces location into block chain hopefully
-    // announces type and location
-    // returns true if submitted to block chain
-    // 0: HQ, 1: MINER
+
+    // announces location of robot and type into block chain hopefully
     static boolean announceSelfLocation(int cost) throws GameActionException {
 
         // announce robot type, and x, y coords
-        // sign it off with a UNIQUEKEY // could also store info in transaction cost
+        // sign it off with a UNIQUEKEY
         int[] message = new int[] {generateUNIQUEKEY(), rc.getType().ordinal(), hashLoc(rc.getLocation()),randomInt(), randomInt(), randomInt(), randomInt()};
         encodeMsg(message);
-        // attempt to submit with
         if (rc.canSubmitTransaction(message, cost)) {
             rc.submitTransaction(message, cost);
             return true;
@@ -223,15 +194,13 @@ public strictfp class RobotPlayer {
             return false;
         }
     }
+
     static int randomInt() {
         return (int) (Math.random() * 10000000);
     }
 
-    // announces the location with that cost.
+    // announces the soup location with that cost, how ,uch soup is nearby and miners nearby
     static boolean announceSoupLocation(MapLocation loc, int cost, int soupCountApprox, int minerCount) throws GameActionException {
-        // announce x y coords and round number,
-        // and how many miners are there already?
-        // how much soup left?
         int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, hashLoc(loc), soupCountApprox, minerCount, randomInt(), randomInt()};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
@@ -245,6 +214,7 @@ public strictfp class RobotPlayer {
         }
     }
 
+    // announce location of enemy base
     static boolean announceEnemyBase(MapLocation loc) throws GameActionException {
         int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_ENEMY_BASE_LOCATION, hashLoc(loc), randomInt(), randomInt(), randomInt(), randomInt()};
         encodeMsg(message);
@@ -258,6 +228,9 @@ public strictfp class RobotPlayer {
             return false;
         }
     }
+
+    // announce if location is not a enemy base
+    // units receiving this should remove the location from their list of enemyHQLocations
     static boolean announceNotEnemyBase(MapLocation loc) throws GameActionException {
         int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_NOT_ENEMY_BASE, hashLoc(loc), randomInt(), randomInt(), randomInt(), randomInt()};
         encodeMsg(message);
@@ -271,12 +244,13 @@ public strictfp class RobotPlayer {
             return false;
         }
     }
+
+    // checks for updates to enemy HQ location
     static void checkForEnemyBasesInBlocks(Transaction [] transactions) throws GameActionException {
         for (int i = transactions.length; --i >= 0;) {
             int[] msg = transactions[i].getMessage();
             decodeMsg(msg);
             if (isOurMessage((msg))) {
-                // if it is announce SOUP location message
                 if ((msg[1] ^ ANNOUNCE_ENEMY_BASE_LOCATION) == 0) {
                     enemyBaseLocation = parseLoc(msg[2]);
                 }
@@ -325,20 +299,12 @@ public strictfp class RobotPlayer {
         if (rc.senseFlooding(rc.getLocation())) {
             if (debug) System.out.println("About to drown, trying to jump out");
             for (int i = directions.length; --i >= 1; ) {
-                //MapLocation checkLoc = rc.adjacentLocation(directions[i]);
                 tryMove(directions[i]);
             }
         }
     }
 
-    /**
-     * Attempts to build a given robot in a given direction.
-     *
-     * @param type The type of the robot to build
-     * @param dir The intended direction of movement
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
+    // tries to build robot in given direction.
     static boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canBuildRobot(type, dir)) {
             rc.buildRobot(type, dir);
@@ -360,22 +326,13 @@ public strictfp class RobotPlayer {
                 (0.0028 - 1.38 * Math.cos(0.00157 * x - 1.73) * 0.00157);
         return waterLevelChange;
     }
+
     // location related
-
-    // checks if unit is within unit distance away from map edge
-    // e.g withinMapEdge(Math.min(rc.getMapWidth()/4, rc.getMapHeight()/4))
-    // would check if unit is closer to center or edge sorta.
-    static boolean withinMapEdge(int distance) {
-        if (rc.getLocation().x <= distance || rc.getLocation().y <= distance
-                || rc.getLocation().x >= rc.getMapWidth() - distance || rc.getLocation().y >= rc.getMapHeight() - distance) {
-            return true;
-        }
-        return false;
-    }
-
+    // hash a location
     static int hashLoc(MapLocation loc) {
         return loc.x  + (loc.y << 6);
     }
+    // parse a hashed location
     static MapLocation parseLoc(int hash) {
         return new MapLocation(hash % 64, hash >> 6);
     }

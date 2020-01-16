@@ -7,6 +7,7 @@ import battlecode.common.RobotType;
 
 public class NetGun extends RobotPlayer {
     public static void run() throws GameActionException {
+
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
         RobotInfo closestDroneBot = null;
@@ -20,7 +21,8 @@ public class NetGun extends RobotPlayer {
                 closestDroneBot = info;
             }
         }
-        // if we found a closest bot
+
+        // if we found a closest enemy drone
         if (closestDroneBot != null) {
             if (rc.canShootUnit(closestDroneBot.getID())) {
                 rc.shootUnit(closestDroneBot.getID());
@@ -28,18 +30,14 @@ public class NetGun extends RobotPlayer {
             }
         }
 
-        /* SCOUTING CODE */
-
         /* BIG BFS LOOP ISH */
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
             int[] deltas = Constants.BFSDeltas24[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
-            // TODO: instead of canSenseLocation, maybe do the math and choose the right BFS deltas to iterate over
             if (rc.canSenseLocation(checkLoc)) {
 
             }
             else {
-                // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
                 break;
             }
         }

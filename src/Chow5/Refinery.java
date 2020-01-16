@@ -5,14 +5,19 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 
 public class Refinery extends RobotPlayer {
+    static boolean announcedSelf = false;
     public static void run() throws GameActionException {
+
+        if (!announcedSelf && rc.getTeamSoup() >= 1) {
+            announceSelfLocation(1);
+            announcedSelf = true;
+        }
+
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
         }
-
-        /* SCOUTING CODE */
 
         /* BIG BFS LOOP ISH */
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
@@ -23,12 +28,14 @@ public class Refinery extends RobotPlayer {
 
             }
             else {
-                // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
                 break;
             }
         }
     }
     public static void setup() throws GameActionException {
-        announceSelfLocation(1);
+        if (rc.getTeamSoup() >= 1) {
+            announceSelfLocation(1);
+            announcedSelf = true;
+        }
     }
 }
