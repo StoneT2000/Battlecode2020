@@ -107,8 +107,10 @@ public class HQ extends RobotPlayer {
             if (surroundedByFlood && rc.getRoundNum() % 50 == 0){
                 announceBuildDrones();
             }
-            if (!saidNoMoreLandscapersNeeded || rc.getRoundNum() % 50 == 0) {
-                //announceNoMoreLandscapersNeeded();
+            if (wallBots >= 20) {
+                if (!saidNoMoreLandscapersNeeded || rc.getRoundNum() % 50 == 0) {
+                    announceNoMoreLandscapersNeeded();
+                }
             }
         }
         // otherwise we don't build (stock up)
