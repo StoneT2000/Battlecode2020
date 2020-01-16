@@ -270,21 +270,36 @@ public class Landscaper extends RobotPlayer {
             if (distToBuildLoc == 0) {
                 if (rc.getDirtCarrying() > 0) {
                     // deposit on places lower than you and has friend landscaper and is on a valid location
+                    // we only spread the wall dirt provided everywhere is filled with landscapers, or its pretty late
+                    // game and water level is near height of unfilled position
                     int lowestElevation = rc.senseElevation(rc.getLocation());
                     Direction depositDir = Direction.CENTER;
-                    for (Direction dir : directions) {
-                        MapLocation loc = rc.adjacentLocation(dir);
-                        if (rc.canSenseLocation(loc) && rc.isLocationOccupied(loc)) {
-                            RobotInfo info = rc.senseRobotAtLocation(loc);
-                            if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) {
-                                int thatElevation = rc.senseElevation(loc);
-                                if (thatElevation < lowestElevation) {
-                                    depositDir = dir;
+                    for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
+                        int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+                        MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
+                        if (rc.getLocation().isAdjacentTo(checkLoc)) {
+                            boolean spread = false;
+                            if (rc.isLocationOccupied(checkLoc)) {
+                                RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                                if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) {
+                                    // one of us?, spread the dirt
+                                    spread = true;
                                 }
                             }
+                            else {
+                                if (waterLevel + 1 > rc.senseElevation(checkLoc)) {
+                                    spread = true;
+                                }
+                            }
+                            if (spread) {
+                                if (rc.senseElevation(checkLoc) < lowestElevation) {
+                                    lowestElevation = rc.senseElevation(checkLoc);
+                                    depositDir = rc.getLocation().directionTo(checkLoc);
+                                }
+                            }
+
                         }
                     }
-                    depositDir = Direction.CENTER;
                     if (debug) System.out.println("Trying to deposit at " + depositDir);
                     if (rc.canDepositDirt(depositDir)) {
                         rc.depositDirt(depositDir);
@@ -298,7 +313,7 @@ public class Landscaper extends RobotPlayer {
                     }
                 }
             }
-            // otherwise our we didnt have a closestBuildLoc, so we use closestSupportLoc
+            // otherwise our we didn't have a closestBuildLoc, so we use closestSupportLoc
             else if (distToBuildLoc == -1 && closestSupportLoc != null) {
                 targetLoc = closestSupportLoc;
                 int distToSupportLoc = rc.getLocation().distanceSquaredTo(closestSupportLoc);
@@ -309,8 +324,8 @@ public class Landscaper extends RobotPlayer {
                         Direction depositDir = Direction.CENTER;
                         // we deposit in CENTER if it is worth more than depositing to a wall
                         // calculate rate of change of water level, if water level increases by more than 2, we should deposit on wall
-                        double levelChange = calculateWaterLevelChangeRate();
-                        if (levelChange >= 2.0) {
+                        // double levelChange = calculateWaterLevelChangeRate();// FIXME
+                        if (waterLevel + 2 < rc.senseElevation(rc.getLocation())) {
                             int lowestElevation = 99999;
                             for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
                                 int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
