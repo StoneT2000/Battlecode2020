@@ -15,7 +15,7 @@ public class FulfillmentCenter extends RobotPlayer {
         RobotInfo[] nearbyFriendRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         int nearbyEnemyLandscapers = 0;
         int dronesNearby = 0;
-
+        int netGunsnearby = 0;
         // count bots nearby
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
@@ -27,6 +27,9 @@ public class FulfillmentCenter extends RobotPlayer {
             RobotInfo info = nearbyFriendRobots[i];
             if (info.getType() == RobotType.DELIVERY_DRONE) {
                 dronesNearby++;
+            }
+            else if (info.getType() == RobotType.NET_GUN) {
+                netGunsnearby++;
             }
         }
 
@@ -59,6 +62,9 @@ public class FulfillmentCenter extends RobotPlayer {
         }
         if (vaporatorsBuilt * 3 + 3 > dronesBuilt && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 250) {
             confirmBuild = true;
+        }
+        if (netGunsnearby > 0) {
+            confirmBuild = false;
         }
         if (confirmBuild) {
             boolean builtUnit = false;

@@ -55,7 +55,7 @@ public class Landscaper extends RobotPlayer {
             }
         }
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
-        checkForEnemyBasesInBlocks(lastRoundsBlocks);
+        checkForEnemyBasesInBlocks(lastRoundsBlocks); // checks for where bases are and removes ones where they dont exist
         checkBlockForActions(lastRoundsBlocks);
 
         /* BIG BFS LOOP ISH */

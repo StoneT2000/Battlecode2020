@@ -11,6 +11,7 @@ public class DeliveryDrone extends RobotPlayer {
     static MapLocation attackLoc;
     static MapLocation waterLoc;
     static boolean attackHQ = false;
+    static boolean holdingCow = false;
     static int receivedAttackHQMessageRound = -1;
     static int roundsToWaitBeforeAttack = 0;
     public static void run() throws GameActionException {
@@ -45,6 +46,28 @@ public class DeliveryDrone extends RobotPlayer {
 
                     }
                 }
+                else if ((msg[1] ^ ANNOUNCE_NOT_ENEMY_BASE) == 0) {
+                    // remove said base from enemy base locations
+                    MapLocation notBaseLocation = parseLoc(msg[2]);
+
+                    // iterate over list
+                    Node<MapLocation> node = enemyHQLocations.head;
+
+                    Node<MapLocation> nodeToRemove = null;
+                    if (node != null) {
+                        for (int j = 0; j++ < enemyHQLocations.size; ) {
+                            if (node.val.equals(notBaseLocation)) {
+                                nodeToRemove = node;
+                                break;
+                            }
+                            node = node.next;
+
+                        }
+                    }
+                    if (nodeToRemove != null) {
+                        enemyHQLocations.remove(nodeToRemove);
+                    }
+                }
                 else if ((msg[1] ^ BUILD_DRONE_NOW) == 0) {
                     attackLoc = HQLocation;
 
@@ -54,7 +77,8 @@ public class DeliveryDrone extends RobotPlayer {
 
 
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
-
+        RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+        RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(-1, Team.NEUTRAL);
 
         RobotInfo closestEnemyLandscaper = null;
         RobotInfo closestEnemyMiner = null;
@@ -96,6 +120,35 @@ public class DeliveryDrone extends RobotPlayer {
             }
         }
 
+        int friendlyDrones = 0;
+        RobotInfo nearestCow = null;
+        int distToNearestCow =  9999999;
+        for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
+            RobotInfo info  =nearbyFriendlyRobots[i];
+            switch(info.type) {
+                case DELIVERY_DRONE:
+                    friendlyDrones++;
+                    break;
+            }
+        }
+        if (debug) System.out.println("There are " + nearbyNeutralRobots.length + " neutrals (cows?) nearby ");
+        for (int i = nearbyNeutralRobots.length; --i >= 0; ) {
+            RobotInfo info = nearbyNeutralRobots[i];
+            switch(info.type) {
+                case COW:
+                    if (debug) System.out.println("Found COW at " + info.location);
+                    int dist = rc.getLocation().distanceSquaredTo(info.location);
+                    if (dist < distToNearestCow) {
+                        nearestCow = info;
+                        distToNearestCow = dist;
+                    }
+            }
+        }
+
+        // if many friend drones, go to HQ?
+        if (friendlyDrones > 3) {
+            //attackLoc = HQLocation;
+        }
 
 
         /* SCOUTING CODE */
@@ -121,25 +174,108 @@ public class DeliveryDrone extends RobotPlayer {
             }
         }
 
+        // Store closest enemy HQ position
+        MapLocation closestMaybeHQ = null;
+        // dont know where base is, then look around for it.
+        if (enemyBaseLocation == null) {
+            if (debug) System.out.println("finding closest HQ TO LOOK FOR");
+            Node<MapLocation> node = enemyHQLocations.head;
+
+            Node<MapLocation> closestMaybeHQNode = enemyHQLocations.head;
+            int minDistToMaybeHQ = 9999999;
+
+            if (node != null) {
+                closestMaybeHQ = node.val;
+                for (int i = 0; i++ < enemyHQLocations.size; ) {
+                    int dist = rc.getLocation().distanceSquaredTo(node.val);
+                    if (dist < minDistToMaybeHQ) {
+                        minDistToMaybeHQ = dist;
+                        closestMaybeHQ = node.val;
+                        closestMaybeHQNode = node;
+                    }
+                    node = node.next;
+
+                }
+            } else {
+                // dont swarm?
+            }
+            if (debug) System.out.println("Closest possible enemy HQ: " + closestMaybeHQ);
+
+            // if we can check location we are trying to head to, determine if its a enemy HQ or not
+            if (rc.canSenseLocation(closestMaybeHQ)) {
+                if (rc.isLocationOccupied(closestMaybeHQ)) {
+                    RobotInfo unit = rc.senseRobotAtLocation(closestMaybeHQ);
+                    if (unit.type == RobotType.HQ && unit.team == enemyTeam) {
+                        // FOUND HQ!
+                        enemyBaseLocation = closestMaybeHQ;
+                        announceEnemyBase(enemyBaseLocation);
+                        if (debug) System.out.println("FOUND ENEMY HQ AT " + closestMaybeHQ);
+                        if (debug) rc.setIndicatorDot(enemyBaseLocation, 100, 29, 245);
+                        attackLoc = enemyBaseLocation;
+                    } else {
+
+                        // announce to everyone its not an HQ
+                        announceNotEnemyBase(closestMaybeHQNode.val);
+                        // remove this location from linked list
+                        enemyHQLocations.remove(closestMaybeHQNode);
+
+                    }
+                } else {
+                    // announce to everyone its not an HQ
+                    announceNotEnemyBase(closestMaybeHQNode.val);
+                    enemyHQLocations.remove(closestMaybeHQNode);
+                }
+            }
+        }
+        else {
+            closestMaybeHQ = enemyBaseLocation;
+        }
+
         if (role == DUMP_BAD_GUY) {
             // if currently holding unit, it should be a bad guy
-            if (debug) System.out.println("DUMPING BAD UNIT to " + waterLoc);
+
             if (rc.isCurrentlyHoldingUnit()) {
-                // find water and drop that thing
-                if (waterLoc != null) {
-                    targetLoc = waterLoc;
-                    if (rc.getLocation().isAdjacentTo(waterLoc)) {
-                        // adjacent to waterLoc, drop that thing!
-                        Direction dropDir = rc.getLocation().directionTo(waterLoc);
-                        if (rc.canDropUnit(dropDir)) {
-                            rc.dropUnit(dropDir);
-                            role = ATTACK;
+                if (!holdingCow) {
+                    // find water and drop that thing
+                    if (waterLoc != null) {
+                        if (debug) System.out.println("DUMPING BAD UNIT to " + waterLoc);
+                        targetLoc = waterLoc;
+                        if (rc.getLocation().isAdjacentTo(waterLoc)) {
+                            // adjacent to waterLoc, drop that thing!
+                            Direction dropDir = rc.getLocation().directionTo(waterLoc);
+                            if (rc.canDropUnit(dropDir)) {
+                                rc.dropUnit(dropDir);
+                                role = ATTACK;
+                            }
                         }
                     }
+                    // TODO: doesnt know any water sources? do what then?
+                    else {
+                        targetLoc = rc.adjacentLocation(randomDirection());
+                    }
                 }
-                // TODO: doesnt know any water sources? do what then?
                 else {
-                    targetLoc = rc.adjacentLocation(randomDirection());
+                    targetLoc = closestMaybeHQ;
+                    if (enemyBaseLocation != null) {
+                        // drop on nearby land if possible, otherwise SEARCH!
+                        if (rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 8) {
+                            int i = 0;
+                            Direction dropDir = rc.getLocation().directionTo(enemyBaseLocation);
+                            while (++i <= 8) {
+                                if (rc.canDropUnit(dropDir)) {
+                                    rc.dropUnit(dropDir);
+                                    role = ATTACK;
+                                    holdingCow = false;
+                                }
+                                else {
+                                    dropDir = dropDir.rotateLeft();
+                                }
+                            }
+                        }
+                    }
+                    else {
+
+                    }
                 }
             }
             else {
@@ -152,18 +288,26 @@ public class DeliveryDrone extends RobotPlayer {
             // if not ordered to attack enemy HQ, do normal defending and attack
             if (attackHQ == false) {
                 // if there is enemy, engage!
-                if (closestEnemyMiner != null || closestEnemyLandscaper != null) {
+                if (closestEnemyMiner != null || closestEnemyLandscaper != null || nearestCow != null) {
                     RobotInfo enemyToEngage = closestEnemyLandscaper;
                     if (enemyToEngage == null) enemyToEngage = closestEnemyMiner;
+                    if (enemyToEngage == null) enemyToEngage = nearestCow;
 
                     if (debug) System.out.println("ENGAGING ENEMY at " + enemyToEngage.location);
                     int distToEnemy = rc.getLocation().distanceSquaredTo(enemyToEngage.location);
-                    if (distToEnemy <= 2) {
+                    if (distToEnemy <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) {
                         // we are adjacent, pick it up and prepare for destroy procedure
                         if (rc.canPickUpUnit(enemyToEngage.getID())) {
                             rc.pickUpUnit(enemyToEngage.getID());
-                            role = DUMP_BAD_GUY;
-                            targetLoc = waterLoc;
+                            if (enemyToEngage.getType() != RobotType.COW) {
+                                role = DUMP_BAD_GUY;
+                                targetLoc = waterLoc;
+                            }
+                            else {
+                                role = DUMP_BAD_GUY;
+                                holdingCow = true;
+                                targetLoc = closestMaybeHQ;
+                            }
                         }
                     } else {
                         // not near enemy yet, set targetLoc to this so we move towards enemey.
@@ -239,52 +383,7 @@ public class DeliveryDrone extends RobotPlayer {
                 }
                 else {
                     // got attack msg, no hq to go and kill
-                    // search for it then
-                    MapLocation closestMaybeHQ = null;
-                    // dont know where base is, then look around for it.
-                    if (enemyBaseLocation == null) {
-                        if (debug) System.out.println("finding closest HQ TO LOOK FOR");
-                        Node<MapLocation> node = enemyHQLocations.head;
 
-                        Node<MapLocation> closestMaybeHQNode = enemyHQLocations.head;
-                        int minDistToMaybeHQ = 9999999;
-
-                        if (node != null) {
-                            closestMaybeHQ = node.val;
-                            for (int i = 0; i++ < enemyHQLocations.size; ) {
-                                int dist = rc.getLocation().distanceSquaredTo(node.val);
-                                if (dist < minDistToMaybeHQ) {
-                                    minDistToMaybeHQ = dist;
-                                    closestMaybeHQ = node.val;
-                                    closestMaybeHQNode = node;
-                                }
-                                node = node.next;
-
-                            }
-                        } else {
-                            // dont swarm?
-                        }
-
-                        // if we can check location we are trying to head to, determine if its a enemy HQ or not
-                        if (rc.canSenseLocation(closestMaybeHQ)) {
-                            if (rc.isLocationOccupied(closestMaybeHQ)) {
-                                RobotInfo unit = rc.senseRobotAtLocation(closestMaybeHQ);
-                                if (unit.type == RobotType.HQ && unit.team == enemyTeam) {
-                                    // FOUND HQ!
-                                    enemyBaseLocation = closestMaybeHQ;
-                                    announceEnemyBase(enemyBaseLocation);
-                                    if (debug) System.out.println("FOUND ENEMY HQ AT " + closestMaybeHQ);
-                                    if (debug) rc.setIndicatorDot(enemyBaseLocation, 100, 29, 245);
-                                    attackLoc = enemyBaseLocation;
-                                } else {
-                                    // remove this location from linked list
-                                    enemyHQLocations.remove(closestMaybeHQNode);
-                                }
-                            } else {
-                                enemyHQLocations.remove(closestMaybeHQNode);
-                            }
-                        }
-                    }
                     targetLoc = closestMaybeHQ;
                 }
             }

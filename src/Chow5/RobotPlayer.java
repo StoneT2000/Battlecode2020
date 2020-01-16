@@ -1,5 +1,6 @@
 package Chow5;
 import Chow5.utils.LinkedList;
+import Chow5.utils.Node;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -37,6 +38,7 @@ public strictfp class RobotPlayer {
     static final int NEED_DRONES_FOR_DEFENCE = 15;
     static final int BUILD_DRONE_NOW = 16;
     static final int NO_MORE_LANDSCAPERS_NEEDED = 17;
+    static final int ANNOUNCE_NOT_ENEMY_BASE = 18;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -154,7 +156,7 @@ public strictfp class RobotPlayer {
                     if (isOurMessage((msg))) {
                         if (msg[1] == 0) {
                             // HQ!
-                            HQLocation = new MapLocation(msg[2], msg[3]);
+                            HQLocation = parseLoc(msg[2]);
                             if (debug) System.out.println("Stored HQLOC " +HQLocation + " | len " + msg.length + " | round: " + roundCheck);
                             break theLoop;
                         }
@@ -210,7 +212,7 @@ public strictfp class RobotPlayer {
 
         // announce robot type, and x, y coords
         // sign it off with a UNIQUEKEY // could also store info in transaction cost
-        int[] message = new int[] {generateUNIQUEKEY(), rc.getType().ordinal(), rc.getLocation().x, rc.getLocation().y, randomInt(), randomInt(), randomInt()};
+        int[] message = new int[] {generateUNIQUEKEY(), rc.getType().ordinal(), hashLoc(rc.getLocation()),randomInt(), randomInt(), randomInt(), randomInt()};
         encodeMsg(message);
         // attempt to submit with
         if (rc.canSubmitTransaction(message, cost)) {
@@ -246,7 +248,7 @@ public strictfp class RobotPlayer {
     static boolean announceEnemyBase(MapLocation loc) throws GameActionException {
         int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_ENEMY_BASE_LOCATION, hashLoc(loc), randomInt(), randomInt(), randomInt(), randomInt()};
         encodeMsg(message);
-        if (debug) System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
+        if (debug) System.out.println("ANNOUNCING ENEMY BASE LOCATION " + loc + " hash " + hashLoc(loc));
 
         if (rc.canSubmitTransaction(message, 1)) {
             rc.submitTransaction(message, 1);
@@ -256,7 +258,19 @@ public strictfp class RobotPlayer {
             return false;
         }
     }
+    static boolean announceNotEnemyBase(MapLocation loc) throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_NOT_ENEMY_BASE, hashLoc(loc), randomInt(), randomInt(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING NOT ENEMY BASE LOCATION " + loc + " hash " + hashLoc(loc));
 
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
     static void checkForEnemyBasesInBlocks(Transaction [] transactions) throws GameActionException {
         for (int i = transactions.length; --i >= 0;) {
             int[] msg = transactions[i].getMessage();
@@ -265,6 +279,28 @@ public strictfp class RobotPlayer {
                 // if it is announce SOUP location message
                 if ((msg[1] ^ ANNOUNCE_ENEMY_BASE_LOCATION) == 0) {
                     enemyBaseLocation = parseLoc(msg[2]);
+                }
+                else if ((msg[1] ^ ANNOUNCE_NOT_ENEMY_BASE) == 0) {
+                    // remove said base from enemy base locations
+                    MapLocation notBaseLocation = parseLoc(msg[2]);
+
+                    // iterate over list
+                    Node<MapLocation> node = enemyHQLocations.head;
+
+                    Node<MapLocation> nodeToRemove = null;
+                    if (node != null) {
+                        for (int j = 0; j++ < enemyHQLocations.size; ) {
+                            if (node.val.equals(notBaseLocation)) {
+                                nodeToRemove = node;
+                                break;
+                            }
+                            node = node.next;
+
+                        }
+                    }
+                    if (nodeToRemove != null) {
+                        enemyHQLocations.remove(nodeToRemove);
+                    }
                 }
             }
         }

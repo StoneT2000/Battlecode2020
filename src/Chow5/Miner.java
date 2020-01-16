@@ -222,13 +222,22 @@ public class Miner extends RobotPlayer {
             }*/
             // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
             // 800 - something, subtract distance. Subtract less for the higher amount soup mined
-            if (mined && soupNearbyCount > 800 - rc.getLocation().distanceSquaredTo(lastDepositedRefinery) * 4 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
-                role = BUILDING;
-                unitToBuild = RobotType.REFINERY;
+            if (lastDepositedRefinery.equals(HQLocation)) {
+                // if refinery deposited at is HQ location, go all out to build this refinery at least
+                if (mined && soupNearbyCount > 800 - rc.getLocation().distanceSquaredTo(lastDepositedRefinery) * 4 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
+                    role = BUILDING;
+                    unitToBuild = RobotType.REFINERY;
+                }
+            }
+            else {
+                if (mined && soupNearbyCount > 800 - Math.sqrt(rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
+                    role = BUILDING;
+                    unitToBuild = RobotType.REFINERY;
+                }
             }
             // early game
             // TODO: TUNE PARAM!
-            else if (rc.getRoundNum() <= 300) {
+            if (rc.getRoundNum() <= 300) {
                 if (rc.getTeamSoup() >= 1000) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
@@ -244,7 +253,7 @@ public class Miner extends RobotPlayer {
 
             }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if (VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 200) {
+            else if (VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 250) {
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
             }
@@ -436,6 +445,12 @@ public class Miner extends RobotPlayer {
                 }
                 else if (msg[1] == RobotType.DESIGN_SCHOOL.ordinal()) {
                     firstDesignSchoolBuilt = true;
+                }
+                else if (msg[1] == RobotType.REFINERY.ordinal()) {
+                    MapLocation locOfRefinery = parseLoc(msg[2]);
+                    if (rc.getLocation().distanceSquaredTo(locOfRefinery) < rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) {
+                        lastDepositedRefinery = locOfRefinery;
+                    }
                 }
             }
         }
