@@ -236,12 +236,12 @@ public class DeliveryDrone extends RobotPlayer {
 
             if (rc.isCurrentlyHoldingUnit()) {
                 if (!holdingCow) {
-                    // find water and drop that thing
+                    // find water and drop the enemy unit
                     if (waterLoc != null) {
                         if (debug) System.out.println("DUMPING BAD UNIT to " + waterLoc);
                         targetLoc = waterLoc;
                         if (rc.getLocation().isAdjacentTo(waterLoc)) {
-                            // adjacent to waterLoc, drop that thing!
+                            // if drone is adjacent to waterLoc, drop the enemy unit
                             Direction dropDir = rc.getLocation().directionTo(waterLoc);
                             if (rc.canDropUnit(dropDir)) {
                                 rc.dropUnit(dropDir);
@@ -257,7 +257,7 @@ public class DeliveryDrone extends RobotPlayer {
                 else {
                     targetLoc = closestMaybeHQ;
                     if (enemyBaseLocation != null) {
-                        // drop on nearby land if possible, otherwise SEARCH!
+                        // drop on nearby land if possible, otherwise SEARCH for nearest place we can drop this cow
                         if (rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 8) {
                             int i = 0;
                             Direction dropDir = rc.getLocation().directionTo(enemyBaseLocation);
@@ -282,11 +282,11 @@ public class DeliveryDrone extends RobotPlayer {
                 // this shouldn't ever happen
             }
         }
-        // if attacking, move towards nearest enemy
         else if (role == ATTACK) {
 
             // if not ordered to attack enemy HQ, do normal defending and attack
             if (attackHQ == false) {
+
                 // if there is enemy, engage!
                 if (closestEnemyMiner != null || closestEnemyLandscaper != null || nearestCow != null) {
                     RobotInfo enemyToEngage = closestEnemyLandscaper;
@@ -314,27 +314,25 @@ public class DeliveryDrone extends RobotPlayer {
                         targetLoc = enemyToEngage.location;
                     }
                 }
-                // otherwise hover around attackLOC and fuzzy
+
+                // otherwise hover around attackLOC and fuzzy move
                 else {
                     int distToAttackLoc = rc.getLocation().distanceSquaredTo(attackLoc);
-                    // stick around, don't move in
+                    // stick around, don't move in too close
                     if (distToAttackLoc <= RobotType.DELIVERY_DRONE.sensorRadiusSquared) {
                         //fuzzy
                         targetLoc = rc.adjacentLocation(randomDirection());
                     } else {
                         targetLoc = attackLoc; // move towards attack loc first if not near it yet.
-                        //rc.setIndicatorLine(rc.getLocation(), targetLoc, 200, 200, 10);
                     }
 
                     // check if we should still hover around this location
+                    // if we can still sense it and it is occupied by a friendly unit, keep hovering over it
+                    // otherwise set attackLoc to HQLocation (basically defence the HQ)
                     if (rc.canSenseLocation(attackLoc)) {
                         if (rc.isLocationOccupied(attackLoc)) {
                             RobotInfo info = rc.senseRobotAtLocation(attackLoc);
-                            if (info.team == rc.getTeam()) {
-                                // if my team, proceed
-                            }
-                            else {
-                                // go back to base cuz enemy bot
+                            if (info.team != rc.getTeam()) {
                                 attackLoc = HQLocation;
                             }
                         }
@@ -356,9 +354,10 @@ public class DeliveryDrone extends RobotPlayer {
                         if (debug) rc.setIndicatorDot(rc.getLocation(), 10, 20,200);
                     } else {
                         targetLoc = null; // don't move there if it isn't time yet
+                        // if we waited long enough,
                         if (roundsToWaitBeforeAttack <= rc.getRoundNum() - receivedAttackHQMessageRound) {
-                            // if we waited long enough, begin attacking
 
+                            // begin attacking nearest enemy unit
                             if (closestEnemyMiner != null || closestEnemyLandscaper != null) {
 
                                 RobotInfo enemyToEngage = closestEnemyLandscaper;
@@ -366,15 +365,15 @@ public class DeliveryDrone extends RobotPlayer {
                                 if (debug) System.out.println("ENGAGING ENEMY at " + enemyToEngage.location);
                                 if (debug) rc.setIndicatorLine(rc.getLocation(), enemyToEngage.location, 100, 200, 10);
                                 int distToEnemy = rc.getLocation().distanceSquaredTo(enemyToEngage.location);
-                                if (distToEnemy <= 2) {
-                                    // we are adjacent, pick it up and prepare for destroy procedure
+                                if (distToEnemy <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) {
+                                    // we are near enough, pick it up and prepare for destroy procedure
                                     if (rc.canPickUpUnit(enemyToEngage.getID())) {
                                         rc.pickUpUnit(enemyToEngage.getID());
                                         role = DUMP_BAD_GUY;
                                         targetLoc = waterLoc;
                                     }
                                 } else {
-                                    // not near enemy yet, set targetLoc to this so we move towards enemey.
+                                    // not near enemy yet, set targetLoc to enemy location so we move towards enemey.
                                     targetLoc = enemyToEngage.location;
                                 }
                             }
@@ -382,14 +381,13 @@ public class DeliveryDrone extends RobotPlayer {
                     }
                 }
                 else {
-                    // got attack msg, no hq to go and kill
-
+                    // got attackHQ message, but no attackLoc provided, so go to closestMaybeHQ we know of.
                     targetLoc = closestMaybeHQ;
                 }
             }
         }
 
-        // whatever targetloc is, try to go to it
+        // whatever targetLoc is, try to go to it
         movement:
         {
             if (targetLoc != null && rc.isReady()) {
@@ -405,16 +403,17 @@ public class DeliveryDrone extends RobotPlayer {
                         if (dist < minDist && rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.isLocationOccupied((rc.adjacentLocation(dir)))) {
                             dir = directions[i];
                             minDist = dist;
-                            if (debug) System.out.println("I chose " + dir + " instead in order to go to " + targetLoc);
                         }
                     }
                 }
 
+                // try to go in the closest direction
                 if (debug) System.out.println("Moving to " + rc.adjacentLocation((dir)) + " to get to " + targetLoc);
                 if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.isLocationOccupied((rc.adjacentLocation(dir)))) {
                     rc.move(dir);
                     break movement;
                 } else {
+                    // otherwise rotate left
                     for (int i = 7; --i >= 0; ) {
                         dir = dir.rotateLeft();
                         if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.isLocationOccupied((rc.adjacentLocation(dir)))) {
@@ -430,6 +429,7 @@ public class DeliveryDrone extends RobotPlayer {
         storeHQLocation();
         storeEnemyHQLocations();
         attackLoc = HQLocation;
+        // find FC that produced us, and set it as attackLoc.
         for (Direction dir: directions) {
             MapLocation potentialCenterLoc = rc.adjacentLocation(dir);
             if (rc.canSenseLocation(potentialCenterLoc) && rc.isLocationOccupied(potentialCenterLoc)) {

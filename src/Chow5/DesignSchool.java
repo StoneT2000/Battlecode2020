@@ -53,7 +53,7 @@ public class DesignSchool extends RobotPlayer {
             int[] msg = transactions[i].getMessage();
             decodeMsg(msg);
             if (isOurMessage((msg))) {
-                // if it is announce SOUP location message
+                // FIXME: Buggy, better way?
                 if ((msg[1] ^ NEED_LANDSCAPERS_FOR_DEFENCE) == 0) {
                     int origSoup = msg[2];
                     int soupSpent = origSoup - rc.getTeamSoup();

@@ -23,6 +23,8 @@ public class FulfillmentCenter extends RobotPlayer {
                 nearbyEnemyLandscapers++;
             }
         }
+
+        // count nearby drones, netGuns
         for (int i = nearbyFriendRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendRobots[i];
             if (info.getType() == RobotType.DELIVERY_DRONE) {
@@ -32,8 +34,6 @@ public class FulfillmentCenter extends RobotPlayer {
                 netGunsnearby++;
             }
         }
-
-        /* SCOUTING CODE */
 
         /* BIG BFS LOOP ISH */
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
@@ -81,7 +81,7 @@ public class FulfillmentCenter extends RobotPlayer {
             }
             buildDir = buildDir.rotateRight();
         }
-        // make false for next round
+        // make false for next round to be confirmed again
         confirmBuild = false;
     }
     static void checkForBuildInfo(Transaction[] transactions) {
