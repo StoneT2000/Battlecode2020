@@ -219,11 +219,11 @@ public class Miner extends RobotPlayer {
             // early game
             // TODO: TUNE PARAM!
             else if (rc.getRoundNum() <= 300) {
-                if (rc.getTeamSoup() >= 1000) {
+                if (rc.getTeamSoup() >= 500) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                 }
-                else if ((mined || RefineryCount > 0) && VaporatorCount > 0 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 350) {
+                else if ((mined || RefineryCount > 0) && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost) {
                     unitToBuild = RobotType.DESIGN_SCHOOL;
                     role = BUILDING;
                 }
@@ -348,15 +348,6 @@ public class Miner extends RobotPlayer {
                     targetLoc = null;
                 }
             }
-            /*
-            for (Direction dir : directions) {
-                if (rc.canDepositSoup(dir)) {
-                    rc.depositSoup(dir, rc.getSoupCarrying());
-                    if (debug) System.out.println("Deposited soup to " + targetLoc);
-                    role = MINER;
-                    targetLoc = null;
-                };
-            }*/
         }
 
         // whatever targetloc is, try to go to it
