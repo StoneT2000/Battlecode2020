@@ -301,18 +301,24 @@ public class Landscaper extends RobotPlayer {
                         // find point that is not on wall to take dirt from
                         else {
                             // take from right outside base
-                            Direction digDir = bestDigDir();
-                            if (rc.canDigDirt(digDir)) {
-                                rc.digDirt((digDir));
-                            }
-                            // if for some reason u cant dig, go dig elsewhere...
-                            else {
-                                for (Direction dir : directions) {
-                                    MapLocation checkLoc = rc.adjacentLocation(dir);
-                                    if (!validBuildWallLoc(checkLoc) && rc.canDigDirt(dir)) {
-                                        digDir = dir;
+                            boolean dug = false;
+                            for (int i = Constants.DigDeltasAroundHQ.length; --i >= 0; ) {
+                                int[] deltas = Constants.DigDeltasAroundHQ[i];
+                                MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
+                                Direction testDir = rc.getLocation().directionTo(checkLoc);
+                                // try the targeted dig sites, dig if its empty or is enemy team
+                                if (rc.getLocation().distanceSquaredTo(checkLoc) <= 2 && rc.canSenseLocation(checkLoc)) {
+                                    if (!rc.isLocationOccupied(checkLoc) || rc.senseRobotAtLocation(checkLoc).team == enemyTeam) {
+                                        if (rc.canDigDirt(testDir)) {
+                                            rc.digDirt(testDir);
+                                            dug = true;
+                                            break;
+                                        }
                                     }
                                 }
+                            }
+                            if (!dug) {
+                                Direction digDir = rc.getLocation().directionTo(HQLocation).opposite();
                                 if (rc.canDigDirt(digDir)) {
                                     rc.digDirt((digDir));
                                 }
