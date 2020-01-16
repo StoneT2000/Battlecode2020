@@ -23,7 +23,7 @@ public class DesignSchool extends RobotPlayer {
             willBuild = true;
             needLandscaper = false;
         }
-        if (vaporatorsBuilt * 3 + 3 > landscapersBuilt) {
+        if (vaporatorsBuilt * 3 + 3 > landscapersBuilt && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + 250) {
             willBuild = true;
         }
         if (rc.getRoundNum() % 30 == 0 && rc.getTeamSoup() > 500) {

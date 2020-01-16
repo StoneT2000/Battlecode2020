@@ -57,7 +57,7 @@ public class FulfillmentCenter extends RobotPlayer {
         if (nearbyEnemyLandscapers > dronesNearby) {
             confirmBuild = true;
         }
-        if (vaporatorsBuilt * 3 + 3 > dronesBuilt) {
+        if (vaporatorsBuilt * 3 + 3 > dronesBuilt && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 250) {
             confirmBuild = true;
         }
         if (confirmBuild) {
