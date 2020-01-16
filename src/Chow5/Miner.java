@@ -222,7 +222,7 @@ public class Miner extends RobotPlayer {
             }*/
             // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
             // 800 - something, subtract distance. Subtract less for the higher amount soup mined
-            if (mined && soupNearbyCount > 800 - Math.sqrt(rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
+            if (mined && soupNearbyCount > 800 - rc.getLocation().distanceSquaredTo(lastDepositedRefinery) * 4 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
                 role = BUILDING;
                 unitToBuild = RobotType.REFINERY;
             }
