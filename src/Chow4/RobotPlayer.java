@@ -210,7 +210,7 @@ public strictfp class RobotPlayer {
 
         // announce robot type, and x, y coords
         // sign it off with a UNIQUEKEY // could also store info in transaction cost
-        int[] message = new int[] {generateUNIQUEKEY(), rc.getType().ordinal(), rc.getLocation().x, rc.getLocation().y};
+        int[] message = new int[] {generateUNIQUEKEY(), rc.getType().ordinal(), rc.getLocation().x, rc.getLocation().y, randomInt(), randomInt(), randomInt()};
         encodeMsg(message);
         // attempt to submit with
         if (rc.canSubmitTransaction(message, cost)) {
@@ -221,13 +221,16 @@ public strictfp class RobotPlayer {
             return false;
         }
     }
+    static int randomInt() {
+        return (int) (Math.random() * 10000000);
+    }
 
     // announces the location with that cost.
     static boolean announceSoupLocation(MapLocation loc, int cost, int soupCountApprox, int minerCount) throws GameActionException {
         // announce x y coords and round number,
         // and how many miners are there already?
         // how much soup left?
-        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, hashLoc(loc), soupCountApprox, minerCount};
+        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, hashLoc(loc), soupCountApprox, minerCount, randomInt(), randomInt()};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
 
@@ -241,7 +244,7 @@ public strictfp class RobotPlayer {
     }
 
     static boolean announceEnemyBase(MapLocation loc) throws GameActionException {
-        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_ENEMY_BASE_LOCATION, hashLoc(loc)};
+        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_ENEMY_BASE_LOCATION, hashLoc(loc), randomInt(), randomInt(), randomInt(), randomInt()};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
 
@@ -312,6 +315,14 @@ public strictfp class RobotPlayer {
         //e0.0028x − 1.38sin (0.00157x − 1.73) + 1.38sin ( − 1.73) − 1,
         waterLevel = (int) Math.pow(Math.E, 0.0028 * rc.getRoundNum() - 1.38 * Math.sin(0.00157 * rc.getRoundNum() - 1.73) + 1.38*Math.sin(-1.73)) - 1;
         return waterLevel;
+    }
+    static double calculateWaterLevelChangeRate() {
+        // \left(e^{0.0028x-1.38\sin(0.00157x-1.73)+1.38\sin(-1.73)}\right)\cdot\left(0.0028-1.38\cos\left(0.00157x-1.73\right)0.00157\right)
+        double waterLevelChange = 0;
+        int x = rc.getRoundNum();
+        waterLevelChange = Math.pow(Math.E, (0.0028 * x - 1.38 * Math.sin(0.00157 * x - 1.73) + 1.38 * Math.sin(-1.73))) *
+                (0.0028 - 1.38 * Math.cos(0.00157 * x - 1.73) * 0.00157);
+        return waterLevelChange;
     }
     // location related
 

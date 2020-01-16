@@ -123,7 +123,7 @@ public class HQ extends RobotPlayer {
         }
     }
     static void announceBuildDronesNow(int amount) throws GameActionException {
-        int[] message = new int[] {generateUNIQUEKEY(), BUILD_DRONE_NOW, rc.getTeamSoup(), amount};
+        int[] message = new int[] {generateUNIQUEKEY(), BUILD_DRONE_NOW, rc.getTeamSoup(), amount, 0, 0, 0};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING BUILD DRONES!!!");
         // TODO: CHANGE COSTS HERE, put -1 and a max 50 or smth to get suggested cost
@@ -132,7 +132,7 @@ public class HQ extends RobotPlayer {
         }
     }
     static void announceBuildDrones() throws GameActionException {
-        int[] message = new int[] {generateUNIQUEKEY(), BUILD_DRONES};
+        int[] message = new int[] {generateUNIQUEKEY(), BUILD_DRONES, 0, 0, 0, 0, 0};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING BUILD DRONES!!!");
         // TODO: CHANGE COSTS HERE, put -1 and a max 50 or smth to get suggested cost
@@ -145,7 +145,7 @@ public class HQ extends RobotPlayer {
         if (enemyBaseLocation != null) {
             hashedLoc = hashLoc(enemyBaseLocation);
         }
-        int[] message = new int[] {generateUNIQUEKEY(), DRONES_ATTACK, hashedLoc};
+        int[] message = new int[] {generateUNIQUEKEY(), DRONES_ATTACK, hashedLoc, 0, 0, 0, 0};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING DRONE ATTACK ");
         // TODO: CHANGE COSTS HERE, put -1 and a max 50 or smth to get suggested cost
@@ -155,7 +155,7 @@ public class HQ extends RobotPlayer {
     }
     static void announceWantDronesForDefence() throws GameActionException {
         // send teamsoup count to ensure we don't build too many drones?
-        int [] message = new int[] {generateUNIQUEKEY(), NEED_DRONES_FOR_DEFENCE, rc.getTeamSoup()};
+        int [] message = new int[] {generateUNIQUEKEY(), NEED_DRONES_FOR_DEFENCE, rc.getTeamSoup(), 0, 0, 0, 0};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING WANT DRONES ");
         if (rc.canSubmitTransaction(message, 1)) {
@@ -164,7 +164,7 @@ public class HQ extends RobotPlayer {
     }
     static void announceWantLandscapers(int amount) throws GameActionException {
         // send teamsoup count to ensure we don't build too many landscapers
-        int [] message = new int[] {generateUNIQUEKEY(), NEED_LANDSCAPERS_FOR_DEFENCE, rc.getTeamSoup(), amount};
+        int [] message = new int[] {generateUNIQUEKEY(), NEED_LANDSCAPERS_FOR_DEFENCE, rc.getTeamSoup(), amount, 0, 0, 0};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING WANT LANDSCAPERS ");
         if (rc.canSubmitTransaction(message, 1)) {

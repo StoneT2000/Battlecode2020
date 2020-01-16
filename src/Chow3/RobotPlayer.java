@@ -209,7 +209,7 @@ public strictfp class RobotPlayer {
 
         // announce robot type, and x, y coords
         // sign it off with a UNIQUEKEY // could also store info in transaction cost
-        int[] message = new int[] {generateUNIQUEKEY(), rc.getType().ordinal(), rc.getLocation().x, rc.getLocation().y};
+        int[] message = new int[] {generateUNIQUEKEY(), rc.getType().ordinal(), rc.getLocation().x, rc.getLocation().y, 0, 0, 0};
         encodeMsg(message);
         // attempt to submit with
         if (rc.canSubmitTransaction(message, cost)) {
@@ -226,7 +226,7 @@ public strictfp class RobotPlayer {
         // announce x y coords and round number,
         // and how many miners are there already?
         // how much soup left?
-        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, hashLoc(loc), soupCountApprox, minerCount};
+        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_SOUP_LOCATION, hashLoc(loc), soupCountApprox, minerCount, 0, 0};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
 
@@ -240,7 +240,7 @@ public strictfp class RobotPlayer {
     }
 
     static boolean announceEnemyBase(MapLocation loc) throws GameActionException {
-        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_ENEMY_BASE_LOCATION, hashLoc(loc)};
+        int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_ENEMY_BASE_LOCATION, hashLoc(loc), 0, 0, 0, 0};
         encodeMsg(message);
         if (debug) System.out.println("ANNOUNCING LOCATION " + loc + " hash " + hashLoc(loc));
 

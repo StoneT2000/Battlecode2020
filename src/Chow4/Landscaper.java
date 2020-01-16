@@ -2,6 +2,7 @@ package Chow4;
 
 import Chow4.utils.Node;
 import battlecode.common.*;
+import org.w3c.dom.ranges.DocumentRange;
 
 public class Landscaper extends RobotPlayer {
     static final int ATTACK = 0;
@@ -72,58 +73,11 @@ public class Landscaper extends RobotPlayer {
             if (rc.canSenseLocation(checkLoc)) {
                 switch(role) {
                     case DEFEND_HQ:
-                        // find position in square around base to build wall
-                        int dist = rc.getLocation().distanceSquaredTo(checkLoc);
-                        // TODO: reevaluate this method of defending
-
-                        boolean occupied = true;
-                        if (!rc.isLocationOccupied(checkLoc)) {
-                            occupied = false;
-                        }
-                        else {
-                            RobotInfo senseRobot = rc.senseRobotAtLocation(checkLoc);
-                            if (senseRobot != null && (senseRobot.ID == rc.getID() || senseRobot.type != RobotType.LANDSCAPER || senseRobot.team != rc.getTeam())) {
-                                occupied = false;
-                            }
-                        }
-                        // only look at valid build locs and places not occupied by self or landscapers
-                        if (validBuildWallLoc(checkLoc) && !occupied) {
-
-                            // look for first elevation that is not good enough yet and is not at least 3
-                            int locElevation = rc.senseElevation(checkLoc);
-                            if (locElevation <= 3) {
-                                if (dist < minDistToBestBuildLoc) {
-                                    bestWallLocForDefend = checkLoc;
-                                    minDistToBestBuildLoc = dist;
-                                }
-                            }
-                            // also find least elevated build location
-                            if (locElevation < leastElevation) {
-                                leastElevatedWallLocForDefend = checkLoc;
-                                leastElevation = locElevation;
-                            }
-                            // find closest wall
-                            if (dist < minDistToWall) {
-                                if (debug) System.out.println(checkLoc);
-                                closestWallLocForDefend = checkLoc;
-                                minDistToWall = dist;
-                            }
-
-                        }
-                        break;
                 }
             }
             else {
                 switch(role) {
                     case DEFEND_HQ:
-                        int dist = rc.getLocation().distanceSquaredTo(checkLoc);
-                        if (validBuildWallLoc(checkLoc)) {
-                            if (dist < minDistToWall) {
-                                closestWallLocForDefend = checkLoc;
-                                minDistToWall = dist;
-                            }
-                        }
-                        break;
                 }
                 // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
 
@@ -157,7 +111,7 @@ public class Landscaper extends RobotPlayer {
             }
 
             // if we can check location we are trying to head to, determine if its a enemy HQ or not
-            if (rc.canSenseLocation(closestMaybeHQ)) {
+            if (closestMaybeHQ != null && rc.canSenseLocation(closestMaybeHQ)) {
                 if (rc.isLocationOccupied(closestMaybeHQ)) {
                     RobotInfo unit = rc.senseRobotAtLocation(closestMaybeHQ);
                     if (unit.type == RobotType.HQ && unit.team == enemyTeam) {
@@ -233,176 +187,163 @@ public class Landscaper extends RobotPlayer {
         }
         // TODO: THIS NEEDS REDESIGNING!!!
         else if (role == DEFEND_HQ) {
-            if (debug) System.out.println("Best defend build loc " + bestWallLocForDefend + " | closest wall loc " + closestWallLocForDefend);
-            if (bestWallLocForDefend != null || closestWallLocForDefend != null) {
-
-                // we prefer the bestBuildLoc first, then use closest one
-                targetLoc = bestWallLocForDefend;
-                if (targetLoc == null) targetLoc = closestWallLocForDefend;
-                boolean diggingUpLowPlace = false;
-                if (leastElevation < 1) {
-                    targetLoc = leastElevatedWallLocForDefend;
-                    diggingUpLowPlace = true;
-                }
-                // if adjacent to targetLoc, start digging at it
-                bestWallLocForDefend = null;
-                closestWallLocForDefend = null;
-                int distToTarget = rc.getLocation().distanceSquaredTo(targetLoc);
-                // if on target or (near it and its flooded)
-                if (distToTarget == 0) {
-
-                    if (debug) System.out.println("Close and building wall at " + targetLoc);
-                    // deposit onto wall
-
-                    // check if base is getting buried
-                    Direction dirToBase = rc.getLocation().directionTo(HQLocation);
-                    if (rc.getLocation().isAdjacentTo(HQLocation) && rc.canDigDirt(dirToBase)) {
-                        // targetLoc = null;
-                        if (debug) System.out.println("Digging base out");
-                        rc.digDirt(dirToBase);
-                    }
-                    // otherwise proceed with building wall nicely
-                    else {
-
-                        // now perform wall building maneuvers
-                        if (rc.getDirtCarrying() > 0) {
-                            // build on least elevated part that has unit on it
-                            Direction bestDepositDir = rc.getLocation().directionTo(targetLoc);
-                            int lowestElevation = rc.senseElevation(rc.getLocation());
-                            for (Direction depositDir: directions) {
-                                MapLocation loc = rc.adjacentLocation(depositDir);
-                                // must be a build wall loc that is not occupied ( if occupied then it is self )
-                                boolean validBuildLoc = false;
-                                if (rc.canSenseLocation(loc) && validBuildWallLoc(loc)) {
-                                    if (!rc.isLocationOccupied(loc)) {
-
-                                    }
-                                    // if it is occupied and it is our own team but not self or landscaper, dont build
-                                    else {
-                                        RobotInfo info = rc.senseRobotAtLocation(loc);
-                                        if (info.getID() == rc.getID() || info.type == RobotType.LANDSCAPER) {
-                                            validBuildLoc = true;
-                                        }
-
-                                    }
-                                }
-                                if (validBuildLoc) {
-                                    int thisE = rc.senseElevation(loc);
-                                    if (thisE < lowestElevation) {
-                                        lowestElevation = thisE;
-                                        bestDepositDir = depositDir;
-                                    }
-                                }
-                            }
-                            if (rc.canDepositDirt(bestDepositDir)) {
-                                rc.depositDirt(bestDepositDir);
-                            }
+            int minDist = 99999999;
+            // Find closest location adjacent to HQ to build on
+            MapLocation closestBuildLoc = null;
+            for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
+                int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+                MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
+                int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+                // valid build location if we can't see it
+                // valid if we see it and there's no friendly landscaper on it (or if there is one its not self)
+                boolean valid = false;
+                if (rc.canSenseLocation(checkLoc)) {
+                    if (rc.isLocationOccupied(checkLoc)) {
+                        RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                        if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam() && rc.getID() != info.getID()) {
+                            valid = false;
                         }
-                        // find point that is not on wall to take dirt from
                         else {
-                            // take from right outside base
-                            boolean dug = false;
-                            for (int i = Constants.DigDeltasAroundHQ.length; --i >= 0; ) {
-                                int[] deltas = Constants.DigDeltasAroundHQ[i];
-                                MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
-                                Direction testDir = rc.getLocation().directionTo(checkLoc);
-                                // try the targeted dig sites, dig if its empty or is enemy team
-                                if (rc.getLocation().distanceSquaredTo(checkLoc) <= 2 && rc.canSenseLocation(checkLoc)) {
-                                    if (!rc.isLocationOccupied(checkLoc) || rc.senseRobotAtLocation(checkLoc).team == enemyTeam) {
-                                        if (rc.canDigDirt(testDir)) {
-                                            rc.digDirt(testDir);
-                                            dug = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                            if (!dug) {
-                                Direction digDir = rc.getLocation().directionTo(HQLocation).opposite();
-                                if (rc.canDigDirt(digDir)) {
-                                    rc.digDirt((digDir));
-                                }
-                            }
+                            valid = true;
                         }
-                        // set to null so we stop moving generally
-                        targetLoc = null;
                     }
-
-
+                    else {
+                        valid = true;
+                    }
                 }
-                // if we havent reached the build place, check it out
                 else {
-                    // if adjacent to occupied building, BURY IT probably
-                    if (distToTarget <= 2 && rc.canSenseLocation(targetLoc) && rc.isLocationOccupied(targetLoc)) {
-                        RobotInfo info = rc.senseRobotAtLocation(targetLoc);
-                        if (info.type == RobotType.FULFILLMENT_CENTER || info.type == RobotType.DESIGN_SCHOOL || info.type == RobotType.NET_GUN) {
-                            if (debug) System.out.println("Found building on wall loc, trying to bury " + targetLoc);
-                            Direction dirToBuilding = rc.getLocation().directionTo(targetLoc);
-                            if (rc.canDepositDirt(dirToBuilding)) {
-                                rc.depositDirt(dirToBuilding);
+                    valid = true;
+                }
+                // if build location is buildable, and closer
+                if (valid && dist < minDist) {
+                    minDist = dist;
+                    closestBuildLoc = checkLoc;
+                }
+            }
+
+            // if no closest one found from this set, check supporting build locations
+            // when on these positions, you don't build on self, you build on wall.
+            MapLocation closestSupportLoc = null;
+            if (closestBuildLoc == null) {
+                for (int i = Constants.LandscaperPosAroundHQ.length; --i >= 0; ) {
+                    int [] deltas = Constants.LandscaperPosAroundHQ[i];
+                    MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
+                    int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+                    // valid build location if we can't see it
+                    // valid if we see it and there's no friendly landscaper on it (or if there is one its not self)
+                    boolean valid = false;
+                    if (rc.canSenseLocation(checkLoc)) {
+                        if (rc.isLocationOccupied(checkLoc)) {
+                            RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                            if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam() && rc.getID() != info.getID()) {
+                                valid = false;
                             }
                             else {
-                                Direction digDir = null;
-                                for (Direction dir : directions) {
-                                    MapLocation checkLoc = rc.adjacentLocation(dir);
-                                    if (!validBuildWallLoc(checkLoc) && rc.canDigDirt(dir)) {
-                                        digDir = dir;
-                                    }
-                                }
-                                if (digDir != null && rc.canDigDirt(digDir)) {
-                                    rc.digDirt((digDir));
-                                }
+                                valid = true;
                             }
-                            targetLoc = null; // don't move, just try to bury
+                        }
+                        else {
+                            valid = true;
                         }
                     }
-                    // otherwise if its not occupied, and elevation is too high, move self up
-                    else if (distToTarget <= 2) {
-                        if (rc.canSenseLocation(targetLoc)) {
-                            int thatElevation = rc.senseElevation(targetLoc);
-                            int myElevation = rc.senseElevation(rc.getLocation());
-                            if (thatElevation > myElevation + 3) {
-                                // otherwise its normal, no unit on it, we are next to it, build up
-                                if (rc.getDirtCarrying() > 0) {
-                                    if (rc.canDepositDirt(Direction.CENTER)) {
-                                        rc.depositDirt(Direction.CENTER);
-                                    }
-                                } else {
-                                    Direction digDir = bestDigDir();
-                                    if (rc.canDigDirt(digDir)) {
-                                        rc.digDirt(digDir);
-                                    }
-                                }
-                            }
-                            // if too low, fill that low place up
-                            else if (thatElevation < thatElevation - 3) {
-                                if (rc.getDirtCarrying() > 0) {
-                                    Direction dirToLowElevation = rc.getLocation().directionTo(targetLoc);
-                                    if (rc.canDepositDirt(dirToLowElevation)) {
-                                        rc.depositDirt(dirToLowElevation);
-                                    }
-                                // otherwise get more dirt
-                                } else {
-                                    Direction digDir = bestDigDir();
-                                    if (rc.canDigDirt(digDir)) {
-                                        rc.digDirt(digDir);
-                                    }
+                    else {
+                        valid = true;
+                    }
+                    // if build location is buildable, and closer
+                    if (valid && dist < minDist) {
+                        minDist = dist; // we can still use minDist cuz it was never reset as closestBuildLoc == null
+                        closestSupportLoc = checkLoc;
+                    }
+                }
+
+            }
+
+            targetLoc = closestBuildLoc;
+            int distToBuildLoc = -1;
+            // store distance if not null
+            if (targetLoc != null) {
+                distToBuildLoc = rc.getLocation().distanceSquaredTo(targetLoc);
+            }
+
+            if (debug) System.out.println("Going to build loc " + closestBuildLoc);
+            // if landscaper is on top of build loc
+            if (distToBuildLoc == 0) {
+                if (rc.getDirtCarrying() > 0) {
+                    // deposit on places lower than you and has friend landscaper and is on a valid location
+                    int lowestElevation = rc.senseElevation(rc.getLocation());
+                    Direction depositDir = Direction.CENTER;
+                    for (Direction dir : directions) {
+                        MapLocation loc = rc.adjacentLocation(dir);
+                        if (rc.canSenseLocation(loc) && rc.isLocationOccupied(loc)) {
+                            RobotInfo info = rc.senseRobotAtLocation(loc);
+                            if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) {
+                                int thatElevation = rc.senseElevation(loc);
+                                if (thatElevation < lowestElevation) {
+                                    depositDir = dir;
                                 }
                             }
                         }
+                    }
+                    depositDir = Direction.CENTER;
+                    if (debug) System.out.println("Trying to deposit at " + depositDir);
+                    if (rc.canDepositDirt(depositDir)) {
+                        rc.depositDirt(depositDir);
+                    }
+                }
+                else {
+                    Direction digDir = getDigDirectionForDefending();
+                    if (debug) System.out.println("Trying to dig at " + digDir);
+                    if (rc.canDigDirt(digDir)) {
+                        rc.digDirt(digDir);
                     }
                 }
             }
-            // otherwise we aren't near enough to find a location to build the wall
-            else {
-                targetLoc = HQLocation;
-                if (rc.getLocation().distanceSquaredTo(HQLocation) <= 8) {
-                    if (closestWallLocForDefend == null) {
-                        role = ATTACK;
+            // otherwise our we didnt have a closestBuildLoc, so we use closestSupportLoc
+            else if (distToBuildLoc == -1 && closestSupportLoc != null) {
+                targetLoc = closestSupportLoc;
+                int distToSupportLoc = rc.getLocation().distanceSquaredTo(closestSupportLoc);
+                if (distToSupportLoc == 0) {
+                    // STAY, DONT MOVE
+                    if (rc.getDirtCarrying() > 0) {
+                        // iterate over HQ wall areas, and find lowest one adjacent
+                        Direction depositDir = Direction.CENTER;
+                        // we deposit in CENTER if it is worth more than depositing to a wall
+                        // calculate rate of change of water level, if water level increases by more than 2, we should deposit on wall
+                        double levelChange = calculateWaterLevelChangeRate();
+                        if (levelChange >= 2.0) {
+                            int lowestElevation = 99999;
+                            for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
+                                int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+                                MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
+                                if (rc.getLocation().isAdjacentTo(checkLoc)) {
+                                    if (rc.senseElevation(checkLoc) < lowestElevation) {
+                                        lowestElevation = rc.senseElevation(checkLoc);
+                                        depositDir = rc.getLocation().directionTo(checkLoc);
+                                    }
+                                }
+                            }
+                        }
+                        if (debug) System.out.println("Trying to deposit at " + depositDir);
+                        if (rc.canDepositDirt(depositDir)) {
+                            rc.depositDirt(depositDir);
+                        }
+                    }
+                    else {
+                        Direction digDir = getDigDirectionForDefending();
+                        if (debug) System.out.println("Trying to dig at " + digDir);
+                        if (rc.canDigDirt(digDir)) {
+                            rc.digDirt(digDir);
+                        }
                     }
                 }
             }
 
+
+            // if no build loc is found, go away
+            if (targetLoc == null) {
+                role = ATTACK;
+            }
+            // if none found
         }
 
 
@@ -417,6 +358,25 @@ public class Landscaper extends RobotPlayer {
         }
         if (debug) System.out.println(" Carrying " + rc.getDirtCarrying() + " dirt | Cooldown: " + rc.getCooldownTurns());
 
+    }
+
+    // heuristic
+
+    static Direction getDigDirectionForDefending() throws GameActionException {
+        for (int i = Constants.DigDeltasAroundHQ.length; --i >= 0; ) {
+            int[] deltas = Constants.DigDeltasAroundHQ[i];
+            MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
+            Direction testDir = rc.getLocation().directionTo(checkLoc);
+            // try the targeted dig sites, dig if its empty or is enemy team
+            if (rc.getLocation().distanceSquaredTo(checkLoc) <= 2 && rc.canSenseLocation(checkLoc)) {
+                if (!rc.isLocationOccupied(checkLoc) || rc.senseRobotAtLocation(checkLoc).team == enemyTeam) {
+                    if (rc.canDigDirt(testDir)) {
+                        return testDir;
+                    }
+                }
+            }
+        }
+        return bestDigDir();
     }
     static Direction bestDigDir() throws GameActionException {
         for (Direction dir : directions) {
