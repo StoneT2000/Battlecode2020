@@ -307,7 +307,7 @@ public class Miner extends RobotPlayer {
         }
         else if (role == BUILDING) {
             Direction buildDir = Direction.NORTH;
-            if (minedDirection != null) {
+            if (minedDirection != null && minedDirection != Direction.CENTER) {
                 if (unitToBuild == RobotType.REFINERY) {
                     buildDir = minedDirection;
                 }

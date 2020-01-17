@@ -78,10 +78,11 @@ public class HQ extends RobotPlayer {
                 criedForDroneHelp = true;
             }
             // not enough drones to combat, ask for more drones
-            else if (myDrones < enemyLandscapers) {
-                announceBuildDronesNow(enemyLandscapers - myDrones);
-            }
             */
+            if ((!criedForDroneHelp || rc.getRoundNum() % 10 == 0) && myDrones < enemyLandscapers) {
+                announceBuildDronesNow(enemyLandscapers - myDrones);
+                criedForDroneHelp = true;
+            }
         }
 
         // TODO:, shoot closest one with our unit

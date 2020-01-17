@@ -244,7 +244,7 @@ public class Landscaper extends RobotPlayer {
             // ALSO IF U CAN DEPOSIT DIRT ON ADJACENT ENEMY DESIGN SCHOOL or NETGUN DO SO
             for (Direction dir : directions) {
                 MapLocation adjacentLoc = rc.adjacentLocation(dir);
-                if (rc.isLocationOccupied(adjacentLoc)) {
+                if (rc.canSenseLocation(adjacentLoc) && rc.isLocationOccupied(adjacentLoc)) {
                     RobotInfo info = rc.senseRobotAtLocation(adjacentLoc);
                     if (info.team == enemyTeam && (info.type == RobotType.NET_GUN || info.type == RobotType.DESIGN_SCHOOL)) {
                         if (rc.canDepositDirt(dir)) {
