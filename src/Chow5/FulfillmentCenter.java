@@ -49,21 +49,31 @@ public class FulfillmentCenter extends RobotPlayer {
             }
         }
         // build one asap
-        if (dronesBuilt < 1 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
+        if (dronesBuilt < 1 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 350) {
             confirmBuild = true;
+            if (debug) System.out.println("Building first one");
         }
         // in end game keep building
+        /*
         if (inEndGame && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 200) {
             confirmBuild = true;
         }
+        */
         // build if there are enemy landscapers nearby
         if (nearbyEnemyLandscapers > dronesNearby) {
             confirmBuild = true;
+            if (debug) System.out.println("Building to fight landscapers");
         }
-        if (vaporatorsBuilt * 3 + 3 > dronesBuilt && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 250) {
+        if (vaporatorsBuilt * 3 > dronesBuilt && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 350) {
             confirmBuild = true;
+            if (debug) System.out.println("Building balance");
+        }
+        if (rc.getTeamSoup() > 1000) {
+            confirmBuild = true;
+            if (debug) System.out.println("Building cuz excess soup");
         }
         if (netGunsnearby > 0) {
+            if (debug) System.out.println("Not Building because netguns");
             confirmBuild = false;
         }
         if (confirmBuild) {
@@ -99,6 +109,7 @@ public class FulfillmentCenter extends RobotPlayer {
                     // if soup spent / number of landscapers needed is greater than cost
                     if (soupSpent / msg[3] < RobotType.DELIVERY_DRONE.cost) {
                         confirmBuild = true;
+                        if (debug) System.out.println("Building because HQ wants them");
                     }
                 }
                 else if (msg[1] == RobotType.VAPORATOR.ordinal()) {

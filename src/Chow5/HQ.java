@@ -63,6 +63,9 @@ public class HQ extends RobotPlayer {
         if (rc.getRoundNum() >= 300 && wallBots < 8 && rc.getRoundNum() % 10 == 0) {
             announceWantLandscapers(8 - wallBots);
         }
+        else if (rc.getRoundNum() >= 450 && wallBots < 20 && rc.getRoundNum() % 10 == 0) {
+            announceWantLandscapers(20 - wallBots);
+        }
         // if we see an enemy landscaper or enemy miner
         if (enemyLandscapers > 0 || enemyMiners > 0) {
             // announce I want drones and fulfillment center to build them if we have no drones and we dont know a center was built or every 20 turns
@@ -101,13 +104,7 @@ public class HQ extends RobotPlayer {
             // proceed with building unit using default heurstics
             build();
         }
-        if (!surroundedByFlood && surroundedByFlood()) {
-            surroundedByFlood = true;
-            surroundedByFloodRound = rc.getRoundNum();
-            announceBuildDrones();
-            //TODO: once surrounded, announce to fulfillment centers to BUILD BUILD DRONES
 
-        }
         if (myDrones >= MIN_DRONE_FOR_ATTACK) {
             announceDroneAttack();
         }
@@ -115,7 +112,7 @@ public class HQ extends RobotPlayer {
         if (wallBots >= 8) {
             if (debug) System.out.println("myDrones: " + myDrones);
             if (surroundedByFlood && rc.getRoundNum() % 50 == 0){
-                announceBuildDrones();
+                //announceBuildDrones();
             }
             if (wallBots >= 20) {
                 if (!saidNoMoreLandscapersNeeded || rc.getRoundNum() % 50 == 0) {
@@ -274,9 +271,12 @@ public class HQ extends RobotPlayer {
             unitToBuild = RobotType.MINER;
             return;
         }
-        if (vaporatorsBuilt * 4 + 4 >= minersBuilt) {
+        if (vaporatorsBuilt * 4 + 4 >= minersBuilt && existsSoup) {
             unitToBuild = RobotType.MINER;
             return;
+        }
+        if (rc.getRoundNum() % 30 == 0 && rc.getTeamSoup() >= 350) {
+            unitToBuild = RobotType.MINER;
         }
 
 

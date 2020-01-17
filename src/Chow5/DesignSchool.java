@@ -24,13 +24,12 @@ public class DesignSchool extends RobotPlayer {
             needLandscaper = false;
             if (debug) System.out.println("Building landscaper as asked by HQ ");
         }
-        if (vaporatorsBuilt * 3 + 2 > landscapersBuilt && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + 350) {
+        if (vaporatorsBuilt * 3 + 3 > landscapersBuilt && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + 350) {
             willBuild = true;
             if (debug) System.out.println("Building landscaper matching vaporators");
         }
-        if (rc.getRoundNum() % 30 == 0 && rc.getTeamSoup() > 500) {
+        if (rc.getTeamSoup() > 1000) {
             willBuild = true;
-            if (debug) System.out.println("Building landscaper time pass");
         }
 
         if (willBuild) {

@@ -336,5 +336,11 @@ public strictfp class RobotPlayer {
     static MapLocation parseLoc(int hash) {
         return new MapLocation(hash % 64, hash >> 6);
     }
+    static boolean isDigLocation(MapLocation loc) {
+        if (loc.x % 2 == HQLocation.x % 2 && loc.y % 2 == HQLocation.y % 2) {
+            return true;
+        }
+        return false;
+    }
 
 }
