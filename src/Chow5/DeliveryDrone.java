@@ -440,5 +440,7 @@ public class DeliveryDrone extends RobotPlayer {
                 }
             }
         }
+        // For now, go to HQ anyway
+        attackLoc = HQLocation;
     }
 }
