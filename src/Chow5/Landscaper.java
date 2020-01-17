@@ -455,7 +455,7 @@ public class Landscaper extends RobotPlayer {
                                 proceed = false;
                             }
                             if (debug) System.out.println("Still Checking " + checkLoc);
-                            if (proceed && elevation < lowestElevation && elevation < 5) {
+                            if (proceed && elevation < lowestElevation && elevation < 4) {
                                 lowestElevation = elevation;
                                 depositDir = rc.getLocation().directionTo(checkLoc);
                             }
@@ -592,10 +592,13 @@ public class Landscaper extends RobotPlayer {
             boolean digSelfOut = true;
             for (int i = directions.length; --i >= 0; ) {
                 Direction dir = directions[i];
-                int thatElevation = rc.senseElevation(rc.adjacentLocation(dir));
-                if (thatElevation <= myElevation + 3 && thatElevation >= myElevation - 3) {
-                    digSelfOut = false;
-                    break;
+                MapLocation loc = rc.adjacentLocation(dir);
+                if (rc.canSenseLocation(loc)) {
+                    int thatElevation = rc.senseElevation(loc);
+                    if (thatElevation <= myElevation + 3 && thatElevation >= myElevation - 3) {
+                        digSelfOut = false;
+                        break;
+                    }
                 }
             }
             if (digSelfOut) {
