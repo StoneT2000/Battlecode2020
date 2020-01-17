@@ -235,6 +235,25 @@ public class Landscaper extends RobotPlayer {
         }
         // TODO: THIS NEEDS REDESIGNING!!!
         else if (role == DEFEND_HQ) {
+
+            // FIRST THING FIRST DIG OUT HQ
+            Direction dirToHQ = rc.getLocation().directionTo(HQLocation);
+            if (rc.canDigDirt(dirToHQ)) {
+                rc.digDirt(dirToHQ);
+            }
+            // ALSO IF U CAN DEPOSIT DIRT ON ADJACENT DESIGN SCHOOL DO SO
+            for (Direction dir : directions) {
+                MapLocation adjacentLoc = rc.adjacentLocation(dir);
+                if (rc.isLocationOccupied(adjacentLoc)) {
+                    RobotInfo info = rc.senseRobotAtLocation(adjacentLoc);
+                    if (info.team == enemyTeam && (info.type == RobotType.NET_GUN || info.type == RobotType.DESIGN_SCHOOL)) {
+                        if (rc.canDepositDirt(dir)) {
+                            rc.depositDirt(dir);
+                        }
+                    }
+                }
+            }
+
             int minDist = 99999999;
             // Find closest location adjacent to HQ to build on
             MapLocation closestBuildLoc = null;
