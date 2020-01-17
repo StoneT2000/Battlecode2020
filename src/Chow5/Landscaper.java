@@ -60,13 +60,38 @@ public class Landscaper extends RobotPlayer {
         int minDistToBestBuildLoc = 99999999;
         //int farthestDistToBuildLoc
         int leastElevation = 999999999;
+
+        int closestTerraformDist = 9999999;
+        MapLocation locToTerraform = null;
+        int desiredElevation = waterLevel + 3;
         if (debug) System.out.println("BFS start: " + Clock.getBytecodeNum());
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
             int[] deltas = Constants.BFSDeltas24[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
             if (rc.canSenseLocation(checkLoc)) {
                 switch(role) {
-                    case DEFEND_HQ:
+                    case ATTACK:
+                        int elevation = rc.senseElevation(checkLoc);
+                        int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
+                        int distToHQ = checkLoc.distanceSquaredTo(HQLocation);
+                        if (elevation < desiredElevation && !isDigLocation(checkLoc) && distToHQ > 8) {
+                            if (rc.isLocationOccupied(checkLoc)) {
+                                RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                                if (isBuilding(info) && info.team == enemyTeam) {
+                                    if (distToLoc < closestTerraformDist) {
+                                        closestTerraformDist = distToLoc;
+                                        locToTerraform = checkLoc;
+                                    }
+                                }
+                            }
+                            else {
+                                if (distToLoc < closestTerraformDist) {
+                                    closestTerraformDist = distToLoc;
+                                    locToTerraform = checkLoc;
+                                }
+                            }
+
+                        }
                 }
             }
             else {
@@ -183,10 +208,10 @@ public class Landscaper extends RobotPlayer {
 
             MapLocation attackLoc = null;
             if (enemyBaseLocation == null) {
-                attackLoc = closestMaybeHQ;
+                //attackLoc = closestMaybeHQ;
             }
             else {
-                attackLoc = enemyBaseLocation;
+                //attackLoc = enemyBaseLocation;
             }
             // prioritize destructing buildings
             if (nearestEnemy != null) {
@@ -194,8 +219,33 @@ public class Landscaper extends RobotPlayer {
 
             }
 
+            if (attackLoc == null) {
+                // no enemy in sight!, TERRAFORM
+                if (debug) System.out.println("Terraform mode: elevating " + locToTerraform);
+                targetLoc = locToTerraform;
+                //RobotType.LANDSCAPER.dirtLimit
+                if (rc.getDirtCarrying() <= 0) {
+                    Direction dirToDig = Direction.NORTH;
+                    for (int i = 0; i++ < 8; ) {
+                        MapLocation digLoc = rc.adjacentLocation(dirToDig);
+                        if (targetLoc.distanceSquaredTo(HQLocation) > 8 && isDigLocation(digLoc)) {
+                            if (rc.canDigDirt(dirToDig)) {
+                                rc.digDirt(dirToDig);
+                                break;
+                            }
+                        }
+                        dirToDig = dirToDig.rotateRight();
+                    }
+                }
+                if (rc.getLocation().isAdjacentTo(locToTerraform)) {
+                    Direction dirToLoc = rc.getLocation().directionTo(locToTerraform);
+                    if (rc.canDepositDirt(dirToLoc)) {
+                        rc.depositDirt(dirToLoc);
+                    }
+                }
+            }
             // move towards maybe enemy HQ if not next to it.
-            if (!rc.getLocation().isAdjacentTo(attackLoc)) {
+            else if (!rc.getLocation().isAdjacentTo(attackLoc)) {
                 targetLoc = attackLoc;
             }
             else {
@@ -233,7 +283,6 @@ public class Landscaper extends RobotPlayer {
                 }
             }
         }
-        // TODO: THIS NEEDS REDESIGNING!!!
         else if (role == DEFEND_HQ) {
 
             // FIRST THING FIRST DIG OUT HQ if adjacent to it

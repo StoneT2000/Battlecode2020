@@ -321,7 +321,7 @@ public class Miner extends RobotPlayer {
             for (int i = 9; --i >= 1;) {
                 MapLocation buildLoc = rc.adjacentLocation(buildDir);
                 // same parity and must not be too close
-                if ((buildLoc.x + buildLoc.y) % 2 == HQParity && HQLocation.distanceSquaredTo(buildLoc) > 8) {
+                if ((buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && HQLocation.distanceSquaredTo(buildLoc) > 8) {
                     if (tryBuild(unitToBuild, buildDir)) {
                         builtUnit = true;
                         break;

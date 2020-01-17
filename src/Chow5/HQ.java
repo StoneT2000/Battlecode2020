@@ -94,6 +94,7 @@ public class HQ extends RobotPlayer {
             */
             if ((!criedForDroneHelp || rc.getRoundNum() % 10 == 0) && myDrones < enemyLandscapers) {
                 announceBuildDronesNow(enemyLandscapers - myDrones);
+                announceWantDronesForDefence();
                 criedForDroneHelp = true;
             }
         }

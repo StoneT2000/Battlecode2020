@@ -69,7 +69,9 @@ public class DeliveryDrone extends RobotPlayer {
                     }
                 }
                 else if ((msg[1] ^ BUILD_DRONE_NOW) == 0) {
-                    attackLoc = HQLocation;
+                    if (!attackHQ) {
+                        attackLoc = HQLocation;
+                    }
 
                 }
             }
