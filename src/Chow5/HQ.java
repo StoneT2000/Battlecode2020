@@ -10,6 +10,7 @@ public class HQ extends RobotPlayer {
     static MapLocation SoupLocation;
     static MapLocation mapCenter;
     static int mapSize;
+    static boolean criedForLandscapers = false;
     static boolean surroundedByFlood = false;
     static int surroundedByFloodRound = -1;
     static boolean nearCenter;
@@ -59,13 +60,19 @@ public class HQ extends RobotPlayer {
                 myDrones++;
             }
         }
-        if (wallBots < 8 && rc.getRoundNum() % 10 == 0) {
+        if (rc.getRoundNum() >= 300 && wallBots < 8 && rc.getRoundNum() % 10 == 0) {
             announceWantLandscapers(8 - wallBots);
         }
         // if we see an enemy landscaper or enemy miner
         if (enemyLandscapers > 0 || enemyMiners > 0) {
             // announce I want drones and fulfillment center to build them if we have no drones and we dont know a center was built or every 20 turns
             // announce asap and then every 10 rounds
+            if ((!criedForLandscapers || rc.getRoundNum() % 10 == 0) && wallBots < enemyLandscapers + enemyMiners + 1) {
+                if (wallBots < 8) {
+                    announceWantLandscapers(8 - wallBots);
+                }
+            }
+            /*
             if ((!criedForDroneHelp || rc.getRoundNum() % 10 == 0) && myDrones == 0 && (FulfillmentCentersBuilt < 1 || rc.getRoundNum() % 20 == 0)) {
                 announceWantDronesForDefence();
                 criedForDroneHelp = true;
@@ -74,6 +81,7 @@ public class HQ extends RobotPlayer {
             else if (myDrones < enemyLandscapers) {
                 announceBuildDronesNow(enemyLandscapers - myDrones);
             }
+            */
         }
 
         // TODO:, shoot closest one with our unit
@@ -265,7 +273,7 @@ public class HQ extends RobotPlayer {
             unitToBuild = RobotType.MINER;
             return;
         }
-        if (vaporatorsBuilt * 4 + 4 >= minersBuilt && existsSoup) {
+        if (vaporatorsBuilt * 4 + 4 >= minersBuilt) {
             unitToBuild = RobotType.MINER;
             return;
         }

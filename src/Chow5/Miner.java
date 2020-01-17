@@ -126,7 +126,7 @@ public class Miner extends RobotPlayer {
         if (role == BUILDING) {
             // if we are trying to build but we already have one, stop, or if we already built it cuz soup went down, STOP
             if (debug) System.out.println("Trying to build " + unitToBuild +" | soup rn: "+ rc.getTeamSoup());
-            if (unitToBuild == RobotType.DESIGN_SCHOOL && (DesignSchoolCount > 0 || rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost + 250)) {
+            if (unitToBuild == RobotType.DESIGN_SCHOOL && firstDesignSchoolBuilt && (DesignSchoolCount > 0 || rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost + 250)) {
                 role = MINER;
             }
             else if (unitToBuild == RobotType.FULFILLMENT_CENTER && (FulfillmentCenterCount > 0 || rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost + 300)) {
@@ -216,11 +216,11 @@ public class Miner extends RobotPlayer {
 
 
             // haven't built design school yet? BUILDDDDD
-            /*
-            if (!firstDesignSchoolBuilt && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost) {
+
+            if (!firstDesignSchoolBuilt && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && DesignSchoolCount == 0) {
                 role = BUILDING;
                 unitToBuild = RobotType.DESIGN_SCHOOL;
-            }*/
+            }
             // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
             // 800 - something, subtract distance. Subtract less for the higher amount soup mined
             if (lastDepositedRefinery.equals(HQLocation)) {
@@ -239,7 +239,7 @@ public class Miner extends RobotPlayer {
             // early game
             // TODO: TUNE PARAM!
             if (rc.getRoundNum() <= 300) {
-                if (rc.getTeamSoup() >= 1000) {
+                if (rc.getTeamSoup() >= 500 + 250) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                 }
@@ -396,6 +396,8 @@ public class Miner extends RobotPlayer {
                     " | SoupLoc Target: " + SoupLocation + " | targetLoc: " + targetLoc +
                     " | Cooldown: " + rc.getCooldownTurns());
         }
+
+        // check if miner is in a build wall loc and STUCK
     }
 
 
