@@ -15,6 +15,7 @@ public class Landscaper extends RobotPlayer {
         int waterLevel = calculateWaterLevels();
 
         int friendlyLandscaperCount = 0;
+        int friendlyMiners = 0;
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
@@ -22,6 +23,8 @@ public class Landscaper extends RobotPlayer {
                 case LANDSCAPER:
                     friendlyLandscaperCount++;
                     break;
+                case MINER:
+                    friendlyMiners++;
             }
         }
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
@@ -64,6 +67,7 @@ public class Landscaper extends RobotPlayer {
         int closestTerraformDist = 9999999;
         MapLocation locToTerraform = null;
         int desiredElevation = waterLevel + 3;
+        int soupNearby = 0;
         if (debug) System.out.println("BFS start: " + Clock.getBytecodeNum());
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
             int[] deltas = Constants.BFSDeltas24[i];
@@ -93,6 +97,8 @@ public class Landscaper extends RobotPlayer {
 
                         }
                 }
+
+                soupNearby+=rc.senseSoup(checkLoc);
             }
             else {
                 switch(role) {
@@ -103,6 +109,11 @@ public class Landscaper extends RobotPlayer {
             }
         }
         if (debug) System.out.println("BFS end: " + Clock.getBytecodeNum());
+
+        // announce soup loc
+        if (friendlyMiners == 0 && rc.getRoundNum() % 10 == 0 && soupNearby >= 100) {
+            announceSoupLocation(rc.getLocation(), 1, soupNearby, friendlyMiners);
+        }
 
         // always check for enemy base and do this recon
         MapLocation closestMaybeHQ = null;
@@ -421,6 +432,35 @@ public class Landscaper extends RobotPlayer {
 
                             }
                         }
+                    }
+                    // we also check adjacent tiles to make sure we have a platform to walk around
+                    Direction dir2 = Direction.NORTH;
+                    for (int i = 0; i++ < 8; ) {
+
+                        MapLocation checkLoc = rc.adjacentLocation(dir2);
+                        if (rc.canSenseLocation(checkLoc)) {
+                            int elevation = rc.senseElevation(checkLoc);
+                            boolean proceed = true;
+                            if (debug) System.out.println("Checking " + checkLoc);
+                            // make sure we dont fill up a dig spot
+                            for (int j = Constants.DigDeltasAroundHQ.length; --j >= 0; ) {
+                                int[] deltas = Constants.DigDeltasAroundHQ[j];
+                                MapLocation checkLoc2 = HQLocation.translate(deltas[0], deltas[1]);
+                                if (checkLoc2.equals(checkLoc)) {
+                                    proceed = false;
+                                    break;
+                                }
+                            }
+                            if (rc.isLocationOccupied(checkLoc) && rc.senseRobotAtLocation(checkLoc).type == RobotType.HQ) {
+                                proceed = false;
+                            }
+                            if (debug) System.out.println("Still Checking " + checkLoc);
+                            if (proceed && elevation < lowestElevation && elevation < 5) {
+                                lowestElevation = elevation;
+                                depositDir = rc.getLocation().directionTo(checkLoc);
+                            }
+                        }
+                        dir2 = dir2.rotateLeft();
                     }
                     if (debug) System.out.println("Trying to deposit at " + depositDir);
                     if (rc.canDepositDirt(depositDir)) {
