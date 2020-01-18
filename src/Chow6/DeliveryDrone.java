@@ -350,7 +350,7 @@ public class DeliveryDrone extends RobotPlayer {
                 if (attackLoc != null) {
                     int distToAttackLoc = rc.getLocation().distanceSquaredTo(attackLoc);
                     // stick around, don't move in
-                    if (distToAttackLoc > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + 10) {
+                    if (distToAttackLoc >= 36) {
                         //move to just edge of base attack range.
                         targetLoc = attackLoc;
                         if (debug) rc.setIndicatorDot(rc.getLocation(), 10, 20,200);
