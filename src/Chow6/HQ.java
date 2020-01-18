@@ -60,24 +60,13 @@ public class HQ extends RobotPlayer {
                 myDrones++;
             }
         }
-        if (rc.getRoundNum() >= 300 && wallBots < 20 && rc.getRoundNum() % 10 == 0) {
+        if ((rc.getRoundNum() >= 300 || vaporatorsBuilt > 10) && wallBots < 20 && rc.getRoundNum() % 10 == 0) {
             announceWantLandscapers(20 - wallBots);
         }
         if (rc.getRoundNum() >= 300 && myDrones < 4 && rc.getRoundNum() % 10 == 0) {
             announceBuildDronesNow(4 - myDrones);
         }
-        /*
-        if (rc.getRoundNum() >= 300 && wallBots >= 8 && rc.getRoundNum() % 10 == 0) {
-            announceNoMoreLandscapersNeeded();
-        }*/
 
-        if (rc.getRoundNum() >= 300 && myDrones > 4 && rc.getRoundNum() % 10 == 0) {
-            //announceNoMoreDronesNeeded();
-        }
-        // try to get more landscapers later. Or if we built enough vaporators, get more landscapers
-        else if ((rc.getRoundNum() >= 550 || vaporatorsBuilt > 10) && wallBots < 20 && rc.getRoundNum() % 10 == 0) {
-            announceWantLandscapers(20 - wallBots);
-        }
         // if we see an enemy landscaper or enemy miner
         if (enemyLandscapers > 0 || enemyMiners > 0) {
             // announce I want drones and fulfillment center to build them if we have no drones and we dont know a center was built or every 20 turns

@@ -65,12 +65,8 @@ public class Landscaper extends RobotPlayer {
         checkForEnemyBasesInBlocks(lastRoundsBlocks); // checks for where bases are and removes ones where they dont exist
         checkBlockForActions(lastRoundsBlocks);
         MapLocation attackLoc = null;
-        /* BIG BFS LOOP ISH */
 
-        int minDistToWall = 999999999;
-        int minDistToBestBuildLoc = 99999999;
-        //int farthestDistToBuildLoc
-        int leastElevation = 999999999;
+        /* BIG BFS LOOP ISH */
 
         int closestTerraformDist = 9999999;
         MapLocation locToTerraform = null;
@@ -339,6 +335,8 @@ public class Landscaper extends RobotPlayer {
             Direction dirToHQ = rc.getLocation().directionTo(HQLocation);
             if (rc.getLocation().distanceSquaredTo(HQLocation) <= 2 && rc.canDigDirt(dirToHQ)) {
                 rc.digDirt(dirToHQ);
+                if (debug) System.out.println("Digging out HQ at " + HQLocation);
+                if (debug) rc.setIndicatorLine(rc.getLocation(), HQLocation, 120, 0, 230);
             }
             // ALSO IF U CAN DEPOSIT DIRT ON ADJACENT ENEMY DESIGN SCHOOL or NETGUN DO SO
             for (Direction dir : directions) {
@@ -348,14 +346,22 @@ public class Landscaper extends RobotPlayer {
                     if (info.team == enemyTeam && (info.type == RobotType.NET_GUN || info.type == RobotType.DESIGN_SCHOOL)) {
                         if (rc.canDepositDirt(dir)) {
                             rc.depositDirt(dir);
+                            if (debug) System.out.println("Depositing at " + adjacentLoc);
+                            if (debug) rc.setIndicatorLine(rc.getLocation(), adjacentLoc, 20, 50, 130);
                         }
                     }
                 }
             }
+            // heuristic against defending RUSHES
+            // Always look for closest build wall loc
+            // If you can see a enemy DESIGN SCHOOL ADJACENT to HQ, choose closest build loc adjacent to the DESIGN SCHOOL
+
 
             int minDist = 99999999;
+            int minDistToDefendRushLoc = 99999999;
             // Find closest location adjacent to HQ to build on
             MapLocation closestBuildLoc = null;
+            MapLocation closestDefendRushLoc = null;
             if (!onSupportBlockDoNotMove) {
                 for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
                     int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
@@ -374,9 +380,35 @@ public class Landscaper extends RobotPlayer {
                                     valid = false;
                                     // this wall is taken, add to taken list
                                     BuildPositionsTaken.add(checkLoc);
-                                } else {
+                                }
+                                else {
                                     valid = true;
                                 }
+                                // find defend positions against rushes
+                                if (info.type == RobotType.DESIGN_SCHOOL && info.team == enemyTeam) {
+                                    // enemy design school right around HQ?, defend near position
+                                    // search for adjacent locations to HQ and design school
+                                    for (int j = directions.length; --j >= 0; ) {
+                                        Direction dir = directions[j];
+                                        MapLocation adjToSchool = checkLoc.add(dir);
+                                        int distToAdjToSchool = rc.getLocation().distanceSquaredTo(adjToSchool);
+                                        if (adjToSchool.isAdjacentTo(HQLocation)) {
+                                            boolean proceed = true;
+                                            if (rc.canSenseLocation(adjToSchool) && rc.isLocationOccupied(adjToSchool)) {
+                                                //RobotInfo occupiedBot = rc.senseRobotAtLocation(adjToSchool);
+                                                proceed = false;
+                                            }
+                                            if (proceed) {
+                                                if (distToAdjToSchool < minDistToDefendRushLoc) {
+                                                    closestDefendRushLoc = adjToSchool;
+                                                    minDistToDefendRushLoc = distToAdjToSchool;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                }
+
                             } else {
                                 valid = true;
                             }
@@ -435,8 +467,14 @@ public class Landscaper extends RobotPlayer {
                 }
 
             }
+            // prioritize defending rush loc if we aren't on the closest buildloc
+            if (closestDefendRushLoc != null && !rc.getLocation().equals(closestBuildLoc)) {
+                setTargetLoc(closestDefendRushLoc);
+            }
+            else {
+                setTargetLoc(closestBuildLoc);
+            }
 
-            setTargetLoc(closestBuildLoc);
             //targetLoc = closestBuildLoc;
 
             int distToBuildLoc = -1;
@@ -445,7 +483,7 @@ public class Landscaper extends RobotPlayer {
                 distToBuildLoc = rc.getLocation().distanceSquaredTo(targetLoc);
             }
             double waterChangeRate = calculateWaterLevelChangeRate();
-            if (debug) System.out.println("Going to build loc " + closestBuildLoc + " | closest support loc " + closestSupportLoc + " | water change rate: " + waterChangeRate + " | levels: " + calculateWaterLevels());
+            if (debug) System.out.println("Going to build loc " + targetLoc + " | Closest rush defence loc " + closestDefendRushLoc  + " | closest support loc " + closestSupportLoc + " | water change rate: " + waterChangeRate + " | levels: " + calculateWaterLevels());
             // if landscaper is on top of build loc
             if (distToBuildLoc == 0) {
                 if (rc.getDirtCarrying() > 0) {

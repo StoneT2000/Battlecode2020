@@ -144,7 +144,6 @@ public strictfp class RobotPlayer {
         }
         for (int i = 7; --i >= 0; ) {
             dir = dir.rotateLeft();
-            if (debug)  System.out.println("Check " + dir);
             MapLocation adjLoc = rc.adjacentLocation(dir);
             if (rc.canSenseLocation(adjLoc) && !rc.senseFlooding(adjLoc)) {
                 if (rc.canMove(dir)) {
