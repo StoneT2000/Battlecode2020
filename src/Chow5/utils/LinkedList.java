@@ -20,6 +20,16 @@ public class LinkedList<T> {
         }
         size++;
     }
+    public boolean contains(T obj) {
+        Node node = head;
+        while (node != null) {
+            if (node.val.equals(obj)) {
+                return true;
+            }
+            node = node.next;
+        }
+        return false;
+    }
     public void remove(Node node) {
         if (node.prev != null) {
             node.prev.next = node.next;
@@ -36,6 +46,17 @@ public class LinkedList<T> {
         }
         node = null;
         size--;
+    }
+    public boolean remove(T obj) {
+        Node node = head;
+        while (node != null) {
+            if (node.val.equals(obj)) {
+                remove(node);
+                return true;
+            }
+            node = node.next;
+        }
+        return false;
     }
 
 }

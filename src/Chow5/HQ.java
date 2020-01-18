@@ -118,22 +118,10 @@ public class HQ extends RobotPlayer {
             build();
         }
 
-        if (myDrones >= MIN_DRONE_FOR_ATTACK) {
+        if (myDrones >= MIN_DRONE_FOR_ATTACK && rc.getRoundNum() % 20 == 0) {
             announceDroneAttack();
         }
-        // announce drone attack sometime before we would get overwhelmed by flood
-        if (wallBots >= 8) {
-            if (debug) System.out.println("myDrones: " + myDrones);
-            if (surroundedByFlood && rc.getRoundNum() % 50 == 0){
-                //announceBuildDrones();
-            }
-            if (wallBots >= 20) {
-                if (!saidNoMoreLandscapersNeeded || rc.getRoundNum() % 50 == 0) {
-                    announceNoMoreLandscapersNeeded();
-                    saidNoMoreLandscapersNeeded = true;
-                }
-            }
-        }
+
         existsSoup = false;
         if (rc.getRoundNum() > 1) {
             Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);

@@ -1,5 +1,6 @@
 package Chow5;
 
+import Chow5.utils.HashTable;
 import Chow5.utils.Node;
 import battlecode.common.*;
 
@@ -8,12 +9,16 @@ public class Landscaper extends RobotPlayer {
     static final int ATTACK = 0;
     static final int DEFEND_HQ = 1;
     static int role = DEFEND_HQ;
+    static boolean onSupportBlockDoNotMove = false;
     static boolean shouldDig = true;
     static RobotInfo nearestEnemy = null;
     static boolean circling = false;
     static int nearestEnemyDist = 9999999;
     static int startedCirclingRound = -1;
     static int terraformDistAwayFromHQ = 36; // how far landscaper should go
+    static HashTable<MapLocation> DigDeltasAroundHQTable =  new HashTable<>(5);
+    static HashTable<MapLocation> FirstLandscaperPosAroundHQTable =  new HashTable<>(9);
+    static HashTable<MapLocation> BuildPositionsTaken = new HashTable<>(10);
     public static void run() throws GameActionException {
         int waterLevel = calculateWaterLevels();
 
@@ -347,19 +352,27 @@ public class Landscaper extends RobotPlayer {
             int minDist = 99999999;
             // Find closest location adjacent to HQ to build on
             MapLocation closestBuildLoc = null;
-            for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
-                int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
-                MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
-                int dist = rc.getLocation().distanceSquaredTo(checkLoc);
-                // valid build location if we can't see it or not occupied
-                // valid if we see it and there's no friendly landscaper on it (or if there is one its not self)
-                boolean valid = false;
-                if (rc.onTheMap(checkLoc)) {
-                    if (rc.canSenseLocation(checkLoc)) {
-                        if (rc.isLocationOccupied(checkLoc)) {
-                            RobotInfo info = rc.senseRobotAtLocation(checkLoc);
-                            if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam() && rc.getID() != info.getID()) {
-                                valid = false;
+            if (!onSupportBlockDoNotMove) {
+                for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
+                    int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+                    MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
+                    int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+                    // valid build location if we can't see it or not occupied
+                    // valid if we see it and there's no friendly landscaper on it (or if there is one its not self)
+                    // valid if table of taken walls doesn't contain checkLoc
+                    boolean valid = false;
+                    if (!BuildPositionsTaken.contains(checkLoc) && rc.onTheMap(checkLoc)) {
+                        if (rc.canSenseLocation(checkLoc)) {
+                            if (rc.isLocationOccupied(checkLoc)) {
+                                RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                                if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam() && rc.getID() != info.getID()) {
+                                    // found bot on wall that is our own landscaper that isn't itself
+                                    valid = false;
+                                    // this wall is taken, add to taken list
+                                    BuildPositionsTaken.add(checkLoc);
+                                } else {
+                                    valid = true;
+                                }
                             } else {
                                 valid = true;
                             }
@@ -367,19 +380,15 @@ public class Landscaper extends RobotPlayer {
                             valid = true;
                         }
                     } else {
-                        valid = true;
+                        valid = false;
+                    }
+                    // if build location is buildable, and closer
+                    if (valid && dist < minDist) {
+                        minDist = dist;
+                        closestBuildLoc = checkLoc;
                     }
                 }
-                else {
-                    valid = false;
-                }
-                // if build location is buildable, and closer
-                if (valid && dist < minDist) {
-                    minDist = dist;
-                    closestBuildLoc = checkLoc;
-                }
             }
-
             // if no closest one found from this set, check supporting build locations
             // when on these positions, you don't build on self, you build on wall.
             MapLocation closestSupportLoc = null;
@@ -391,24 +400,28 @@ public class Landscaper extends RobotPlayer {
                     // valid build location if we can't see it
                     // valid if we see it and there's no friendly landscaper on it (or if there is one its not self)
                     boolean valid = false;
-                    if (rc.onTheMap(checkLoc)) {
+                    if (!BuildPositionsTaken.contains(checkLoc) && rc.onTheMap(checkLoc)) {
                         if (rc.canSenseLocation(checkLoc)) {
                             if (rc.isLocationOccupied(checkLoc)) {
                                 RobotInfo info = rc.senseRobotAtLocation(checkLoc);
                                 if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam() && rc.getID() != info.getID()) {
                                     valid = false;
+                                    BuildPositionsTaken.add(checkLoc);
                                 } else {
                                     valid = true;
                                 }
                             } else {
+                                // valid if not occupied
                                 valid = true;
                             }
                         } else {
+                            // valid if can't sense but its not taken and on map
                             valid = true;
                         }
                     }
                     else {
-                        valid = true;
+                        // invalid if taken or not on map
+                        valid = false;
                     }
                     // if build location is buildable, and closer
                     if (valid && dist < minDist) {
@@ -472,14 +485,9 @@ public class Landscaper extends RobotPlayer {
                             int elevation = rc.senseElevation(checkLoc);
                             boolean proceed = true;
                             if (debug) System.out.println("Checking " + checkLoc);
-                            // make sure we dont fill up a dig spot
-                            for (int j = Constants.DigDeltasAroundHQ.length; --j >= 0; ) {
-                                int[] deltas = Constants.DigDeltasAroundHQ[j];
-                                MapLocation checkLoc2 = HQLocation.translate(deltas[0], deltas[1]);
-                                if (checkLoc2.equals(checkLoc)) {
-                                    proceed = false;
-                                    break;
-                                }
+                            // make sure we don't fill up a dig spot
+                            if (DigDeltasAroundHQTable.contains(checkLoc)) {
+                                proceed = false;
                             }
                             if (rc.isLocationOccupied(checkLoc) && rc.senseRobotAtLocation(checkLoc).type == RobotType.HQ) {
                                 proceed = false;
@@ -566,6 +574,7 @@ public class Landscaper extends RobotPlayer {
                 int distToSupportLoc = rc.getLocation().distanceSquaredTo(closestSupportLoc);
                 if (distToSupportLoc == 0) {
                     // STAY, DONT MOVE
+                    onSupportBlockDoNotMove = true;
                     if (rc.getDirtCarrying() > 0) {
                         // iterate over HQ wall areas, and find lowest one adjacent
                         Direction depositDir = Direction.CENTER;
@@ -754,5 +763,17 @@ public class Landscaper extends RobotPlayer {
     public static void setup() throws GameActionException {
         storeHQLocation();
         storeEnemyHQLocations();
+        for (int i = Constants.DigDeltasAroundHQ.length; --i>= 0; ) {
+            int[] deltas = Constants.DigDeltasAroundHQ[i];
+            MapLocation digLoc = HQLocation.translate(deltas[0], deltas[1]);
+            DigDeltasAroundHQTable.add(digLoc);
+        }
+        /*
+        for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
+            int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+            MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
+            FirstLandscaperPosAroundHQTable.add(loc);
+        }*/
+
     }
 }
