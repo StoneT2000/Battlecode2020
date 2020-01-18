@@ -27,8 +27,11 @@ public strictfp class RobotPlayer {
 
     static final int BASE_WALL_DIST = 1;
 
+    static int closestToTargetLocSoFar = 9999999;
     // usually the position to move towards
     static MapLocation targetLoc;
+    static Direction lastDirMove;
+    static LinkedList<MapLocation> lastLocs = new LinkedList<>();
 
 
     // SIGNAL Codes
@@ -95,21 +98,71 @@ public strictfp class RobotPlayer {
         }
     }
 
-    static Direction getBugPathMove(MapLocation target) throws GameActionException {
+    static void setTargetLoc(MapLocation loc) {
+        // if target is null or doesn't equal our new loc, set target
+        if (targetLoc == null || !targetLoc.equals(loc)) {
+            targetLoc = loc;
+            closestToTargetLocSoFar = rc.getLocation().distanceSquaredTo(targetLoc);
+        }
+    }
+    // using this because miners aparently mine better with this
+    static Direction badGetBugPathMove(MapLocation target) throws GameActionException {
         Direction dir = rc.getLocation().directionTo(target);
-        if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.senseFlooding(rc.adjacentLocation(dir))) {
+        MapLocation greedyLoc = rc.adjacentLocation(dir);
+
+        if (rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc)) {
             if (rc.canMove(dir)) {
                 return dir;
             }
         }
         for (int i = 7; --i >= 0; ) {
             dir = dir.rotateLeft();
-            if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.senseFlooding(rc.adjacentLocation(dir))) {
+            MapLocation adjLoc = rc.adjacentLocation(dir);
+            if (rc.canSenseLocation(adjLoc) && !rc.senseFlooding(adjLoc)) {
                 if (rc.canMove(dir)) {
                     return dir;
                 }
             }
+
         }
+        return Direction.CENTER;
+    }
+    static Direction getBugPathMove(MapLocation target) throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(target);
+        MapLocation greedyLoc = rc.adjacentLocation(dir);
+        int greedyDist = greedyLoc.distanceSquaredTo(target);
+        if (debug) System.out.println("Target: " + target + " | greedyLoc " + greedyLoc +
+                " | closestSoFar " + closestToTargetLocSoFar + " | this dist " + greedyDist);
+        if (greedyDist < closestToTargetLocSoFar && rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc)) {
+            if (rc.canMove(dir)) {
+                closestToTargetLocSoFar = greedyDist;
+                return dir;
+            }
+        }
+        for (int i = 7; --i >= 0; ) {
+            dir = dir.rotateLeft();
+            if (debug)  System.out.println("Check " + dir);
+            MapLocation adjLoc = rc.adjacentLocation(dir);
+            if (rc.canSenseLocation(adjLoc) && !rc.senseFlooding(adjLoc)) {
+                if (rc.canMove(dir)) {
+                    //lastDirMove = dir;
+                    //lastLoc = adjLoc;
+
+                    // store past 2 positions
+                    /*
+                    if (lastLocs.size < 2) {
+                        lastLocs.add(adjLoc);
+                    }
+                    else {
+                        lastLocs.dequeue();
+                        lastLocs.add(adjLoc);
+                    }*/
+                    return dir;
+                }
+            }
+
+        }
+        //lastLocs.dequeue();
         return Direction.CENTER;
     }
 

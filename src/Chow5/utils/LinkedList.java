@@ -20,6 +20,15 @@ public class LinkedList<T> {
         }
         size++;
     }
+    public Node dequeue() {
+        if (this.size > 0) {
+            Node removed = head;
+            remove(head);
+            this.size--;
+            return removed;
+        }
+        return null;
+    }
     public boolean contains(T obj) {
         Node node = head;
         while (node != null) {

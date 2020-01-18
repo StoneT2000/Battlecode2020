@@ -12,7 +12,6 @@ public class HashTable<T> {
     }
     public void add(T obj) {
         int index = obj.hashCode() % this.size;
-        System.out.println(table + " adding " + obj + " to index " + index +" with table sizE:" + this.size);
         table[index].add(obj);
     }
     public boolean contains(T obj) {

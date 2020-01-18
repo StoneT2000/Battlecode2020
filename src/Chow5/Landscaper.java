@@ -237,7 +237,8 @@ public class Landscaper extends RobotPlayer {
                 }
             }
             else {
-                targetLoc = nearestEnemy.location;
+                //targetLoc = nearestEnemy.location;
+                setTargetLoc(nearestEnemy.location);
             }
         }
 
@@ -260,7 +261,8 @@ public class Landscaper extends RobotPlayer {
             if (attackLoc == null) {
                 // no enemy in sight!, TERRAFORM
                 if (debug) System.out.println("Terraform mode: elevating " + locToTerraform);
-                targetLoc = locToTerraform;
+                //targetLoc = locToTerraform;
+                setTargetLoc(locToTerraform);
                 //RobotType.LANDSCAPER.dirtLimit
                 if (shouldDig) {
                     Direction dirToDig = Direction.NORTH;
@@ -291,7 +293,8 @@ public class Landscaper extends RobotPlayer {
             }
             // move towards maybe enemy HQ if not next to it.
             else if (!rc.getLocation().isAdjacentTo(attackLoc)) {
-                targetLoc = attackLoc;
+                //targetLoc = attackLoc;
+                setTargetLoc(attackLoc);
             }
             else {
                 // adjacent to attack loc now
@@ -432,7 +435,9 @@ public class Landscaper extends RobotPlayer {
 
             }
 
-            targetLoc = closestBuildLoc;
+            setTargetLoc(closestBuildLoc);
+            //targetLoc = closestBuildLoc;
+
             int distToBuildLoc = -1;
             // store distance if not null
             if (targetLoc != null) {
@@ -570,7 +575,8 @@ public class Landscaper extends RobotPlayer {
             }
             // otherwise our we didn't have a closestBuildLoc, so we use closestSupportLoc
             else if (distToBuildLoc == -1 && closestSupportLoc != null) {
-                targetLoc = closestSupportLoc;
+                //targetLoc = closestSupportLoc;
+                setTargetLoc(closestSupportLoc);
                 int distToSupportLoc = rc.getLocation().distanceSquaredTo(closestSupportLoc);
                 if (distToSupportLoc == 0) {
                     // STAY, DONT MOVE
@@ -705,6 +711,7 @@ public class Landscaper extends RobotPlayer {
     static boolean okToDig(MapLocation loc) throws GameActionException {
         if (validBuildWallLoc(loc)) {
             // replace with hashmap
+            // FIXME REPLACE NOW
             return false;
         }
         if (rc.canSenseLocation(loc)) {
@@ -748,7 +755,8 @@ public class Landscaper extends RobotPlayer {
                 if ((msg[1] ^ NEED_LANDSCAPERS_FOR_DEFENCE) == 0) {
                     // go run to HQ
                     role = DEFEND_HQ;
-                    targetLoc = HQLocation;
+                    //targetLoc = HQLocation;
+                    setTargetLoc(HQLocation);
                 }
                 else if ((msg[1] ^ NO_MORE_LANDSCAPERS_NEEDED) == 0) {
 

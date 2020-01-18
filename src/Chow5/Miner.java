@@ -66,7 +66,8 @@ public class Miner extends RobotPlayer {
             }
             // else if we are near full, we go to nearest refinery known, otherwise go to HQ
             else {
-                targetLoc = lastDepositedRefinery;
+                //targetLoc = lastDepositedRefinery;
+                setTargetLoc(lastDepositedRefinery);
                 role = RETURNING;
             }
         }
@@ -102,7 +103,8 @@ public class Miner extends RobotPlayer {
                         int dist = rc.getLocation().distanceSquaredTo(info.location);
                         if (dist < minDist) {
                             minDist = dist;
-                            targetLoc = info.location;
+                            //targetLoc = info.location;
+                            setTargetLoc(info.location);
                         }
                     }
                     break;
@@ -226,7 +228,7 @@ public class Miner extends RobotPlayer {
             // 800 - something, subtract distance. Subtract less for the higher amount soup mined
             if (lastDepositedRefinery.equals(HQLocation)) {
                 // if refinery deposited at is HQ location, go all out to build this refinery at least
-                if (mined && soupNearbyCount > 800 - rc.getLocation().distanceSquaredTo(lastDepositedRefinery) * 4 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
+                if (mined && soupNearbyCount > 800 - rc.getLocation().distanceSquaredTo(lastDepositedRefinery) * 8 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
                     role = BUILDING;
                     unitToBuild = RobotType.REFINERY;
                 }
@@ -284,7 +286,8 @@ public class Miner extends RobotPlayer {
             // EXPLORE if still no soup found
             if (SoupLocation == null) {
                 if (debug) System.out.println("Exploring to " + exploreLocs[exploreLocIndex]);
-                targetLoc = rc.adjacentLocation(getExploreDir());
+                //targetLoc = rc.adjacentLocation(getExploreDir());
+                setTargetLoc(rc.adjacentLocation(getExploreDir()));
             }
             // otherwise we approach the soup location.
             else {
@@ -294,7 +297,8 @@ public class Miner extends RobotPlayer {
                     // if not close enough to soup location, move towards it as it still has soup there
                     if (SoupLocation.distanceSquaredTo(rc.getLocation()) > 1) {
                         if (debug) System.out.println("Heading to soup location " + SoupLocation + " with score " + soupLocScore);
-                        targetLoc = SoupLocation;
+                        //targetLoc = SoupLocation;
+                        setTargetLoc(SoupLocation);
                     } else {
                         // close enough...
                     }
@@ -367,6 +371,7 @@ public class Miner extends RobotPlayer {
                     // reset roles
                     role = MINER;
                     targetLoc = null;
+                    closestToTargetLocSoFar = 9999999;
 
                 }
             }
