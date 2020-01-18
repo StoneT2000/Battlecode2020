@@ -359,7 +359,10 @@ public class Landscaper extends RobotPlayer {
 
             int minDist = 99999999;
             int minDistToDefendRushLoc = 99999999;
+            int maxDiffWalls = 0;
+            // take position with most adjacent high walls > 3 or low walls < 3
             // Find closest location adjacent to HQ to build on
+            MapLocation mostCloggedBuildLoc = null;
             MapLocation closestBuildLoc = null;
             MapLocation closestDefendRushLoc = null;
             if (!onSupportBlockDoNotMove) {
@@ -423,6 +426,25 @@ public class Landscaper extends RobotPlayer {
                         minDist = dist;
                         closestBuildLoc = checkLoc;
                     }
+                    if (valid) {
+                        // count number of walls around
+                        int locElevation = rc.senseElevation(rc.getLocation());
+                        int diffWalls = 0;
+                        for (int j = directions.length; --j >= 0; ) {
+                            Direction dir = directions[j];
+                            MapLocation adjToWallLoc = checkLoc.add(dir);
+                            if (rc.canSenseLocation(adjToWallLoc) && !FirstLandscaperPosAroundHQTable.contains(adjToWallLoc) && adjToWallLoc!= HQLocation) {
+                                int elevation = rc.senseElevation(adjToWallLoc);
+                                if (elevation + 3 < locElevation || elevation - 3 > locElevation) {
+                                    diffWalls++;
+                                }
+                            }
+                        }
+                        if (diffWalls > maxDiffWalls && diffWalls <= 5) {
+                            mostCloggedBuildLoc = checkLoc;
+                            maxDiffWalls = diffWalls;
+                        }
+                    }
                 }
             }
             // if no closest one found from this set, check supporting build locations
@@ -471,6 +493,9 @@ public class Landscaper extends RobotPlayer {
             if (closestDefendRushLoc != null && !rc.getLocation().equals(closestBuildLoc)) {
                 setTargetLoc(closestDefendRushLoc);
             }
+            else if (mostCloggedBuildLoc != null) {
+                setTargetLoc(mostCloggedBuildLoc);
+            }
             else {
                 setTargetLoc(closestBuildLoc);
             }
@@ -483,7 +508,7 @@ public class Landscaper extends RobotPlayer {
                 distToBuildLoc = rc.getLocation().distanceSquaredTo(targetLoc);
             }
             double waterChangeRate = calculateWaterLevelChangeRate();
-            if (debug) System.out.println("Going to build loc " + targetLoc + " | Closest rush defence loc " + closestDefendRushLoc  + " | closest support loc " + closestSupportLoc + " | water change rate: " + waterChangeRate + " | levels: " + calculateWaterLevels());
+            if (debug) System.out.println("Going to build loc " + targetLoc + " | Closest rush defence loc " + closestDefendRushLoc  + "| most clogged <= 5 wall loc at " + maxDiffWalls +" - " + mostCloggedBuildLoc +  " | closest support loc " + closestSupportLoc + " | water change rate: " + waterChangeRate + " | levels: " + calculateWaterLevels());
             // if landscaper is on top of build loc
             if (distToBuildLoc == 0) {
                 if (rc.getDirtCarrying() > 0) {

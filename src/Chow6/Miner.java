@@ -1,7 +1,6 @@
 package Chow6;
 
-import Chow6.utils.LinkedList;
-import Chow6.utils.Node;
+import Chow6.utils.*;
 import battlecode.common.*;
 
 public class Miner extends RobotPlayer {
@@ -25,13 +24,14 @@ public class Miner extends RobotPlayer {
     static MapLocation[] exploreLocs;
     static int exploreLocIndex = 0;
 
+    static HashTable<MapLocation> MainHQWall = new HashTable<>(8);
     static RobotType unitToBuild; // unit to build if role is building
 
+    static int stuckRounds = 0;
     static boolean blocked = false; // whether or not unit couldn't determine a path to goal last round
 
     static int role = MINER; // default ROLE
     static int HQParity; // parity of HQLocation.x + HQLocation.y
-    static LinkedList<MapLocation> RefineryLocations = new LinkedList<>();
 
     public static void run() throws GameActionException {
         // try to get out of water, checks if in water for you
@@ -407,6 +407,17 @@ public class Miner extends RobotPlayer {
         }
 
         // check if miner is in a build wall loc and STUCK
+        if (debug) System.out.println(" Mined? " + mined + " | In wall?" + MainHQWall.contains(rc.getLocation()));
+        if (!mined && MainHQWall.contains(rc.getLocation()) && turnCount > 15) {
+            stuckRounds++;
+            if (stuckRounds > 4) {
+                if (debug) System.out.println("been stuck for 4 or more rounds, disintegrate please");
+                rc.disintegrate();
+            }
+        }
+        else {
+            stuckRounds = 0;
+        }
     }
 
 
@@ -554,13 +565,19 @@ public class Miner extends RobotPlayer {
 
         lastDepositedRefinery = HQLocation;
         // 4 corners and center
-        exploreLocs = new MapLocation[] {
-                new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2),
+        exploreLocs = new MapLocation[]{
+                new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2),
                 new MapLocation(0, 0),
                 new MapLocation(0, rc.getMapHeight()),
                 new MapLocation(rc.getMapWidth(), 0),
                 new MapLocation(rc.getMapWidth(), rc.getMapHeight())
         };
         exploreLocIndex = (int) (Math.random() * exploreLocs.length);
+
+        for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
+            int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+            MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
+            MainHQWall.add(loc);
+        }
     }
 }
