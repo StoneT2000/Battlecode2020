@@ -11,6 +11,7 @@ public class HashTable<T> {
         }
     }
     public void add(T obj) {
+        System.out.println("HASH: " + obj.hashCode());
         int index = obj.hashCode() % this.size;
         table[index].add(obj);
     }

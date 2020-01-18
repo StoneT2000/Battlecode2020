@@ -102,7 +102,10 @@ public strictfp class RobotPlayer {
         // if target is null or doesn't equal our new loc, set target
         if (targetLoc == null || !targetLoc.equals(loc)) {
             targetLoc = loc;
-            closestToTargetLocSoFar = rc.getLocation().distanceSquaredTo(targetLoc);
+            closestToTargetLocSoFar = 99999999;
+            if (targetLoc != null) {
+                rc.getLocation().distanceSquaredTo(targetLoc);
+            }
         }
     }
     // using this because miners aparently mine better with this

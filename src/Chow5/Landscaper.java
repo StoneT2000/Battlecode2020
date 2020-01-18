@@ -80,7 +80,7 @@ public class Landscaper extends RobotPlayer {
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
             int[] deltas = Constants.BFSDeltas24[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
-            if (rc.canSenseLocation(checkLoc)) {
+            if (rc.onTheMap(checkLoc) && rc.canSenseLocation(checkLoc)) {
                 switch(role) {
                     case ATTACK:
                         int elevation = rc.senseElevation(checkLoc);
@@ -122,6 +122,7 @@ public class Landscaper extends RobotPlayer {
             // increase search dist
             //
             attackLoc = HQLocation;
+            if(debug) System.out.println("No terraform loc, using " + attackLoc);
 
             if (!circling) {
                 startedCirclingRound = rc.getRoundNum();
@@ -130,7 +131,7 @@ public class Landscaper extends RobotPlayer {
             if (circling && rc.getRoundNum() - startedCirclingRound >= 28) {
                 terraformDistAwayFromHQ = (int) Math.pow((Math.sqrt(terraformDistAwayFromHQ) + 1), 2);
                 circling = false;
-                attackLoc = null;
+                //attackLoc = HQL;
             }
         }
 
@@ -258,7 +259,7 @@ public class Landscaper extends RobotPlayer {
 
             }
 
-            if (attackLoc == null) {
+            if (attackLoc == null && locToTerraform != null) {
                 // no enemy in sight!, TERRAFORM
                 if (debug) System.out.println("Terraform mode: elevating " + locToTerraform);
                 //targetLoc = locToTerraform;
