@@ -296,6 +296,7 @@ public class Landscaper extends RobotPlayer {
         }
         else if (role == DEFEND_HQ) {
 
+            // TODO: make some better defence code...
             // FIRST THING FIRST DIG OUT HQ if adjacent to it
             Direction dirToHQ = rc.getLocation().directionTo(HQLocation);
             if (rc.getLocation().distanceSquaredTo(HQLocation) <= 2 && rc.canDigDirt(dirToHQ)) {
@@ -321,7 +322,7 @@ public class Landscaper extends RobotPlayer {
                 int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
                 MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
                 int dist = rc.getLocation().distanceSquaredTo(checkLoc);
-                // valid build location if we can't see it
+                // valid build location if we can't see it or not occupied
                 // valid if we see it and there's no friendly landscaper on it (or if there is one its not self)
                 boolean valid = false;
                 if (rc.onTheMap(checkLoc)) {
@@ -413,7 +414,7 @@ public class Landscaper extends RobotPlayer {
                                 boolean spread = false;
                                 if (rc.isLocationOccupied(checkLoc)) {
                                     RobotInfo info = rc.senseRobotAtLocation(checkLoc);
-                                    if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) {
+                                    if ((info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) || rc.getRoundNum() > 1400) {
                                         // one of us?, spread the dirt
                                         spread = true;
                                     }
