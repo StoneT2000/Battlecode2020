@@ -8,9 +8,12 @@ public class Landscaper extends RobotPlayer {
     static final int ATTACK = 0;
     static final int DEFEND_HQ = 1;
     static int role = DEFEND_HQ;
-
+    static boolean shouldDig = true;
     static RobotInfo nearestEnemy = null;
+    static boolean circling = false;
     static int nearestEnemyDist = 9999999;
+    static int startedCirclingRound = -1;
+    static int terraformDistAwayFromHQ = 36; // how far landscaper should go
     public static void run() throws GameActionException {
         int waterLevel = calculateWaterLevels();
 
@@ -56,7 +59,7 @@ public class Landscaper extends RobotPlayer {
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         checkForEnemyBasesInBlocks(lastRoundsBlocks); // checks for where bases are and removes ones where they dont exist
         checkBlockForActions(lastRoundsBlocks);
-
+        MapLocation attackLoc = null;
         /* BIG BFS LOOP ISH */
 
         int minDistToWall = 999999999;
@@ -66,7 +69,7 @@ public class Landscaper extends RobotPlayer {
 
         int closestTerraformDist = 9999999;
         MapLocation locToTerraform = null;
-        int desiredElevation = waterLevel + 3;
+        int desiredElevation = waterLevel + 4;
         int soupNearby = 0;
         if (debug) System.out.println("BFS start: " + Clock.getBytecodeNum());
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
@@ -78,7 +81,8 @@ public class Landscaper extends RobotPlayer {
                         int elevation = rc.senseElevation(checkLoc);
                         int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
                         int distToHQ = checkLoc.distanceSquaredTo(HQLocation);
-                        if (elevation < desiredElevation && !isDigLocation(checkLoc) && distToHQ > 8) {
+                        // make sure its not too deep, not near HQ, but within some dist of HQ, and is not a dig location, and is lower than desired
+                        if (elevation < desiredElevation && !isDigLocation(checkLoc) && distToHQ > 8 && elevation > -30 && distToHQ < terraformDistAwayFromHQ) {
                             if (rc.isLocationOccupied(checkLoc)) {
                                 RobotInfo info = rc.senseRobotAtLocation(checkLoc);
                                 if (isBuilding(info) && info.team == enemyTeam) {
@@ -108,7 +112,25 @@ public class Landscaper extends RobotPlayer {
 
             }
         }
+        if (locToTerraform == null) {
+            // still no terraform location?
+            // increase search dist
+            //
+            attackLoc = HQLocation;
+
+            if (!circling) {
+                startedCirclingRound = rc.getRoundNum();
+                circling = true;
+            }
+            if (circling && rc.getRoundNum() - startedCirclingRound >= 28) {
+                terraformDistAwayFromHQ = (int) Math.pow((Math.sqrt(terraformDistAwayFromHQ) + 1), 2);
+                circling = false;
+                attackLoc = null;
+            }
+        }
+
         if (debug) System.out.println("BFS end: " + Clock.getBytecodeNum());
+        if (debug) System.out.println("Terraform range: " + terraformDistAwayFromHQ);
 
         // announce soup loc
         if (friendlyMiners == 0 && rc.getRoundNum() % 10 == 0 && soupNearby >= 100) {
@@ -217,7 +239,7 @@ public class Landscaper extends RobotPlayer {
         if (role == ATTACK) {
             // find nearest enemy hq location to go and search and store map location
 
-            MapLocation attackLoc = null;
+
             if (enemyBaseLocation == null) {
                 //attackLoc = closestMaybeHQ;
             }
@@ -235,23 +257,30 @@ public class Landscaper extends RobotPlayer {
                 if (debug) System.out.println("Terraform mode: elevating " + locToTerraform);
                 targetLoc = locToTerraform;
                 //RobotType.LANDSCAPER.dirtLimit
-                if (rc.getDirtCarrying() <= 0) {
+                if (shouldDig) {
                     Direction dirToDig = Direction.NORTH;
                     for (int i = 0; i++ < 8; ) {
                         MapLocation digLoc = rc.adjacentLocation(dirToDig);
-                        if (targetLoc.distanceSquaredTo(HQLocation) > 8 && isDigLocation(digLoc)) {
+                        if (debug) System.out.println("Trying to dig " + digLoc + " | " + isDigLocation(digLoc));
+                        if (digLoc.distanceSquaredTo(HQLocation) > 8 && isDigLocation(digLoc)) {
                             if (rc.canDigDirt(dirToDig)) {
                                 rc.digDirt(dirToDig);
+                                if (rc.getDirtCarrying() == 25) {
+                                    shouldDig = false;
+                                }
                                 break;
                             }
                         }
                         dirToDig = dirToDig.rotateRight();
                     }
                 }
-                if (rc.getLocation().isAdjacentTo(locToTerraform)) {
+                if (!shouldDig && rc.getLocation().isAdjacentTo(locToTerraform)) {
                     Direction dirToLoc = rc.getLocation().directionTo(locToTerraform);
                     if (rc.canDepositDirt(dirToLoc)) {
                         rc.depositDirt(dirToLoc);
+                        if (rc.getDirtCarrying() <= 0) {
+                            shouldDig = true;
+                        }
                     }
                 }
             }
@@ -543,7 +572,7 @@ public class Landscaper extends RobotPlayer {
                         // we deposit in CENTER if it is worth more than depositing to a wall
                         // calculate rate of change of water level, if water level increases by more than 2, we should deposit on wall
                         // double levelChange = calculateWaterLevelChangeRate();// FIXME
-                        if (waterLevel + 2 < rc.senseElevation(rc.getLocation())) {
+                        if (waterLevel + 3 < rc.senseElevation(rc.getLocation())) {
                             int lowestElevation = 99999;
                             for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
                                 int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];

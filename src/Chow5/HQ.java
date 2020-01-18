@@ -60,15 +60,17 @@ public class HQ extends RobotPlayer {
                 myDrones++;
             }
         }
-        if (rc.getRoundNum() >= 300 && wallBots < 8 && rc.getRoundNum() % 10 == 0) {
-            announceWantLandscapers(8 - wallBots);
+        if (rc.getRoundNum() >= 300 && wallBots < 20 && rc.getRoundNum() % 10 == 0) {
+            announceWantLandscapers(20 - wallBots);
         }
         if (rc.getRoundNum() >= 300 && myDrones < 4 && rc.getRoundNum() % 10 == 0) {
             announceBuildDronesNow(4 - myDrones);
         }
+        /*
         if (rc.getRoundNum() >= 300 && wallBots >= 8 && rc.getRoundNum() % 10 == 0) {
             announceNoMoreLandscapersNeeded();
-        }
+        }*/
+
         if (rc.getRoundNum() >= 300 && myDrones > 4 && rc.getRoundNum() % 10 == 0) {
             //announceNoMoreDronesNeeded();
         }
@@ -128,6 +130,7 @@ public class HQ extends RobotPlayer {
             if (wallBots >= 20) {
                 if (!saidNoMoreLandscapersNeeded || rc.getRoundNum() % 50 == 0) {
                     announceNoMoreLandscapersNeeded();
+                    saidNoMoreLandscapersNeeded = true;
                 }
             }
         }

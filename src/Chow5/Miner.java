@@ -218,7 +218,7 @@ public class Miner extends RobotPlayer {
 
             // haven't built design school yet? BUILDDDDD
 
-            if (!firstDesignSchoolBuilt && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && DesignSchoolCount == 0 && distToHQ <= 36) {
+            if (!firstDesignSchoolBuilt && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && DesignSchoolCount == 0 && distToHQ <= 25) {
                 role = BUILDING;
                 unitToBuild = RobotType.DESIGN_SCHOOL;
             }
@@ -244,18 +244,18 @@ public class Miner extends RobotPlayer {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                 }
-                else if ((mined || RefineryCount > 0) && VaporatorCount > 0 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 350 && distToHQ <= 25) {
+                else if ((mined || RefineryCount > 0) && VaporatorCount > 0 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 350 && distToHQ <= 17) {
                     unitToBuild = RobotType.DESIGN_SCHOOL;
                     role = BUILDING;
                 }
-                else if (RefineryCount > 0 && VaporatorCount > 0 && FulfillmentCentersBuilt < 1 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 350 && distToHQ <= 25) {
+                else if (RefineryCount > 0 && VaporatorCount > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 350 && distToHQ <= 17) {
                     role = BUILDING;
                     unitToBuild = RobotType.FULFILLMENT_CENTER;
                 }
 
             }
             // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if (VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 250 && distToHQ <= 25) {
+            else if (VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 250 && distToHQ <= 17) {
                 if (debug) System.out.println("Soup rn: " + rc.getTeamSoup());
                 unitToBuild = RobotType.DESIGN_SCHOOL;
                 role = BUILDING;
@@ -316,12 +316,15 @@ public class Miner extends RobotPlayer {
                     buildDir = minedDirection.opposite();
                 }
             }
+            if (unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER) {
+                buildDir = rc.getLocation().directionTo(HQLocation);
+            }
             // if building a building, only build on odd x odd
             boolean builtUnit = false;
             for (int i = 9; --i >= 1;) {
                 MapLocation buildLoc = rc.adjacentLocation(buildDir);
                 // same parity and must not be too close
-                if ((buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && HQLocation.distanceSquaredTo(buildLoc) > 8) {
+                if ((buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && !isDigLocation(buildLoc) && HQLocation.distanceSquaredTo(buildLoc) > 8) {
                     if (tryBuild(unitToBuild, buildDir)) {
                         builtUnit = true;
                         break;
