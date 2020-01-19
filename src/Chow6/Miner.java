@@ -289,7 +289,8 @@ public class Miner extends RobotPlayer {
 
             }
         }
-        else if (role == BUILDING) {
+        // must be ready, if not ready and still on cooldown, we wait till next turn basically
+        else if (role == BUILDING && rc.isReady()) {
             Direction buildDir = Direction.NORTH;
             if (minedDirection != null && minedDirection != Direction.CENTER) {
                 if (unitToBuild == RobotType.REFINERY) {
