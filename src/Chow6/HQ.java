@@ -82,7 +82,7 @@ public class HQ extends RobotPlayer {
             }
         }
         // make sure we get a school and FC all the time
-        if ((!criedForDesignSchool || rc.getRoundNum() % 10 == 0) &&designSchools == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
+        if ((!criedForDesignSchool || rc.getRoundNum() % 10 == 0) && designSchools == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
             announceBUILD_A_SCHOOL();
             criedForDesignSchool = true;
         }
