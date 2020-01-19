@@ -64,7 +64,7 @@ public class DesignSchool extends RobotPlayer {
                         needLandscaper = true;
                     }
                 }
-                else if (msg[1] == RobotType.LANDSCAPER.ordinal()) {
+                else if (msg[1] == RobotType.VAPORATOR.ordinal()) {
                     vaporatorsBuilt++;
                 }
             }
