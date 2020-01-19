@@ -134,6 +134,7 @@ public class Miner extends RobotPlayer {
             else if (unitToBuild == RobotType.FULFILLMENT_CENTER && (FulfillmentCenterCount > 0 || rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost + 300)) {
                 role = MINER;
             }
+            if (debug) System.out.println(" Im still a role: " + role);
         }
 
         /* BIG BFS LOOP ISH */
@@ -220,6 +221,7 @@ public class Miner extends RobotPlayer {
 
             // haven't built design school yet? BUILDDDDD
 
+            if (debug) System.out.println ("First school built: " + firstDesignSchoolBuilt + " | Dist to HQ " + distToHQ);
             if (!firstDesignSchoolBuilt && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && DesignSchoolCount == 0 && distToHQ <= 25) {
                 role = BUILDING;
                 unitToBuild = RobotType.DESIGN_SCHOOL;
@@ -328,7 +330,8 @@ public class Miner extends RobotPlayer {
             for (int i = 9; --i >= 1;) {
                 MapLocation buildLoc = rc.adjacentLocation(buildDir);
                 // same parity and must not be too close
-                if ((buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && !isDigLocation(buildLoc) && HQLocation.distanceSquaredTo(buildLoc) > 8) {
+
+                if ((!firstDesignSchoolBuilt || buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && !isDigLocation(buildLoc) && HQLocation.distanceSquaredTo(buildLoc) > 8) {
                     if (tryBuild(unitToBuild, buildDir)) {
                         builtUnit = true;
                         break;
@@ -469,11 +472,18 @@ public class Miner extends RobotPlayer {
                 }
                 else if (msg[1] == RobotType.DESIGN_SCHOOL.ordinal()) {
                     firstDesignSchoolBuilt = true;
+                    if (debug) System.out.println("i think school was built");
                 }
                 else if (msg[1] == RobotType.REFINERY.ordinal()) {
                     MapLocation locOfRefinery = parseLoc(msg[2]);
                     if (rc.getLocation().distanceSquaredTo(locOfRefinery) < rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) {
                         lastDepositedRefinery = locOfRefinery;
+                    }
+                }
+                else if (msg[1] == NEED_LANDSCAPERS_FOR_DEFENCE) {
+                    if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost) {
+                        role= BUILDING;
+                        unitToBuild = RobotType.DESIGN_SCHOOL;
                     }
                 }
             }

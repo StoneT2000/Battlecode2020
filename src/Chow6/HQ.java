@@ -74,6 +74,7 @@ public class HQ extends RobotPlayer {
             if ((!criedForLandscapers || rc.getRoundNum() % 10 == 0) && wallBots < enemyLandscapers + enemyMiners + 1) {
                 if (wallBots < 8) {
                     announceWantLandscapers(8 - wallBots);
+                    criedForLandscapers = true;
                 }
             }
             /*
