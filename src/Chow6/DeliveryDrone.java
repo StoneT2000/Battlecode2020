@@ -1,9 +1,9 @@
 package Chow6;
 
-import Chow6.utils.HashTable;
-import Chow6.utils.Node;
+import Chow6.utils.*;
 import battlecode.common.*;
 
+import java.awt.*;
 import java.util.Map;
 
 public class DeliveryDrone extends RobotPlayer {
@@ -88,7 +88,7 @@ public class DeliveryDrone extends RobotPlayer {
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(-1, Team.NEUTRAL);
-
+        HashTable<Direction> dangerousDirections = new HashTable<>(4); // directioons that when moved in, will result in netgun death
         RobotInfo closestEnemyLandscaper = null;
         RobotInfo closestEnemyMiner = null;
         int closestEnemyLandscaperDist = 99999999;
@@ -126,6 +126,23 @@ public class DeliveryDrone extends RobotPlayer {
                             break;
                     }
                     break;
+            }
+            int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
+            if (dist <= 25 && info.type == RobotType.NET_GUN) {
+                // dangerous netgun, move somewhere not in range!
+                Direction badDir = rc.getLocation().directionTo(info.location);
+                dangerousDirections.add(badDir);
+                Direction badDirLeft = badDir.rotateLeft();
+                Direction badDirRight = badDir.rotateRight();
+                if (rc.adjacentLocation(badDirLeft).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+                    if (debug) System.out.println("Gonna avoid " + badDirLeft);
+                    dangerousDirections.add(badDirLeft);
+                }
+                if (rc.adjacentLocation(badDirRight).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+                    dangerousDirections.add(badDirRight);
+                    if (debug) System.out.println("Gonna avoid " + badDirRight);
+                }
+                if (debug) System.out.println("Gonna avoid " + rc.getLocation().directionTo(info.location));
             }
         }
         // look for nearest empty wall
@@ -583,7 +600,7 @@ public class DeliveryDrone extends RobotPlayer {
         movement:
         {
             if (targetLoc != null && rc.isReady()) {
-                Direction dir = getBugPathMoveDrone(targetLoc);
+                Direction dir = getBugPathMoveDrone(targetLoc, dangerousDirections);
                 if (!dir.equals(Direction.CENTER)) {
                     rc.move(dir);
                 }
@@ -619,13 +636,14 @@ public class DeliveryDrone extends RobotPlayer {
             SecondWall.add(loc);
         }
     }
-    static Direction getBugPathMoveDrone(MapLocation target) throws GameActionException {
+    static Direction getBugPathMoveDrone(MapLocation target, HashTable<Direction> dangerousDirections) throws GameActionException {
+
         Direction dir = rc.getLocation().directionTo(target);
         MapLocation greedyLoc = rc.adjacentLocation(dir);
         int greedyDist = greedyLoc.distanceSquaredTo(target);
         if (debug) System.out.println("Target: " + target + " | greedyLoc " + greedyLoc +
                 " | closestSoFar " + closestToTargetLocSoFar + " | this dist " + greedyDist);
-        if (greedyDist < closestToTargetLocSoFar && rc.canSenseLocation(greedyLoc)) {
+        if (!dangerousDirections.contains(dir) && greedyDist < closestToTargetLocSoFar && rc.canSenseLocation(greedyLoc)) {
             if (rc.canMove(dir)) {
                 closestToTargetLocSoFar = greedyDist;
                 return dir;
@@ -635,7 +653,7 @@ public class DeliveryDrone extends RobotPlayer {
         for (int i = 7; --i >= 0; ) {
             dir = dir.rotateLeft();
             MapLocation adjLoc = rc.adjacentLocation(dir);
-            if (rc.canSenseLocation(adjLoc)) {
+            if (!dangerousDirections.contains(dir) && rc.canSenseLocation(adjLoc)) {
                 if (rc.canMove(dir)) {
                     firstDirThatWorks = dir;
                     //lastDirMove = dir;
