@@ -16,11 +16,11 @@ public class HashTable<T> {
         table[index].add(obj);
     }
     public boolean contains(T obj) {
-        int index = obj.hashCode() % this.size;
+        int index = (Math.abs(obj.hashCode())) % this.size;
         return table[index].contains(obj);
     }
     public boolean remove(T obj) {
-        int index = obj.hashCode() % this.size;
+        int index = (Math.abs(obj.hashCode())) % this.size;
         return table[index].remove(obj);
     }
 }
