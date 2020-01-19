@@ -11,6 +11,7 @@ public class Miner extends RobotPlayer {
 
     static Direction minedDirection;
     static int FulfillmentCentersBuilt = 0;
+    static boolean firstFulfillmentCenterBuilt = false;
     static int DesignSchoolsBuilt = 0; // how many design schools this robot knows have been built ??
     static boolean firstDesignSchoolBuilt = false;
 
@@ -131,7 +132,7 @@ public class Miner extends RobotPlayer {
             if (unitToBuild == RobotType.DESIGN_SCHOOL && firstDesignSchoolBuilt && (DesignSchoolCount > 0 || rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost + 250)) {
                 role = MINER;
             }
-            else if (unitToBuild == RobotType.FULFILLMENT_CENTER && (FulfillmentCenterCount > 0 || rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost + 300)) {
+            else if (unitToBuild == RobotType.FULFILLMENT_CENTER && firstFulfillmentCenterBuilt && (FulfillmentCenterCount > 0 || rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost + 300)) {
                 role = MINER;
             }
             if (debug) System.out.println(" Im still a role: " + role);
@@ -465,7 +466,7 @@ public class Miner extends RobotPlayer {
                     // if soup spent / number of landscapers needed is greater than cost
 
                     // ensure we have enough soup to build fulfillment center
-                    if (rc.getTeamSoup() > RobotType.DELIVERY_DRONE.cost + RobotType.FULFILLMENT_CENTER.cost) {
+                    if (rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost) {
                         role = BUILDING;
                         unitToBuild = RobotType.FULFILLMENT_CENTER;
                     }
@@ -480,12 +481,16 @@ public class Miner extends RobotPlayer {
                         lastDepositedRefinery = locOfRefinery;
                     }
                 }
+                else if (msg[1] == RobotType.FULFILLMENT_CENTER.ordinal()) {
+                    firstFulfillmentCenterBuilt = true;
+                }
+                /*
                 else if (msg[1] == NEED_LANDSCAPERS_FOR_DEFENCE) {
                     if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost) {
-                        role= BUILDING;
+                        role = BUILDING;
                         unitToBuild = RobotType.DESIGN_SCHOOL;
                     }
-                }
+                }*/
             }
         }
     }

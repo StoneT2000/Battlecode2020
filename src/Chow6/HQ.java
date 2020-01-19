@@ -15,8 +15,10 @@ public class HQ extends RobotPlayer {
     static int surroundedByFloodRound = -1;
     static boolean nearCenter;
     static boolean existsSoup = false;
+    static boolean gettingRushed = false;
     static int MIN_DRONE_FOR_ATTACK = 14;
     static boolean criedForDroneHelp = false;
+    static int designSchoolsBuilt = 0;
     static boolean saidNoMoreLandscapersNeeded = false;
     static int vaporatorsBuilt = 0;
     public static void run() throws GameActionException {
@@ -28,6 +30,8 @@ public class HQ extends RobotPlayer {
         RobotInfo closestDroneBot = null;
         int enemyLandscapers = 0;
         int enemyMiners = 0;
+        int enemyDesignSchools = 0;
+        int enemyNetGuns = 0;
         int closestEnemyDroneDist = 99999999;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
@@ -37,12 +41,19 @@ public class HQ extends RobotPlayer {
                 closestEnemyDroneDist = dist;
                 closestDroneBot = info;
             }
-            // nearby landscaper? RUSH, GET HELP!
-            if (info.type == RobotType.LANDSCAPER) {
-                enemyLandscapers++;
-            }
-            if (info.type == RobotType.MINER) {
-                enemyMiners++;
+            switch (info.type) {
+                case NET_GUN:
+                    enemyNetGuns++;
+                    break;
+                case DESIGN_SCHOOL:
+                    enemyDesignSchools++;
+                    break;
+                case MINER:
+                    enemyMiners++;
+                    break;
+                case LANDSCAPER:
+                    enemyLandscapers++;
+                    break;
             }
         }
 
@@ -67,6 +78,17 @@ public class HQ extends RobotPlayer {
             announceBuildDronesNow(4 - myDrones);
         }
 
+        if (!gettingRushed && enemyDesignSchools > 0) {
+            gettingRushed = true;
+        }
+        // if we were rushed but no more design schools
+        if (gettingRushed && enemyDesignSchools == 0) {
+
+        }
+        if (gettingRushed && enemyNetGuns == 0) {
+
+        }
+
         // if we see an enemy landscaper or enemy miner
         if (enemyLandscapers > 0 || enemyMiners > 0) {
             // announce I want drones and fulfillment center to build them if we have no drones and we dont know a center was built or every 20 turns
@@ -84,7 +106,7 @@ public class HQ extends RobotPlayer {
             }
             // not enough drones to combat, ask for more drones
             */
-            if ((!criedForDroneHelp || rc.getRoundNum() % 10 == 0) && myDrones < enemyLandscapers) {
+            if ((!criedForDroneHelp || rc.getRoundNum() % 10 == 0) && myDrones < enemyLandscapers && enemyNetGuns == 0) {
                 announceBuildDronesNow(enemyLandscapers - myDrones);
                 announceWantDronesForDefence();
                 criedForDroneHelp = true;
@@ -127,6 +149,9 @@ public class HQ extends RobotPlayer {
                     }
                     else if ((msg[1] ^ ANNOUNCE_SOUP_LOCATION) == 0) {
                         existsSoup = true;
+                    }
+                    else if (msg[1] == RobotType.DESIGN_SCHOOL.ordinal()) {
+                        designSchoolsBuilt++;
                     }
                 }
             }
@@ -263,7 +288,7 @@ public class HQ extends RobotPlayer {
             unitToBuild = RobotType.MINER;
             return;
         }
-        if (vaporatorsBuilt * 4 + 4 >= minersBuilt && existsSoup) {
+        if (vaporatorsBuilt * 4 + 4 >= minersBuilt && existsSoup && designSchoolsBuilt > 0) {
             unitToBuild = RobotType.MINER;
             return;
         }

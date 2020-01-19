@@ -290,7 +290,8 @@ public class DeliveryDrone extends RobotPlayer {
             if (attackHQ == false) {
 
                 // if there is enemy, engage!
-                if (closestEnemyMiner != null || closestEnemyLandscaper != null || nearestCow != null) {
+                // engage cows if there are 0 enemies and friend drones
+                if (closestEnemyMiner != null || closestEnemyLandscaper != null || (nearestCow != null && nearbyEnemyRobots.length == 0 && friendlyDrones > 1)) {
                     RobotInfo enemyToEngage = closestEnemyLandscaper;
                     if (enemyToEngage == null) enemyToEngage = closestEnemyMiner;
                     if (enemyToEngage == null) enemyToEngage = nearestCow;
