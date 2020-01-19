@@ -394,36 +394,9 @@ public class DeliveryDrone extends RobotPlayer {
         movement:
         {
             if (targetLoc != null && rc.isReady()) {
-                Direction dir = rc.getLocation().directionTo(targetLoc);
-                if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.isLocationOccupied((rc.adjacentLocation(dir)))) {
+                Direction dir = getBugPathMoveDrone(targetLoc);
+                if (!dir.equals(Direction.CENTER)) {
                     rc.move(dir);
-                    break movement;
-                } else {
-                    int minDist = 999999;
-                    for (int i = directions.length; --i >= 0; ) {
-                        // if distance to target from this potential direction is smaller, set it
-                        int dist = targetLoc.distanceSquaredTo(rc.adjacentLocation(directions[i]));
-                        if (dist < minDist && rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.isLocationOccupied((rc.adjacentLocation(dir)))) {
-                            dir = directions[i];
-                            minDist = dist;
-                        }
-                    }
-                }
-
-                // try to go in the closest direction
-                if (debug) System.out.println("Moving to " + rc.adjacentLocation((dir)) + " to get to " + targetLoc);
-                if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.isLocationOccupied((rc.adjacentLocation(dir)))) {
-                    rc.move(dir);
-                    break movement;
-                } else {
-                    // otherwise rotate left
-                    for (int i = 7; --i >= 0; ) {
-                        dir = dir.rotateLeft();
-                        if (rc.canSenseLocation((rc.adjacentLocation(dir))) && !rc.isLocationOccupied((rc.adjacentLocation(dir)))) {
-                            rc.move(dir);
-                            break movement;
-                        }
-                    }
                 }
             }
         }
@@ -445,5 +418,42 @@ public class DeliveryDrone extends RobotPlayer {
         }
         // For now, go to HQ anyway
         attackLoc = HQLocation;
+    }
+    static Direction getBugPathMoveDrone(MapLocation target) throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(target);
+        MapLocation greedyLoc = rc.adjacentLocation(dir);
+        int greedyDist = greedyLoc.distanceSquaredTo(target);
+        if (debug) System.out.println("Target: " + target + " | greedyLoc " + greedyLoc +
+                " | closestSoFar " + closestToTargetLocSoFar + " | this dist " + greedyDist);
+        if (greedyDist < closestToTargetLocSoFar && rc.canSenseLocation(greedyLoc)) {
+            if (rc.canMove(dir)) {
+                closestToTargetLocSoFar = greedyDist;
+                return dir;
+            }
+        }
+        for (int i = 7; --i >= 0; ) {
+            dir = dir.rotateLeft();
+            MapLocation adjLoc = rc.adjacentLocation(dir);
+            if (rc.canSenseLocation(adjLoc) && !rc.senseFlooding(adjLoc)) {
+                if (rc.canMove(dir)) {
+                    //lastDirMove = dir;
+                    //lastLoc = adjLoc;
+
+                    // store past 2 positions
+                    /*
+                    if (lastLocs.size < 2) {
+                        lastLocs.add(adjLoc);
+                    }
+                    else {
+                        lastLocs.dequeue();
+                        lastLocs.add(adjLoc);
+                    }*/
+                    return dir;
+                }
+            }
+
+        }
+        //lastLocs.dequeue();
+        return Direction.CENTER;
     }
 }
