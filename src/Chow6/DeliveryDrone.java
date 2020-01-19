@@ -136,9 +136,9 @@ public class DeliveryDrone extends RobotPlayer {
             int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
             MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
             if (rc.canSenseLocation(loc)) {
-                // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
+                // determine if it has our landscaper or not, if not occupied and not flooded bring our unit in there, if occupied take it out
                 int dist = rc.getLocation().distanceSquaredTo(loc);
-                if (!rc.isLocationOccupied(loc)) {
+                if (!rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
                     if (dist < closestEmptyWallLocDist) {
                         closestEmptyWallLoc = loc;
                         closestEmptyWallLocDist = dist;
@@ -154,7 +154,7 @@ public class DeliveryDrone extends RobotPlayer {
                 if (rc.canSenseLocation(loc)) {
                     // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
                     int dist = rc.getLocation().distanceSquaredTo(loc);
-                    if (!rc.isLocationOccupied(loc)) {
+                    if (!rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
                         if (dist < closestEmptyWallLocDist) {
                             closestEmptyWallLoc = loc;
                             closestEmptyWallLocDist = dist;
