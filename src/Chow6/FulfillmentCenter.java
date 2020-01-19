@@ -22,6 +22,9 @@ public class FulfillmentCenter extends RobotPlayer {
             if (info.getType() == RobotType.LANDSCAPER) {
                 nearbyEnemyLandscapers++;
             }
+            else if (info.getType() == RobotType.NET_GUN) {
+                netGunsnearby++;
+            }
         }
 
         // count nearby drones, netGuns
@@ -30,9 +33,7 @@ public class FulfillmentCenter extends RobotPlayer {
             if (info.getType() == RobotType.DELIVERY_DRONE) {
                 dronesNearby++;
             }
-            else if (info.getType() == RobotType.NET_GUN) {
-                netGunsnearby++;
-            }
+
         }
 
         /* BIG BFS LOOP ISH */
