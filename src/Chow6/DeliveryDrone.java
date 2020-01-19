@@ -18,7 +18,8 @@ public class DeliveryDrone extends RobotPlayer {
     static boolean holdingCow = false;
     static int receivedAttackHQMessageRound = -1;
     static int roundsToWaitBeforeAttack = 0;
-    static HashTable<MapLocation> MainWall = new HashTable<>(16);
+    static HashTable<MapLocation> MainWall = new HashTable<>(8);
+    static HashTable<MapLocation> SecondWall = new HashTable<>(12);
     public static void run() throws GameActionException {
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         for (int i = lastRoundsBlocks.length; --i >= 0; ) {
@@ -126,6 +127,42 @@ public class DeliveryDrone extends RobotPlayer {
                     break;
             }
         }
+        // look for nearest empty wall
+        int closestEmptyWallLocDist = 9999999;
+        MapLocation closestEmptyWallLoc = null;
+        MapLocation closesetEmptyMAINWALL = null;
+        for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
+            int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+            MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
+            if (rc.canSenseLocation(loc)) {
+                // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
+                int dist = rc.getLocation().distanceSquaredTo(loc);
+                if (!rc.isLocationOccupied(loc)) {
+                    if (dist < closestEmptyWallLocDist) {
+                        closestEmptyWallLoc = loc;
+                        closestEmptyWallLocDist = dist;
+                        closesetEmptyMAINWALL = loc;
+                    }
+                }
+            }
+        }
+        if (closestEmptyWallLoc == null) {
+            for (int i = Constants.LandscaperPosAroundHQ.length; --i>= 0; ) {
+                int[] deltas = Constants.LandscaperPosAroundHQ[i];
+                MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
+                if (rc.canSenseLocation(loc)) {
+                    // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
+                    int dist = rc.getLocation().distanceSquaredTo(loc);
+                    if (!rc.isLocationOccupied(loc)) {
+                        if (dist < closestEmptyWallLocDist) {
+                            closestEmptyWallLoc = loc;
+                            closestEmptyWallLocDist = dist;
+                        }
+                    }
+                }
+            }
+        }
+
 
         int friendlyDrones = 0;
         RobotInfo nearestCow = null;
@@ -139,11 +176,15 @@ public class DeliveryDrone extends RobotPlayer {
                     friendlyDrones++;
                     break;
                 case LANDSCAPER:
+                    // if not on man wall, and we have a empty loc on main wall, consider it
+                    // if not on second wall either, consider ir
                     if (!MainWall.contains(info.location)) {
-                        int dist = rc.getLocation().distanceSquaredTo(info.location);
-                        if (dist < distToNearestLandscaper) {
-                            distToNearestLandscaper = dist;
-                            nearestLandscaper = info;
+                        if (closesetEmptyMAINWALL != null || !SecondWall.contains(info.location)) {
+                            int dist = rc.getLocation().distanceSquaredTo(info.location);
+                            if (dist < distToNearestLandscaper) {
+                                distToNearestLandscaper = dist;
+                                nearestLandscaper = info;
+                            }
                         }
                     }
                     break;
@@ -251,6 +292,9 @@ public class DeliveryDrone extends RobotPlayer {
 
         // drone must always try and help our own landscapers
         if (nearestLandscaper != null) {
+            if (debug) System.out.println("found near landscaper that needs help? " + nearestLandscaper.location);
+
+            // look at main wall first and move them there
             for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
                 int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
                 MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
@@ -306,38 +350,7 @@ public class DeliveryDrone extends RobotPlayer {
         }
 
         if (role == MOVE_LANDSCAPER) {
-            int closestEmptyWallLocDist = 9999999;
-            MapLocation closestEmptyWallLoc = null;
-            for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
-                int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
-                MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
-                if (rc.canSenseLocation(loc)) {
-                    // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
-                    int dist = rc.getLocation().distanceSquaredTo(loc);
-                    if (!rc.isLocationOccupied(loc)) {
-                        if (dist < closestEmptyWallLocDist) {
-                            closestEmptyWallLoc = loc;
-                            closestEmptyWallLocDist = dist;
-                        }
-                    }
-                }
-            }
-            if (closestEmptyWallLoc == null) {
-                for (int i = Constants.LandscaperPosAroundHQ.length; --i>= 0; ) {
-                    int[] deltas = Constants.LandscaperPosAroundHQ[i];
-                    MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
-                    if (rc.canSenseLocation(loc)) {
-                        // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
-                        int dist = rc.getLocation().distanceSquaredTo(loc);
-                        if (!rc.isLocationOccupied(loc)) {
-                            if (dist < closestEmptyWallLocDist) {
-                                closestEmptyWallLoc = loc;
-                                closestEmptyWallLocDist = dist;
-                            }
-                        }
-                    }
-                }
-            }
+
             // if no open spot, move on and drop unit
             if (closestEmptyWallLoc == null) {
                 int i = 0;
@@ -571,7 +584,7 @@ public class DeliveryDrone extends RobotPlayer {
         for (int i = Constants.LandscaperPosAroundHQ.length; --i>= 0; ) {
             int[] deltas = Constants.LandscaperPosAroundHQ[i];
             MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
-            MainWall.add(loc);
+            SecondWall.add(loc);
         }
     }
     static Direction getBugPathMoveDrone(MapLocation target) throws GameActionException {

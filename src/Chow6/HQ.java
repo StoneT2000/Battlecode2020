@@ -71,12 +71,19 @@ public class HQ extends RobotPlayer {
                 myDrones++;
             }
         }
-        if ((rc.getRoundNum() >= 300 || vaporatorsBuilt > 10) && wallBots < 20 && rc.getRoundNum() % 10 == 0) {
-            announceWantLandscapers(20 - wallBots);
-        }
-        if (rc.getRoundNum() >= 300 && myDrones < 4 && rc.getRoundNum() % 10 == 0) {
+        // get some drones if we have more wall bots
+        if (wallBots - 8 > myDrones && myDrones < 2) {
             announceBuildDronesNow(4 - myDrones);
         }
+        else if ((rc.getRoundNum() >= 300 || vaporatorsBuilt > 10) && wallBots < 20 && rc.getRoundNum() % 10 == 0) {
+            announceWantLandscapers(20 - wallBots);
+        }
+
+        if (rc.getRoundNum() >= 300 && myDrones < 2 && rc.getRoundNum() % 10 == 0) {
+            announceBuildDronesNow(4 - myDrones);
+        }
+
+
 
         if (!gettingRushed && enemyDesignSchools > 0) {
             gettingRushed = true;
