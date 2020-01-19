@@ -375,6 +375,49 @@ public class Landscaper extends RobotPlayer {
             // If you can see a enemy DESIGN SCHOOL ADJACENT to HQ, choose closest build loc adjacent to the DESIGN SCHOOL
 
 
+            // find one of the spread out wall positions, and try to go there first
+            MapLocation closerOppositeBuildLoc = null;
+            if (!onSupportBlockDoNotMove) {
+                MapLocation[] locsToCheck = {HQLocation.translate(-1, 0),  HQLocation.translate(1, 0)};
+
+                int closestOppositeBuildLocDist = 9999999;
+                for (int i = 0; i < locsToCheck.length; i++ ) {
+                    MapLocation checkLoc = locsToCheck[i];
+                    boolean valid = false;
+                    int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
+                    if (!BuildPositionsTaken.contains(checkLoc) && rc.onTheMap(checkLoc)) {
+                        if (rc.canSenseLocation(checkLoc)) {
+                            if (rc.isLocationOccupied(checkLoc)) {
+                                RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                                if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam() && rc.getID() != info.getID()) {
+                                    // found bot on wall that is our own landscaper that isn't itself
+                                    valid = false;
+                                    // this wall is taken, add to taken list
+                                    BuildPositionsTaken.add(checkLoc);
+                                } else if (info.type == RobotType.LANDSCAPER && info.team == enemyTeam) {
+                                    valid = false;
+                                } else {
+                                    valid = true;
+                                }
+                            } else {
+                                valid = true;
+                            }
+                        } else {
+                            valid = true;
+                        }
+                    }
+                    else {
+                        valid = false;
+                    }
+                    if (valid && distToLoc < closestOppositeBuildLocDist) {
+                        closestOppositeBuildLocDist = distToLoc;
+                        closerOppositeBuildLoc = checkLoc;
+                    }
+                }
+
+            }
+            if (debug) System.out.println("Closest available opposite build loc: " + closerOppositeBuildLoc);
+
             int minDist = 99999999;
             int minDistToDefendRushLoc = 99999999;
             int maxDiffWalls = 0;
@@ -511,10 +554,15 @@ public class Landscaper extends RobotPlayer {
                 }
 
             }
-            // prioritize defending rush loc if we aren't on the closest buildloc
+            // prioritize defending rush loc if we aren't on the closest buildloc (if we are on closest build loc, don't budge)
             if (closestDefendRushLoc != null && !rc.getLocation().equals(closestBuildLoc)) {
                 setTargetLoc(closestDefendRushLoc);
             }
+            // then prioritize the two well spread opposite locations
+            else if (closerOppositeBuildLoc != null) {
+                setTargetLoc(closerOppositeBuildLoc);
+            }
+            // then prioritize most clogged building location
             else if (mostCloggedBuildLoc != null && !rc.getLocation().equals(closestBuildLoc)) {
                 setTargetLoc(mostCloggedBuildLoc);
             }
@@ -642,7 +690,7 @@ public class Landscaper extends RobotPlayer {
                             if (thatElevation > myElevation + 3) {
                                 // otherwise its normal, no unit on it, we are next to it, build up
                                 if (debug) System.out.println("depositing on self");
-                                if (rc.getDirtCarrying() > 24) {
+                                if (rc.getDirtCarrying() > 0) {
                                     if (rc.canDepositDirt(Direction.CENTER)) {
                                         rc.depositDirt(Direction.CENTER);
                                     }
@@ -650,7 +698,7 @@ public class Landscaper extends RobotPlayer {
                             }
                             // if too low, fill that low place up
                             else if (thatElevation < thatElevation - 3) {
-                                if (rc.getDirtCarrying() > 24) {
+                                if (rc.getDirtCarrying() > 0) {
                                     Direction dirToLowElevation = rc.getLocation().directionTo(targetLoc);
                                     if (rc.canDepositDirt(dirToLowElevation)) {
                                         rc.depositDirt(dirToLowElevation);

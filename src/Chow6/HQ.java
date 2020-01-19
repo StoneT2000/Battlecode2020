@@ -23,9 +23,11 @@ public class HQ extends RobotPlayer {
     static int designSchoolsBuilt = 0;
     static boolean saidNoMoreLandscapersNeeded = false;
     static int vaporatorsBuilt = 0;
+    static int wallBotsMax = 20; // max landscapers that can be on wall and second wall
+    static int wallSpaces = 20;
     public static void run() throws GameActionException {
         if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup() + " | Miners Built: " + minersBuilt + " FulfillmentCenters Built: " + FulfillmentCentersBuilt);
-
+        wallBotsMax = wallSpaces;
         // shoot nearest robot
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
@@ -76,29 +78,38 @@ public class HQ extends RobotPlayer {
             }
             else if (info.type == RobotType.FULFILLMENT_CENTER) {
                 fulfillmentCenters++;
+                if (dist <= 8) {
+                    wallBotsMax--;
+                    // decrement one as a fulfillment center is in our wall area
+                }
             }
             else if (info.type == RobotType.DESIGN_SCHOOL) {
                 designSchools++;
+                if (dist <= 8) {
+                    wallBotsMax--;
+                    // decrement one as a fulfillment center is in our wall area
+                }
             }
         }
+        if (debug) System.out.println("I need " + wallBotsMax + " wall bots");
         // make sure we get a school and FC all the time
         if ((!criedForDesignSchool || rc.getRoundNum() % 10 == 0) && designSchools == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
             announceBUILD_A_SCHOOL();
             criedForDesignSchool = true;
         }
-        if ((!criedForFC || rc.getRoundNum() % 10 == 0) && fulfillmentCenters == 0 && designSchools > 0 && wallBots >= 4 && enemyLandscapers > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
+        if ((!criedForFC || rc.getRoundNum() % 10 == 0) && fulfillmentCenters == 0 && designSchools > 0 && wallBots >= Math.min(4, wallBotsMax) && enemyLandscapers > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
             announceBUILD_A_CENTER();
             criedForFC = true;
         }
-        else if (fulfillmentCenters == 0 && designSchools > 0 && wallBots >= 8 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
+        else if (fulfillmentCenters == 0 && designSchools > 0 && wallBots >= Math.min(8, wallBotsMax) && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
             announceBUILD_A_CENTER();
         }
         // get some drones if we have more wall bots
         if (wallBots - 8 > myDrones && myDrones < 2) {
             announceBuildDronesNow(4 - myDrones);
         }
-        else if ((rc.getRoundNum() >= 300 || vaporatorsBuilt > 10) && wallBots < 20 && rc.getRoundNum() % 10 == 0) {
-            announceWantLandscapers(20 - wallBots);
+        else if ((rc.getRoundNum() >= 300 || vaporatorsBuilt > 10) && wallBots < wallBotsMax && rc.getRoundNum() % 10 == 0) {
+            announceWantLandscapers(wallBotsMax - wallBots);
         }
 
         if (rc.getRoundNum() >= 300 && myDrones < 2 && rc.getRoundNum() % 10 == 0) {
@@ -349,7 +360,24 @@ public class HQ extends RobotPlayer {
         else {
             nearCenter = true;
         }
-        // allows all other bots to refer to the HQ if needed by storeHQLocation()
+        // count number of open wall build block tiles
+        wallSpaces = 0;
+        for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
+            int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+            MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
+            //FirstLandscaperPosAroundHQTable.add(loc);
+            if (rc.onTheMap(loc)) {
+                wallSpaces++;
+            }
+        }
+        for (int i = Constants.LandscaperPosAroundHQ.length; --i>= 0; ) {
+            int[] deltas = Constants.LandscaperPosAroundHQ[i];
+            MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
+            //FirstLandscaperPosAroundHQTable.add(loc);
+            if (rc.onTheMap(loc)) {
+                wallSpaces++;
+            }
+        }
     }
     // initializes the strategy through placement of first units and broadcasts
     public static void initializeStrategy() throws GameActionException {
