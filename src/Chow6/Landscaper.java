@@ -554,7 +554,7 @@ public class Landscaper extends RobotPlayer {
                                     }
                                 } else {
                                     // if its too low or high rounds, spread
-                                    if (waterLevel + 2 + waterChangeRate > rc.senseElevation(checkLoc) || rc.getRoundNum() > 2000) {
+                                    if (waterLevel + 2 + waterChangeRate > rc.senseElevation(checkLoc) || rc.getRoundNum() > 1200) {
                                         spread = true;
                                     }
                                 }
