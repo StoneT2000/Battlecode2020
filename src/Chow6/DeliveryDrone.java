@@ -434,7 +434,7 @@ public class DeliveryDrone extends RobotPlayer {
         for (int i = 7; --i >= 0; ) {
             dir = dir.rotateLeft();
             MapLocation adjLoc = rc.adjacentLocation(dir);
-            if (rc.canSenseLocation(adjLoc) && !rc.senseFlooding(adjLoc)) {
+            if (rc.canSenseLocation(adjLoc)) {
                 if (rc.canMove(dir)) {
                     //lastDirMove = dir;
                     //lastLoc = adjLoc;
