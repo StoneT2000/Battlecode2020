@@ -356,6 +356,20 @@ public class Landscaper extends RobotPlayer {
                     }
                 }
             }
+            // THEN DIG OUT UR OWN BUILDINGS NEARBY IF POSSIBLE
+            Direction dirToDigBuildingOut = rc.getLocation().directionTo(HQLocation);
+            for (int i = directions.length; --i>=0; ) {
+                MapLocation adjLoc = rc.adjacentLocation(dirToDigBuildingOut);
+                if (rc.isLocationOccupied(adjLoc)) {
+                    RobotInfo info = rc.senseRobotAtLocation(adjLoc);
+                    if (info.team == rc.getTeam() && isBuilding(info)) {
+                        if (rc.canDigDirt(dirToDigBuildingOut)) {
+                            rc.digDirt(dirToDigBuildingOut);
+                        }
+                    }
+                }
+                dirToDigBuildingOut = dirToDigBuildingOut.rotateLeft();
+            }
             // heuristic against defending RUSHES
             // Always look for closest build wall loc
             // If you can see a enemy DESIGN SCHOOL ADJACENT to HQ, choose closest build loc adjacent to the DESIGN SCHOOL
@@ -566,8 +580,11 @@ public class Landscaper extends RobotPlayer {
                             if (DigDeltasAroundHQTable.contains(checkLoc)) {
                                 proceed = false;
                             }
-                            if (rc.isLocationOccupied(checkLoc) && rc.senseRobotAtLocation(checkLoc).type == RobotType.HQ) {
-                                proceed = false;
+                            if (rc.isLocationOccupied(checkLoc)) {
+                                RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                                if (info.team == rc.getTeam() && isBuilding(info)) {
+                                    proceed = false;
+                                }
                             }
                             if (proceed && elevation < lowestElevation && elevation < 4) {
                                 lowestElevation = elevation;
@@ -606,7 +623,7 @@ public class Landscaper extends RobotPlayer {
                             RobotInfo info = rc.senseRobotAtLocation(targetLoc);
                             // if this is some stupid friendly unit, DISINTEGRATE IT?
                             // if it is a building, BURY IT if possible
-                            if (isBuilding(info)) {
+                            if (info.team == enemyTeam && isBuilding(info)) {
                                 Direction depositDir = rc.getLocation().directionTo(targetLoc);
                                 if (rc.canDepositDirt(depositDir)) {
                                     rc.depositDirt(depositDir);

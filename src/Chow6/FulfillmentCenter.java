@@ -60,7 +60,7 @@ public class FulfillmentCenter extends RobotPlayer {
         }
         */
         // build if there are enemy landscapers nearby
-        if (nearbyEnemyLandscapers > dronesNearby) {
+        if (nearbyEnemyLandscapers > dronesNearby && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 250) {
             confirmBuild = true;
             if (debug) System.out.println("Building to fight landscapers");
         }

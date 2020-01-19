@@ -83,7 +83,10 @@ public class HQ extends RobotPlayer {
         if (designSchools == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
             announceBUILD_A_SCHOOL();
         }
-        if (fulfillmentCenters == 0 && designSchools > 0 && wallBots >= 2 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
+        if (fulfillmentCenters == 0 && designSchools > 0 && wallBots >= 4 && enemyLandscapers > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
+            announceBUILD_A_CENTER();
+        }
+        else if (fulfillmentCenters == 0 && designSchools > 0 && wallBots >= 8 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
             announceBUILD_A_CENTER();
         }
         // get some drones if we have more wall bots
