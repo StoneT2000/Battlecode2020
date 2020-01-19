@@ -308,7 +308,8 @@ public class Miner extends RobotPlayer {
                 MapLocation buildLoc = rc.adjacentLocation(buildDir);
                 // same parity and must not be too close
 
-                if ((!firstDesignSchoolBuilt || buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && !isDigLocation(buildLoc) && HQLocation.distanceSquaredTo(buildLoc) > 8) {
+                // if school or FC, just build asap
+                if ((unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER || buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && !isDigLocation(buildLoc) && HQLocation.distanceSquaredTo(buildLoc) > 8) {
                     if (tryBuild(unitToBuild, buildDir)) {
                         builtUnit = true;
                         break;
@@ -387,6 +388,7 @@ public class Miner extends RobotPlayer {
         }
 
         // check if miner is in a build wall loc and STUCK
+        /*
         if (debug) System.out.println(" Mined? " + mined + " | In wall?" + MainHQWall.contains(rc.getLocation()));
         if (!mined && MainHQWall.contains(rc.getLocation()) && turnCount > 15) {
             stuckRounds++;
@@ -397,7 +399,7 @@ public class Miner extends RobotPlayer {
         }
         else {
             stuckRounds = 0;
-        }
+        }*/
     }
 
 

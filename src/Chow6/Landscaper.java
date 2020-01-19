@@ -591,7 +591,7 @@ public class Landscaper extends RobotPlayer {
             }
             // we are adjacent to our intended build location. Now we figure out why we aren't there yet
             else if (distToBuildLoc >= 1 && distToBuildLoc <= 2) {
-                if (rc.getDirtCarrying() <= 24) {
+                if (rc.getDirtCarrying() <= 0) {
                     Direction digDir = getDigDirectionForDefending();
                     if (rc.canDigDirt(digDir)) {
                         rc.digDirt(digDir);
