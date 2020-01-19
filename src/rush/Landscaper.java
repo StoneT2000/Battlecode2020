@@ -8,7 +8,7 @@ public class Landscaper extends RobotPlayer {
     // roles
     static final int ATTACK = 0;
     static final int DEFEND_HQ = 1;
-    static int role = DEFEND_HQ;
+    static int role = ATTACK;
     static boolean onSupportBlockDoNotMove = false;
     static boolean shouldDig = true;
     static RobotInfo nearestEnemy = null;
@@ -244,10 +244,10 @@ public class Landscaper extends RobotPlayer {
 
 
             if (enemyBaseLocation == null) {
-                //attackLoc = closestMaybeHQ;
+                attackLoc = closestMaybeHQ;
             }
             else {
-                //attackLoc = enemyBaseLocation;
+                attackLoc = enemyBaseLocation;
             }
             // prioritize destructing buildings
             if (nearestEnemy != null) {
@@ -793,7 +793,7 @@ public class Landscaper extends RobotPlayer {
             if (isOurMessage((msg))) {
                 if ((msg[1] ^ NEED_LANDSCAPERS_FOR_DEFENCE) == 0) {
                     // go run to HQ
-                    role = DEFEND_HQ;
+                    //role = DEFEND_HQ;
                     //targetLoc = HQLocation;
                     setTargetLoc(HQLocation);
                 }

@@ -10,6 +10,7 @@ public class Miner extends RobotPlayer {
     static final int RETURNING = 2; // RETURNING TO SOME REFINERY OR HQ TO DEPOSIT
     static final int BUILDING = 3;
 
+    static final int ATTACK = 4;
     static Direction minedDirection;
     static int FulfillmentCentersBuilt = 0;
     static int DesignSchoolsBuilt = 0; // how many design schools this robot knows have been built ??
@@ -186,25 +187,86 @@ public class Miner extends RobotPlayer {
             }
         }
 
-        // look for enemey location and see if its there
+        MapLocation closestMaybeHQ = null;
+        // dont know where base is, then look around for it.
         if (enemyBaseLocation == null) {
+            if (debug) System.out.println("finding closest HQ TO LOOK FOR");
             Node<MapLocation> node = enemyHQLocations.head;
-            for (int i = 0; i++ < enemyHQLocations.size; ) {
-                // check if there is enemey base
-                if (rc.canSenseLocation(node.val) && rc.isLocationOccupied(node.val)) {
-                    RobotInfo maybeEnemyHQ = rc.senseRobotAtLocation(node.val);
-                    if (maybeEnemyHQ.type == RobotType.HQ && maybeEnemyHQ.team == enemyTeam) {
-                        if (debug) System.out.println("MINER FOUND ENEMY HQ at " + node.val);
-                        enemyBaseLocation = maybeEnemyHQ.location;
-                        break;
+
+            Node<MapLocation> closestMaybeHQNode = enemyHQLocations.head;
+            int minDistToMaybeHQ = 9999999;
+
+            if (node != null) {
+                closestMaybeHQ = node.val;
+                for (int i = 0; i++ < enemyHQLocations.size; ) {
+                    int dist = rc.getLocation().distanceSquaredTo(node.val);
+                    if (dist < minDistToMaybeHQ) {
+                        minDistToMaybeHQ = dist;
+                        closestMaybeHQ = node.val;
+                        closestMaybeHQNode = node;
+                    }
+                    node = node.next;
+
+                }
+            } else {
+                // dont swarm?
+            }
+            if (debug) System.out.println("Closest possible enemy HQ: " + closestMaybeHQ);
+
+            // if we can check location we are trying to head to, determine if its a enemy HQ or not
+            if (rc.canSenseLocation(closestMaybeHQ)) {
+                if (rc.isLocationOccupied(closestMaybeHQ)) {
+                    RobotInfo unit = rc.senseRobotAtLocation(closestMaybeHQ);
+                    if (unit.type == RobotType.HQ && unit.team == enemyTeam) {
+                        // FOUND HQ!
+                        enemyBaseLocation = closestMaybeHQ;
+                        announceEnemyBase(enemyBaseLocation);
+                        if (debug) System.out.println("FOUND ENEMY HQ AT " + closestMaybeHQ);
+                        if (debug) rc.setIndicatorDot(enemyBaseLocation, 100, 29, 245);
+                        //attackLoc = enemyBaseLocation;
+                    } else {
+
+                        // announce to everyone its not an HQ
+                        announceNotEnemyBase(closestMaybeHQNode.val);
+                        // remove this location from linked list
+                        enemyHQLocations.remove(closestMaybeHQNode);
+
+                    }
+                } else {
+                    // announce to everyone its not an HQ
+                    announceNotEnemyBase(closestMaybeHQNode.val);
+                    enemyHQLocations.remove(closestMaybeHQNode);
+                }
+            }
+        }
+        else {
+            closestMaybeHQ = enemyBaseLocation;
+        }
+        if (role == ATTACK) {
+            setTargetLoc(closestMaybeHQ);
+            if (enemyBaseLocation != null) {
+                if (rc.getLocation().isAdjacentTo(enemyBaseLocation)) {
+                    setTargetLoc(null);
+                    if (DesignSchoolCount == 0) {
+
+                        for (Direction dir : directions) {
+                            MapLocation adjLoc = rc.adjacentLocation(dir);
+                            if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, dir) && adjLoc.distanceSquaredTo(enemyBaseLocation) <= 1) {
+                                rc.buildRobot(RobotType.DESIGN_SCHOOL, dir);
+                            }
+                        }
+                        for (Direction dir : directions) {
+                            MapLocation adjLoc = rc.adjacentLocation(dir);
+                            if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, dir) && adjLoc.distanceSquaredTo(enemyBaseLocation) <= 2) {
+                                rc.buildRobot(RobotType.DESIGN_SCHOOL, dir);
+                            }
+                        }
                     }
                 }
-                node = node.next;
-
             }
         }
 
-        if (role == MINER) {
+        else if (role == MINER) {
             // TODO: cost of announcement should be upped in later rounds with many units.
             // announce soup location if we just made a new soup location
             if (SoupLocation != null && newLocation) {
@@ -562,5 +624,8 @@ public class Miner extends RobotPlayer {
                 new MapLocation(rc.getMapWidth(), rc.getMapHeight())
         };
         exploreLocIndex = (int) (Math.random() * exploreLocs.length);
+        if (rc.getRoundNum() > 10) {
+            role = ATTACK;
+        }
     }
 }

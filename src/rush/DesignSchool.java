@@ -15,7 +15,7 @@ public class DesignSchool extends RobotPlayer {
         }
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         boolean willBuild = false;
-        if (rc.getTeamSoup() >= RobotType.LANDSCAPER.cost && landscapersBuilt < 1) {
+        if (rc.getTeamSoup() >= RobotType.LANDSCAPER.cost && landscapersBuilt < 10) {
             willBuild = true;
         }
         checkMessages(lastRoundsBlocks);
@@ -35,18 +35,36 @@ public class DesignSchool extends RobotPlayer {
         if (willBuild) {
             // should rely on some signal
             boolean builtUnit = false;
-            for (int i = 9; --i >= 1; ) {
-                if (tryBuild(RobotType.LANDSCAPER, buildDir)) {
-                    builtUnit = true;
-                    break;
-                } else {
-                    buildDir = buildDir.rotateRight();
+            if (enemyBaseLocation != null) {
+                for (int i = 9; --i >= 1; ) {
+                    MapLocation buildLoc = rc.adjacentLocation(buildDir);
+                    if (buildLoc.distanceSquaredTo(enemyBaseLocation) <= 2) {
+                        if (tryBuild(RobotType.LANDSCAPER, buildDir)) {
+                            builtUnit = true;
+                            break;
+                        } else {
+                            buildDir = buildDir.rotateRight();
+                        }
+                    }
+                    else {
+                        buildDir = buildDir.rotateRight();
+                    }
                 }
             }
-            if (builtUnit) {
-                landscapersBuilt++;
+            if (!builtUnit) {
+                for (int i = 9; --i >= 1; ) {
+                    if (tryBuild(RobotType.LANDSCAPER, buildDir)) {
+                        builtUnit = true;
+                        break;
+                    } else {
+                        buildDir = buildDir.rotateRight();
+                    }
+                }
+                if (builtUnit) {
+                    landscapersBuilt++;
+                }
+                buildDir = buildDir.rotateRight();
             }
-            buildDir = buildDir.rotateRight();
         }
 
     }
@@ -74,5 +92,14 @@ public class DesignSchool extends RobotPlayer {
     public static void setup() throws GameActionException {
         storeHQLocation();
         announceSelfLocation(1);
+        for (Direction dir: directions) {
+            MapLocation maybeBase = rc.adjacentLocation(dir);
+            if (rc.isLocationOccupied(maybeBase)) {
+                if (rc.senseRobotAtLocation(maybeBase).type == RobotType.HQ) {
+                    enemyBaseLocation = maybeBase;
+                    break;
+                }
+            }
+        }
     }
 }
