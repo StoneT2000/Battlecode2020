@@ -322,8 +322,24 @@ public class Landscaper extends RobotPlayer {
                         }
                     }
                     // otherwise proceed to dig down as we are digging enemy HQ
-                    else if (rc.canDigDirt(digDir)) {
-                        rc.digDirt(digDir);
+                    else {
+                        // find our school, dig it out
+                        for (Direction dir: directions) {
+                            MapLocation adjloc = rc.adjacentLocation(dir);
+                            if (rc.isLocationOccupied(adjloc)) {
+                                RobotInfo maybeSchool = rc.senseRobotAtLocation(adjloc);
+                                if (maybeSchool.team == rc.getTeam() && maybeSchool.getType() == RobotType.DESIGN_SCHOOL) {
+                                    digDir = dir;
+                                    break;
+                                }
+                            }
+                        }
+                        if (rc.canDigDirt(digDir)) {
+                            rc.digDirt(digDir);
+                        }
+                        else if (rc.canDigDirt(Direction.CENTER)) {
+                            rc.digDirt(Direction.CENTER);
+                        }
                     }
                 }
             }
