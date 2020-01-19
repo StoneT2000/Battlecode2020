@@ -83,7 +83,7 @@ public class HQ extends RobotPlayer {
         if (designSchools == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
             announceBUILD_A_SCHOOL();
         }
-        if (fulfillmentCenters == 0 && designSchools > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
+        if (fulfillmentCenters == 0 && designSchools > 0 && wallBots >= 2 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
             announceBUILD_A_CENTER();
         }
         // get some drones if we have more wall bots
@@ -139,7 +139,7 @@ public class HQ extends RobotPlayer {
         // decide on unit to build and set unitToBuild appropriately
         decideOnUnitToBuild();
         // if we are to build a unit, proceed
-        if (unitToBuild != null) {
+        if (unitToBuild != null && (rc.getRoundNum() < 15 || (wallBots > 1 && designSchools > 0 ))) {
             // proceed with building unit using default heurstics
             build();
         }
