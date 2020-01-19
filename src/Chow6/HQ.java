@@ -172,6 +172,7 @@ public class HQ extends RobotPlayer {
         // if we are to build a unit, proceed
         if (unitToBuild != null && (rc.getRoundNum() < 15 || (wallBots > 1 && designSchools > 0 ))) {
             // proceed with building unit using default heurstics
+            if (debug) System.out.println("closest soup: " + closestSoupLoc);
             build(closestSoupLoc);
         }
 
@@ -322,8 +323,11 @@ public class HQ extends RobotPlayer {
 
         }
 
-        if (closestSoupLoc != null) {
+        if (closestSoupLoc != null && !closestSoupLoc.equals(Direction.CENTER)) {
             buildDir = rc.getLocation().directionTo(closestSoupLoc);
+        }
+        if (buildDir.equals(Direction.CENTER)) {
+            buildDir = Direction.NORTH;
         }
         boolean builtUnit = false;
         for (int i = 9; --i >= 1;) {
