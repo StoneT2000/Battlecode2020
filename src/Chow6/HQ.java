@@ -61,6 +61,8 @@ public class HQ extends RobotPlayer {
 
         int wallBots = 0;
         int myDrones = 0;
+        int designSchools = 0;
+        int fulfillmentCenters = 0;
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
@@ -70,6 +72,19 @@ public class HQ extends RobotPlayer {
             if (info.type == RobotType.DELIVERY_DRONE) {
                 myDrones++;
             }
+            else if (info.type == RobotType.FULFILLMENT_CENTER) {
+                fulfillmentCenters++;
+            }
+            else if (info.type == RobotType.DESIGN_SCHOOL) {
+                designSchools++;
+            }
+        }
+        // make sure we get a school and FC all the time
+        if (designSchools == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
+            announceBUILD_A_SCHOOL();
+        }
+        if (fulfillmentCenters == 0 && designSchools > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
+            announceBUILD_A_CENTER();
         }
         // get some drones if we have more wall bots
         if (wallBots - 8 > myDrones && myDrones < 2) {
@@ -106,16 +121,8 @@ public class HQ extends RobotPlayer {
                     criedForLandscapers = true;
                 }
             }
-            /*
-            if ((!criedForDroneHelp || rc.getRoundNum() % 10 == 0) && myDrones == 0 && (FulfillmentCentersBuilt < 1 || rc.getRoundNum() % 20 == 0)) {
-                announceWantDronesForDefence();
-                criedForDroneHelp = true;
-            }
-            // not enough drones to combat, ask for more drones
-            */
             if ((!criedForDroneHelp || rc.getRoundNum() % 10 == 0) && myDrones < enemyLandscapers && enemyNetGuns == 0) {
                 announceBuildDronesNow(enemyLandscapers - myDrones);
-                announceWantDronesForDefence();
                 criedForDroneHelp = true;
             }
         }
@@ -175,6 +182,22 @@ public class HQ extends RobotPlayer {
                     FulfillmentCentersBuilt++;
                 }
             }
+        }
+    }
+    static void announceBUILD_A_CENTER() throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), BUILD_A_CENTER, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING BUILD CENTER!!!");
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+        }
+    }
+    static void announceBUILD_A_SCHOOL() throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), BUILD_A_SCHOOL, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING BUILD SCHOOL!!!");
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
         }
     }
     static void announceBuildDronesNow(int amount) throws GameActionException {

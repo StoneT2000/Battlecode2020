@@ -222,15 +222,6 @@ public class Miner extends RobotPlayer {
 
             // haven't built design school yet? BUILDDDDD
 
-            if (debug) System.out.println ("First school built: " + firstDesignSchoolBuilt + " | Dist to HQ " + distToHQ);
-            if (!firstDesignSchoolBuilt && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && DesignSchoolCount == 0 && distToHQ <= 25) {
-                role = BUILDING;
-                unitToBuild = RobotType.DESIGN_SCHOOL;
-            }
-            else if (!firstFulfillmentCenterBuilt && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost && FulfillmentCenterCount == 0 && distToHQ <= 25) {
-                role = BUILDING;
-                unitToBuild = RobotType.FULFILLMENT_CENTER;
-            }
             // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
             // 800 - something, subtract distance. Subtract less for the higher amount soup mined
             if (lastDepositedRefinery.equals(HQLocation)) {
@@ -253,27 +244,8 @@ public class Miner extends RobotPlayer {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                 }
-                else if ((mined || RefineryCount > 0) && VaporatorCount > 0 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 350 && distToHQ <= 17) {
-                    unitToBuild = RobotType.DESIGN_SCHOOL;
-                    role = BUILDING;
-                }
-                else if (RefineryCount > 0 && VaporatorCount > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 350 && distToHQ <= 17) {
-                    role = BUILDING;
-                    unitToBuild = RobotType.FULFILLMENT_CENTER;
-                }
 
             }
-            // only build a design school if bot just mined or there is more than one refinery nearby to encourage refinery building first?????
-            else if (VaporatorCount > 0 && rc.getRoundNum() % 20 == 1 && DesignSchoolCount == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 250 && distToHQ <= 17) {
-                if (debug) System.out.println("Soup rn: " + rc.getTeamSoup());
-                unitToBuild = RobotType.DESIGN_SCHOOL;
-                role = BUILDING;
-            }
-            else if (VaporatorCount > 0 && rc.getRoundNum() % 20 == 2 && FulfillmentCenterCount == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 300) {
-                role = BUILDING;
-                unitToBuild = RobotType.FULFILLMENT_CENTER;
-            }
-
             else if (rc.getTeamSoup() >= 500 + 250) {
                 role = BUILDING;
                 unitToBuild = RobotType.VAPORATOR;
@@ -463,16 +435,16 @@ public class Miner extends RobotPlayer {
             decodeMsg(msg);
             if (isOurMessage((msg))) {
                 // if it is announce SOUP location message
-                if ((msg[1] ^ NEED_DRONES_FOR_DEFENCE) == 0) {
-                    //int origSoup = msg[2];
-                    //int soupSpent = origSoup - rc.getTeamSoup();
-                    //if (debug) System.out.println("Building drone because HQ said so? Soup spent so far since message " + soupSpent);
-                    // if soup spent / number of landscapers needed is greater than cost
-
-                    // ensure we have enough soup to build fulfillment center
+                if ((msg[1] ^ BUILD_A_CENTER) == 0) {
                     if (rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost) {
                         role = BUILDING;
                         unitToBuild = RobotType.FULFILLMENT_CENTER;
+                    }
+                }
+                else if ((msg[1] ^ BUILD_A_SCHOOL) == 0) {
+                    if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost) {
+                        role = BUILDING;
+                        unitToBuild = RobotType.DESIGN_SCHOOL;
                     }
                 }
                 else if (msg[1] == RobotType.DESIGN_SCHOOL.ordinal()) {
@@ -488,13 +460,6 @@ public class Miner extends RobotPlayer {
                 else if (msg[1] == RobotType.FULFILLMENT_CENTER.ordinal()) {
                     firstFulfillmentCenterBuilt = true;
                 }
-                /*
-                else if (msg[1] == NEED_LANDSCAPERS_FOR_DEFENCE) {
-                    if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost) {
-                        role = BUILDING;
-                        unitToBuild = RobotType.DESIGN_SCHOOL;
-                    }
-                }*/
             }
         }
     }

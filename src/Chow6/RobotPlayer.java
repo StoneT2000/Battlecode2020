@@ -45,6 +45,8 @@ public strictfp class RobotPlayer {
     static final int BUILD_DRONE_NOW = 16;
     static final int NO_MORE_LANDSCAPERS_NEEDED = 17;
     static final int ANNOUNCE_NOT_ENEMY_BASE = 18;
+    static final int BUILD_A_SCHOOL = 19;
+    static final int BUILD_A_CENTER = 20;
 
     public static void run(RobotController rc) throws GameActionException {
 
