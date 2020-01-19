@@ -144,11 +144,13 @@ public strictfp class RobotPlayer {
                 return dir;
             }
         }
+        Direction firstDirThatWorks = Direction.CENTER;
         for (int i = 7; --i >= 0; ) {
             dir = dir.rotateLeft();
             MapLocation adjLoc = rc.adjacentLocation(dir);
             if (rc.canSenseLocation(adjLoc) && !rc.senseFlooding(adjLoc)) {
                 if (rc.canMove(dir)) {
+                    firstDirThatWorks = dir;
                     //lastDirMove = dir;
                     //lastLoc = adjLoc;
 
@@ -161,13 +163,18 @@ public strictfp class RobotPlayer {
                         lastLocs.dequeue();
                         lastLocs.add(adjLoc);
                     }*/
-                    return dir;
+                    //return dir;
+                    int dist = adjLoc.distanceSquaredTo(target);
+                    if (dist < closestToTargetLocSoFar) {
+                        closestToTargetLocSoFar = greedyDist;
+                        return dir;
+                    }
                 }
             }
 
         }
         //lastLocs.dequeue();
-        return Direction.CENTER;
+        return firstDirThatWorks;
     }
 
     static Direction randomDirection() {
