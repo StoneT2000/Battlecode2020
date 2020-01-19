@@ -11,6 +11,8 @@ public class HQ extends RobotPlayer {
     static MapLocation mapCenter;
     static int mapSize;
     static boolean criedForLandscapers = false;
+    static boolean criedForDesignSchool = false;
+    static boolean criedForFC = false;
     static boolean surroundedByFlood = false;
     static int surroundedByFloodRound = -1;
     static boolean nearCenter;
@@ -80,11 +82,13 @@ public class HQ extends RobotPlayer {
             }
         }
         // make sure we get a school and FC all the time
-        if (designSchools == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
+        if ((!criedForDesignSchool || rc.getRoundNum() % 10 == 0) &&designSchools == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
             announceBUILD_A_SCHOOL();
+            criedForDesignSchool = true;
         }
-        if (fulfillmentCenters == 0 && designSchools > 0 && wallBots >= 4 && enemyLandscapers > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
+        if ((!criedForFC || rc.getRoundNum() % 10 == 0) && fulfillmentCenters == 0 && designSchools > 0 && wallBots >= 4 && enemyLandscapers > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
             announceBUILD_A_CENTER();
+            criedForFC = true;
         }
         else if (fulfillmentCenters == 0 && designSchools > 0 && wallBots >= 8 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
             announceBUILD_A_CENTER();
