@@ -530,7 +530,12 @@ public class Landscaper extends RobotPlayer {
                                 if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam() && rc.getID() != info.getID()) {
                                     valid = false;
                                     BuildPositionsTaken.add(checkLoc);
-                                } else {
+                                }
+                                else if (isBuilding(info) && info.team == rc.getTeam()) {
+                                    BuildPositionsTaken.add(checkLoc);
+                                    valid = false;
+                                }
+                                else {
                                     valid = true;
                                 }
                             } else {
