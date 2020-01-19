@@ -11,6 +11,7 @@ public class DeliveryDrone extends RobotPlayer {
     static final int ATTACK = 0;
     static final int DUMP_BAD_GUY = 2;
     static final int MOVE_LANDSCAPER = 3;
+    static final int MOVE_OUR_UNIT_OUT = 4;
     static int role = ATTACK;
     static MapLocation attackLoc;
     static MapLocation waterLoc;
@@ -290,6 +291,7 @@ public class DeliveryDrone extends RobotPlayer {
             closestMaybeHQ = enemyBaseLocation;
         }
 
+        RobotInfo blockingFriendlyUnit = null;
         // drone must always try and help our own landscapers
         if (nearestLandscaper != null) {
             if (debug) System.out.println("found near landscaper that needs help? " + nearestLandscaper.location);
@@ -301,7 +303,21 @@ public class DeliveryDrone extends RobotPlayer {
                 if (rc.canSenseLocation(loc)) {
                     // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
                     if (rc.isLocationOccupied(loc)) {
-
+                       RobotInfo info = rc.senseRobotAtLocation(loc);
+                       if (info.type != RobotType.LANDSCAPER && info.team == rc.getTeam()) {
+                           if (rc.getLocation().isAdjacentTo(info.location)) {
+                               blockingFriendlyUnit = info;
+                               if (rc.canPickUpUnit(info.getID())) {
+                                   rc.pickUpUnit(info.getID());
+                                   role = MOVE_OUR_UNIT_OUT;
+                               }
+                           }
+                           else {
+                               blockingFriendlyUnit = info;
+                               setTargetLoc(info.location);
+                               //role = MOVE_OUR_UNIT_OUT;
+                           }
+                       }
                     }
                     else {
                         // take nearest landscaper
@@ -376,6 +392,22 @@ public class DeliveryDrone extends RobotPlayer {
                 else {
                     setTargetLoc(closestEmptyWallLoc);
                 }
+            }
+        }
+        else if (role == MOVE_OUR_UNIT_OUT) {
+            // drop our unit anywhere but on the wall
+            Direction dropDir = rc.getLocation().directionTo(HQLocation).opposite();
+            int i = 0;
+            while(i++ < 8) {
+                MapLocation dropLoc = rc.adjacentLocation(dropDir);
+                if (!MainWall.contains(dropLoc) && !SecondWall.contains(dropLoc)) {
+                    if (rc.canDropUnit(dropDir)) {
+                        rc.dropUnit(dropDir);
+                        role = ATTACK;
+                        break;
+                    }
+                }
+                dropDir = dropDir.rotateLeft();
             }
         }
         else if (role == DUMP_BAD_GUY) {

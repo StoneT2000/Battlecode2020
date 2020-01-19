@@ -309,7 +309,7 @@ public class Miner extends RobotPlayer {
                 // same parity and must not be too close
 
                 // if school or FC, just build asap
-                if ((unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER || buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && !isDigLocation(buildLoc) && HQLocation.distanceSquaredTo(buildLoc) > 8) {
+                if ((unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER || buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && !isDigLocation(buildLoc) && HQLocation.distanceSquaredTo(buildLoc) >= 8) {
                     if (tryBuild(unitToBuild, buildDir)) {
                         builtUnit = true;
                         break;
