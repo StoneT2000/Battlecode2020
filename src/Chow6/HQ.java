@@ -31,6 +31,7 @@ public class HQ extends RobotPlayer {
         // shoot nearest robot
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+        MapLocation[] soupLocsNearby = rc.senseNearbySoup(-1);
         RobotInfo closestDroneBot = null;
         int enemyLandscapers = 0;
         int enemyMiners = 0;
@@ -58,6 +59,17 @@ public class HQ extends RobotPlayer {
                 case LANDSCAPER:
                     enemyLandscapers++;
                     break;
+            }
+        }
+
+        int closestSoupDist = 9999999;
+        MapLocation closestSoupLoc = null;
+        for (int i = soupLocsNearby.length; --i >= 0; ) {
+            MapLocation soupLoc = soupLocsNearby[i];
+            int distToSoup = rc.getLocation().distanceSquaredTo(soupLoc);
+            if (distToSoup < closestSoupDist) {
+                closestSoupDist = distToSoup;
+                closestSoupLoc = soupLoc;
             }
         }
 
@@ -160,7 +172,7 @@ public class HQ extends RobotPlayer {
         // if we are to build a unit, proceed
         if (unitToBuild != null && (rc.getRoundNum() < 15 || (wallBots > 1 && designSchools > 0 ))) {
             // proceed with building unit using default heurstics
-            build();
+            build(closestSoupLoc);
         }
 
         if (myDrones >= MIN_DRONE_FOR_ATTACK && rc.getRoundNum() % 20 == 0) {
@@ -298,7 +310,7 @@ public class HQ extends RobotPlayer {
         }
         return true;
     }
-    public static void build() throws GameActionException {
+    public static void build(MapLocation closestSoupLoc) throws GameActionException {
         // TODO: optimize bytecode here
         if (rc.getRoundNum() == 1) {
             // preferred build direction is towards middle if castle is not really close to center
@@ -309,9 +321,10 @@ public class HQ extends RobotPlayer {
         else if (rc.getRoundNum() == 2) {
 
         }
-        // keep trying to build in buildDir direction, rotate a little to find new build loc
-        // TODO: Optimize this by building in direction of known soup locations or refineries?
 
+        if (closestSoupLoc != null) {
+            buildDir = rc.getLocation().directionTo(closestSoupLoc);
+        }
         boolean builtUnit = false;
         for (int i = 9; --i >= 1;) {
             if (tryBuild(unitToBuild, buildDir)) {
