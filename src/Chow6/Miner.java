@@ -413,7 +413,7 @@ public class Miner extends RobotPlayer {
         if (debug) System.out.println(" Mined? " + mined + " | In wall?" + MainHQWall.contains(rc.getLocation()));
         if (!mined && MainHQWall.contains(rc.getLocation()) && turnCount > 15) {
             stuckRounds++;
-            if (stuckRounds > 4) {
+            if (stuckRounds > 10) {
                 if (debug) System.out.println("been stuck for 4 or more rounds, disintegrate please");
                 rc.disintegrate();
             }
