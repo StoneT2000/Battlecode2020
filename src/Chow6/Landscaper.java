@@ -73,44 +73,45 @@ public class Landscaper extends RobotPlayer {
         int desiredElevation = waterLevel + 4;
         int soupNearby = 0;
         if (debug) System.out.println("BFS start: " + Clock.getBytecodeNum());
-        for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
-            int[] deltas = Constants.BFSDeltas24[i];
-            MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
-            if (rc.onTheMap(checkLoc) && rc.canSenseLocation(checkLoc)) {
-                switch(role) {
-                    case ATTACK:
-                        int elevation = rc.senseElevation(checkLoc);
-                        int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
-                        int distToHQ = checkLoc.distanceSquaredTo(HQLocation);
-                        // make sure its not too deep, not near HQ, but within some dist of HQ, and is not a dig location, and is lower than desired
-                        if (elevation < desiredElevation && !isDigLocation(checkLoc) && distToHQ > 8 && elevation > -30 && distToHQ < terraformDistAwayFromHQ) {
-                            if (rc.isLocationOccupied(checkLoc)) {
-                                RobotInfo info = rc.senseRobotAtLocation(checkLoc);
-                                if (isBuilding(info) && info.team == enemyTeam) {
+        if (debug) System.out.println("Are we on wall? " + FirstLandscaperPosAroundHQTable.contains(rc.getLocation()));
+        if (!FirstLandscaperPosAroundHQTable.contains(rc.getLocation())) {
+            for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
+                int[] deltas = Constants.BFSDeltas24[i];
+                MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
+                if (rc.canSenseLocation(checkLoc)) {
+                    switch (role) {
+                        case ATTACK:
+                            int elevation = rc.senseElevation(checkLoc);
+                            int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
+                            int distToHQ = checkLoc.distanceSquaredTo(HQLocation);
+                            // make sure its not too deep, not near HQ, but within some dist of HQ, and is not a dig location, and is lower than desired
+                            if (elevation < desiredElevation && !isDigLocation(checkLoc) && distToHQ > 8 && elevation > -30 && distToHQ < terraformDistAwayFromHQ) {
+                                if (rc.isLocationOccupied(checkLoc)) {
+                                    RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                                    if (isBuilding(info) && info.team == enemyTeam) {
+                                        if (distToLoc < closestTerraformDist) {
+                                            closestTerraformDist = distToLoc;
+                                            locToTerraform = checkLoc;
+                                        }
+                                    }
+                                } else {
                                     if (distToLoc < closestTerraformDist) {
                                         closestTerraformDist = distToLoc;
                                         locToTerraform = checkLoc;
                                     }
                                 }
+
                             }
-                            else {
-                                if (distToLoc < closestTerraformDist) {
-                                    closestTerraformDist = distToLoc;
-                                    locToTerraform = checkLoc;
-                                }
-                            }
+                    }
 
-                        }
+                    soupNearby += rc.senseSoup(checkLoc);
+                } else {
+                    switch (role) {
+                        case DEFEND_HQ:
+                    }
+                    // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
+
                 }
-
-                soupNearby+=rc.senseSoup(checkLoc);
-            }
-            else {
-                switch(role) {
-                    case DEFEND_HQ:
-                }
-                // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
-
             }
         }
         if (locToTerraform == null) {
@@ -365,7 +366,8 @@ public class Landscaper extends RobotPlayer {
             MapLocation mostCloggedBuildLoc = null;
             MapLocation closestBuildLoc = null;
             MapLocation closestDefendRushLoc = null;
-            if (!onSupportBlockDoNotMove) {
+            // don't search if we are on wall or support bloc
+            if (!onSupportBlockDoNotMove || FirstLandscaperPosAroundHQTable.contains(rc.getLocation())) {
                 for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
                     int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
                     MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
@@ -493,7 +495,7 @@ public class Landscaper extends RobotPlayer {
             if (closestDefendRushLoc != null && !rc.getLocation().equals(closestBuildLoc)) {
                 setTargetLoc(closestDefendRushLoc);
             }
-            else if (mostCloggedBuildLoc != null) {
+            else if (mostCloggedBuildLoc != null && !rc.getLocation().equals(closestBuildLoc)) {
                 setTargetLoc(mostCloggedBuildLoc);
             }
             else {
@@ -553,7 +555,6 @@ public class Landscaper extends RobotPlayer {
                         if (rc.canSenseLocation(checkLoc)) {
                             int elevation = rc.senseElevation(checkLoc);
                             boolean proceed = true;
-                            if (debug) System.out.println("Checking " + checkLoc);
                             // make sure we don't fill up a dig spot
                             if (DigDeltasAroundHQTable.contains(checkLoc)) {
                                 proceed = false;
@@ -561,7 +562,6 @@ public class Landscaper extends RobotPlayer {
                             if (rc.isLocationOccupied(checkLoc) && rc.senseRobotAtLocation(checkLoc).type == RobotType.HQ) {
                                 proceed = false;
                             }
-                            if (debug) System.out.println("Still Checking " + checkLoc);
                             if (proceed && elevation < lowestElevation && elevation < 4) {
                                 lowestElevation = elevation;
                                 depositDir = rc.getLocation().directionTo(checkLoc);
@@ -840,12 +840,12 @@ public class Landscaper extends RobotPlayer {
             MapLocation digLoc = HQLocation.translate(deltas[0], deltas[1]);
             DigDeltasAroundHQTable.add(digLoc);
         }
-        /*
+
         for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
             int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
             MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
             FirstLandscaperPosAroundHQTable.add(loc);
-        }*/
+        }
 
     }
 }

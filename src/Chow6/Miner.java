@@ -579,5 +579,6 @@ public class Miner extends RobotPlayer {
             MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
             MainHQWall.add(loc);
         }
+        
     }
 }
