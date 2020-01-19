@@ -251,7 +251,7 @@ public class Landscaper extends RobotPlayer {
             }
             // prioritize destructing buildings
             if (nearestEnemy != null) {
-                attackLoc = nearestEnemy.location;
+                //attackLoc = nearestEnemy.location;
 
             }
 
