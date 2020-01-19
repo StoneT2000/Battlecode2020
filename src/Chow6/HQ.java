@@ -101,8 +101,9 @@ public class HQ extends RobotPlayer {
             announceBUILD_A_CENTER();
             criedForFC = true;
         }
-        else if (fulfillmentCenters == 0 && designSchools > 0 && wallBots >= Math.min(8, wallBotsMax) && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
+        else if ((!criedForFC || rc.getRoundNum() % 10 == 0) && fulfillmentCenters == 0 && designSchools > 0 && wallBots >= Math.min(8, wallBotsMax) && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
             announceBUILD_A_CENTER();
+            criedForFC = true;  
         }
         // get some drones if we have more wall bots
         if (wallBots - 8 > myDrones && myDrones < 2) {
