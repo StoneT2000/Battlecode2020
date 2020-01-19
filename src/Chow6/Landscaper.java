@@ -360,7 +360,7 @@ public class Landscaper extends RobotPlayer {
             Direction dirToDigBuildingOut = rc.getLocation().directionTo(HQLocation);
             for (int i = directions.length; --i>=0; ) {
                 MapLocation adjLoc = rc.adjacentLocation(dirToDigBuildingOut);
-                if (rc.isLocationOccupied(adjLoc)) {
+                if (rc.onTheMap(adjLoc) && rc.isLocationOccupied(adjLoc)) {
                     RobotInfo info = rc.senseRobotAtLocation(adjLoc);
                     if (info.team == rc.getTeam() && isBuilding(info)) {
                         if (rc.canDigDirt(dirToDigBuildingOut)) {
@@ -745,7 +745,7 @@ public class Landscaper extends RobotPlayer {
     }
 
     static boolean isBuilding(RobotInfo info) {
-        if (info.type == RobotType.FULFILLMENT_CENTER || info.type == RobotType.NET_GUN || info.type == RobotType.REFINERY || info.type == RobotType.DESIGN_SCHOOL || info.type == RobotType.VAPORATOR) {
+        if (info.type == RobotType.HQ || info.type == RobotType.FULFILLMENT_CENTER || info.type == RobotType.NET_GUN || info.type == RobotType.REFINERY || info.type == RobotType.DESIGN_SCHOOL || info.type == RobotType.VAPORATOR) {
             return true;
         }
         return false;
