@@ -10,6 +10,8 @@ public class DeliveryDrone extends RobotPlayer {
     static final int DUMP_BAD_GUY = 2;
     static final int MOVE_LANDSCAPER = 3;
     static final int MOVE_OUR_UNIT_OUT = 4;
+    static final int MOVE_MINER_TO_HIGH_LAND = 5;
+    static boolean moveMinersToHighland = false;
     static boolean lockAndDefend = false;
     static int role = ATTACK;
     static MapLocation attackLoc;
@@ -35,7 +37,7 @@ public class DeliveryDrone extends RobotPlayer {
             if (isOurMessage((msg))) {
                 if ((msg[1] ^ DRONES_ATTACK) == 0) {
                     int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
-                    if ((distToHQ <= 13 && distToHQ >= 8) || distToHQ == 18) {
+                    if (distToHQ <= 20) {
                         // stay on wall dont do anything
                     }
                     else {
@@ -97,6 +99,12 @@ public class DeliveryDrone extends RobotPlayer {
                 else if ((msg[1] ^ LOCK_AND_DEFEND) == 0) {
                     lockAndDefend = true;
                     toldToLockAndDefendByHQ = true;
+                }
+                else if ((msg[1] ^ NO_MORE_LANDSCAPERS_NEEDED) == 0) {
+                    // means that we have our wall, we terraform now!
+                    moveMinersToHighland = true;
+                    // pick up any miners and drop on height 10 tiles
+
                 }
             }
         }
@@ -230,6 +238,8 @@ public class DeliveryDrone extends RobotPlayer {
         RobotInfo nearestCow = null;
         int distToNearestCow =  9999999;
         int distToNearestLandscaper = 99999999;
+        int distToNearestMiner = 9999999;
+        RobotInfo nearestLowMiner = null;
         RobotInfo nearestLandscaper = null; // nearest not on wall / available
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
@@ -247,6 +257,15 @@ public class DeliveryDrone extends RobotPlayer {
                                 distToNearestLandscaper = dist;
                                 nearestLandscaper = info;
                             }
+                        }
+                    }
+                    break;
+                case MINER:
+                    if (rc.senseElevation(info.location) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+                        int dist = rc.getLocation().distanceSquaredTo(info.location);
+                        if (dist < distToNearestMiner) {
+                            distToNearestMiner = dist;
+                            nearestLowMiner = info;
                         }
                     }
                     break;
@@ -276,6 +295,8 @@ public class DeliveryDrone extends RobotPlayer {
 
         /* BIG BFS LOOP ISH */
         int minDistToFlood = 999999999;
+        MapLocation nearestEmptyHighLand = null;
+        int distToHighLand = 999999999;
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
             int[] deltas = Constants.BFSDeltas24[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
@@ -286,6 +307,16 @@ public class DeliveryDrone extends RobotPlayer {
                     if (dist < minDistToFlood && dist != 0) {
                         minDistToFlood = dist;
                         waterLoc = checkLoc;
+                    }
+
+                }
+                int elevation = rc.senseElevation(checkLoc);
+                if (elevation >= DESIRED_ELEVATION_FOR_TERRAFORM && !rc.isLocationOccupied(checkLoc)) {
+                    int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+                    if (dist < distToHighLand) {
+                        nearestEmptyHighLand = checkLoc;
+                        distToHighLand = dist;
+                        if (debug) System.out.println(checkLoc + " is empty high land");
                     }
                 }
             }
@@ -430,7 +461,56 @@ public class DeliveryDrone extends RobotPlayer {
             }
         }
 
-        if (role == MOVE_LANDSCAPER) {
+        // pick up miners on low land
+        if (moveMinersToHighland) {
+            if (nearestLowMiner != null) {
+                int distToMiner = rc.getLocation().distanceSquaredTo(nearestLowMiner.location);
+                if (distToMiner <= 2) {
+                    if (rc.canPickUpUnit(nearestLowMiner.getID())) {
+                        rc.pickUpUnit(nearestLowMiner.getID());
+                        role = MOVE_MINER_TO_HIGH_LAND;
+                    }
+                }
+            }
+        }
+
+        if (role == MOVE_MINER_TO_HIGH_LAND) {
+            if (nearestEmptyHighLand == null) {
+                setTargetLoc(HQLocation);
+            }
+            else {
+                if (debug) System.out.println("moving a miner to " + nearestEmptyHighLand);
+                if (rc.getLocation().isAdjacentTo(nearestEmptyHighLand)) {
+                    Direction dropDir = rc.getLocation().directionTo(nearestEmptyHighLand);
+                    if (rc.canDropUnit(dropDir)) {
+                        rc.dropUnit(dropDir);
+                        role = ATTACK;
+                    }
+                    else {
+                        // drop on any high land tile
+                        int i = 0;
+                        while(i++ < 8) {
+                            dropDir = dropDir.rotateLeft();
+                            MapLocation adjLoc = rc.adjacentLocation(dropDir);
+                            if (rc.canSenseLocation(adjLoc)) {
+                                int ele = rc.senseElevation(adjLoc);
+                                if (ele >= DESIRED_ELEVATION_FOR_TERRAFORM) {
+                                    if (rc.canDropUnit(dropDir)) {
+                                        rc.dropUnit(dropDir);
+                                        role = ATTACK;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else {
+                    setTargetLoc(nearestEmptyHighLand);
+                }
+            }
+        }
+        else if (role == MOVE_LANDSCAPER) {
 
             // if no open spot, move on and drop unit
             if (closestEmptyWallLoc == null) {

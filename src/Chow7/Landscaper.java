@@ -86,10 +86,8 @@ public class Landscaper extends RobotPlayer {
                             int elevation = rc.senseElevation(checkLoc);
 
                             int distToHQ = checkLoc.distanceSquaredTo(HQLocation);
-                            int desiredElevation = 10; //;waterLevel + 4;
-                            //desiredElevation = Math.max((int) Math.sqrt(distToHQ), 8);
                             // make sure its not too deep, not near HQ, but within some dist of HQ, and is not a dig location, and is lower than desired
-                            if (elevation < desiredElevation && !isDigLocation(checkLoc) && elevation > -30 && distToHQ < terraformDistAwayFromHQ && distToHQ > 8) {
+                            if (elevation < DESIRED_ELEVATION_FOR_TERRAFORM && !isDigLocation(checkLoc) && elevation > -30 && distToHQ < terraformDistAwayFromHQ && distToHQ > 8) {
                                 if (rc.isLocationOccupied(checkLoc)) {
                                     RobotInfo info = rc.senseRobotAtLocation(checkLoc);
                                     if ((!isBuilding(info) || info.team == enemyTeam) || info.getID() == rc.getID()) {

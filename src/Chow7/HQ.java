@@ -104,7 +104,34 @@ public class HQ extends RobotPlayer {
                 designSchools++;
                 if (dist <= 8) {
                     wallBotsMax--;
-                    // decrement one as a fulfillment center is in our wall area
+                }
+                // decrement one as a fulfillment center is in our wall area
+                // count how many open tiles it can build on
+                boolean blocked = true;
+                int elevation = rc.senseElevation(info.location);
+                for (int k = 1; k < directions.length; k++) {
+                    MapLocation adjLoc = info.location.add(directions[k]);
+                    if (rc.canSenseLocation(adjLoc)) {
+                        int asideElevation = rc.senseElevation(adjLoc);
+                        if (debug) System.out.println("School e: " + elevation + " | asideE "  + asideElevation );
+                        if (asideElevation <= elevation + 3 && asideElevation >= elevation - 3) {
+                            if (debug) System.out.println("School at " + info.location + " has space");
+                            blocked = false;
+                            break;
+                        }
+                    }
+                    else {
+                        blocked = false;
+                        break;
+                    }
+
+                }
+                if (blocked) {
+                    if (debug) System.out.println("School at " + info.location + " has no space");
+                    designSchools--;
+                }
+                else {
+                    if (debug) System.out.println("School at " + info.location + " has space");
                 }
             }
         }

@@ -49,6 +49,8 @@ public strictfp class RobotPlayer {
     static final int BUILD_A_CENTER = 20;
     static final int LOCK_AND_DEFEND = 21;
 
+    static final int DESIRED_ELEVATION_FOR_TERRAFORM = 10;
+
     public static void run(RobotController rc) throws GameActionException {
 
         // This is the RobotController object. You use it to perform actions from this robot,

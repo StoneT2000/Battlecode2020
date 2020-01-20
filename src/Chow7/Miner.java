@@ -3,6 +3,7 @@ package Chow7;
 import Chow7.utils.HashTable;
 import Chow7.utils.Node;
 import battlecode.common.*;
+import battlecode.world.maps.Soup;
 
 public class Miner extends RobotPlayer {
     static final int SCOUT = 0; // default to search for patches of soup and what not
@@ -15,6 +16,8 @@ public class Miner extends RobotPlayer {
     static boolean firstFulfillmentCenterBuilt = false;
     static int DesignSchoolsBuilt = 0; // how many design schools this robot knows have been built ??
     static boolean firstDesignSchoolBuilt = false;
+
+    static boolean terraformTime = false;
 
     static MapLocation lastDepositedRefinery;
     static MapLocation enemyBaseLocation = null;
@@ -264,30 +267,32 @@ public class Miner extends RobotPlayer {
             }
 
             // EXPLORE if still no soup found
-            if (SoupLocation == null) {
-                if (debug) System.out.println("Exploring to " + exploreLocs[exploreLocIndex]);
-                //targetLoc = rc.adjacentLocation(getExploreDir());
-                setTargetLoc(rc.adjacentLocation(getExploreDir()));
-            }
-            // otherwise we approach the soup location.
-            else {
-
-                // check if we sense the place, if not, we continue branch, otherwise check if there is soup left
-                if (!rc.canSenseLocation(SoupLocation) || rc.senseSoup(SoupLocation) > 0) {
-                    // if not close enough to soup location, move towards it as it still has soup there
-                    if (SoupLocation.distanceSquaredTo(rc.getLocation()) > 1) {
-                        if (debug) System.out.println("Heading to soup location " + SoupLocation + " with score " + soupLocScore);
-                        //targetLoc = SoupLocation;
-                        setTargetLoc(SoupLocation);
-                    } else {
-                        // close enough...
-                    }
-                } else {
-                    // no soup left at location
-                    SoupLocation = null;
-                    soupLocScore = 0;
+            if (terraformTime == false) {
+                if (SoupLocation == null) {
+                    if (debug) System.out.println("Exploring to " + exploreLocs[exploreLocIndex]);
+                    //targetLoc = rc.adjacentLocation(getExploreDir());
+                    setTargetLoc(rc.adjacentLocation(getExploreDir()));
                 }
+                // otherwise we approach the soup location.
+                else {
 
+                    // check if we sense the place, if not, we continue branch, otherwise check if there is soup left
+                    if (!rc.canSenseLocation(SoupLocation) || rc.senseSoup(SoupLocation) > 0) {
+                        // if not close enough to soup location, move towards it as it still has soup there
+                        if (SoupLocation.distanceSquaredTo(rc.getLocation()) > 1) {
+                            if (debug) System.out.println("Heading to soup location " + SoupLocation + " with score " + soupLocScore);
+                            //targetLoc = SoupLocation;
+                            setTargetLoc(SoupLocation);
+                        } else {
+                            // close enough...
+                        }
+                    } else {
+                        // no soup left at location
+                        SoupLocation = null;
+                        soupLocScore = 0;
+                    }
+
+                }
             }
         }
         // must be ready, if not ready and still on cooldown, we wait till next turn basically
@@ -312,13 +317,16 @@ public class Miner extends RobotPlayer {
 
                 // if school or FC, just build asap
                 if ((unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER || buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && !isDigLocation(buildLoc) && HQLocation.distanceSquaredTo(buildLoc) >= 8) {
-                    if (tryBuild(unitToBuild, buildDir)) {
+                    boolean proceed = true;
+                    if (terraformTime) {
+                        // only build on higher land
+                        if (rc.senseElevation(buildLoc) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+                            proceed = false;
+                        }
+                    }
+                    if (proceed && tryBuild(unitToBuild, buildDir)) {
                         builtUnit = true;
                         break;
-                    } else {
-
-                        // TODO: optimize
-
                     }
                 }
                 buildDir = buildDir.rotateRight();
@@ -465,6 +473,14 @@ public class Miner extends RobotPlayer {
                 }
                 else if (msg[1] == RobotType.FULFILLMENT_CENTER.ordinal()) {
                     firstFulfillmentCenterBuilt = true;
+                }
+                else if ((msg[1] ^ NO_MORE_LANDSCAPERS_NEEDED) == 0) {
+                    // return to base if not near soup loc
+                    if (SoupLocation == null || rc.getLocation().distanceSquaredTo(SoupLocation) >= 45) {
+                        setTargetLoc(HQLocation);
+                        if (debug) System.out.println("going back to base for terraforamtion");
+                        terraformTime = true;
+                    }
                 }
             }
         }
