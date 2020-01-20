@@ -65,7 +65,7 @@ public class FulfillmentCenter extends RobotPlayer {
             confirmBuild = true;
             if (debug) System.out.println("Building to fight landscapers");
         }
-        if (vaporatorsBuilt * 3 > dronesBuilt && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 350) {
+        if (vaporatorsBuilt * 1 > dronesBuilt && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 350) {
             confirmBuild = true;
             if (debug) System.out.println("Building balance");
         }

@@ -21,8 +21,8 @@ public strictfp class RobotPlayer {
     static MapLocation enemyBaseLocation = null; // the enemy HQ location
 
     static int turnCount;
-    static final boolean debug = false;
-    static final int UNIQUEKEY = -1139234321;
+    static final boolean debug = true;
+    static final int UNIQUEKEY = -1449234321;
     static Team enemyTeam; // enemy team enum
 
     static final int BASE_WALL_DIST = 1;
@@ -47,6 +47,7 @@ public strictfp class RobotPlayer {
     static final int ANNOUNCE_NOT_ENEMY_BASE = 18;
     static final int BUILD_A_SCHOOL = 19;
     static final int BUILD_A_CENTER = 20;
+    static final int LOCK_AND_DEFEND = 21;
 
     public static void run(RobotController rc) throws GameActionException {
 
@@ -401,6 +402,7 @@ public strictfp class RobotPlayer {
         return new MapLocation(hash % 64, hash >> 6);
     }
     static boolean isDigLocation(MapLocation loc) {
+        //if (loc.x)
         if (loc.x % 3 == HQLocation.x % 3  && loc.y % 3 == HQLocation.y % 3) {
             return true;
         }

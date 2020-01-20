@@ -13,6 +13,7 @@ public class HQ extends RobotPlayer {
     static boolean criedForLandscapers = false;
     static boolean criedForDesignSchool = false;
     static boolean criedForFC = false;
+    static boolean criedForLockAndDefend = false;
     static boolean surroundedByFlood = false;
     static int surroundedByFloodRound = -1;
     static boolean nearCenter;
@@ -36,6 +37,7 @@ public class HQ extends RobotPlayer {
         int enemyLandscapers = 0;
         int enemyMiners = 0;
         int enemyDesignSchools = 0;
+        int enemyDrones = 0;
         int enemyNetGuns = 0;
         int closestEnemyDroneDist = 99999999;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
@@ -58,6 +60,9 @@ public class HQ extends RobotPlayer {
                     break;
                 case LANDSCAPER:
                     enemyLandscapers++;
+                    break;
+                case DELIVERY_DRONE:
+                    enemyDrones++;
                     break;
             }
         }
@@ -130,8 +135,18 @@ public class HQ extends RobotPlayer {
         }
 
         // if we reach the number of wall bots we want, get drone defenders
-        if (wallBots == wallBotsMax && rc.getRoundNum() % 10 == 0 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
-            announceBuildDronesNow(24 - myDrones);
+        if (wallBots >= wallBotsMax && rc.getRoundNum() % 15 == 0 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
+            if (myDrones <= 24) {
+                announceBuildDronesNow(24 - myDrones);
+            }
+            announceNoMoreLandscapersNeeded();
+        }
+        if (!criedForLockAndDefend && enemyDrones > 0) {
+            announceLOCK_AND_DEFEND();
+            criedForLockAndDefend = true;
+        }
+        else if (enemyDrones == 0) {
+            criedForLockAndDefend = false;
         }
 
 
@@ -218,6 +233,14 @@ public class HQ extends RobotPlayer {
                     FulfillmentCentersBuilt++;
                 }
             }
+        }
+    }
+    static void announceLOCK_AND_DEFEND() throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), LOCK_AND_DEFEND, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING LOCK AND DEFEND!!!");
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
         }
     }
     static void announceBUILD_A_CENTER() throws GameActionException {

@@ -8,6 +8,7 @@ public class Landscaper extends RobotPlayer {
     // roles
     static final int ATTACK = 0;
     static final int DEFEND_HQ = 1;
+    static final int TERRAFORM = 2;
     static int role = DEFEND_HQ;
     static boolean onSupportBlockDoNotMove = false;
     static boolean shouldDig = true;
@@ -71,7 +72,7 @@ public class Landscaper extends RobotPlayer {
 
         int closestTerraformDist = 9999999;
         MapLocation locToTerraform = null;
-        int desiredElevation = waterLevel + 4;
+
         int soupNearby = 0;
         if (debug) System.out.println("BFS start: " + Clock.getBytecodeNum());
         if (debug) System.out.println("Are we on wall? " + FirstLandscaperPosAroundHQTable.contains(rc.getLocation()));
@@ -81,15 +82,17 @@ public class Landscaper extends RobotPlayer {
                 MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
                 if (rc.canSenseLocation(checkLoc)) {
                     switch (role) {
-                        case ATTACK:
+                        case TERRAFORM:
                             int elevation = rc.senseElevation(checkLoc);
 
                             int distToHQ = checkLoc.distanceSquaredTo(HQLocation);
+                            int desiredElevation = 10; //;waterLevel + 4;
+                            //desiredElevation = Math.max((int) Math.sqrt(distToHQ), 8);
                             // make sure its not too deep, not near HQ, but within some dist of HQ, and is not a dig location, and is lower than desired
-                            if (elevation < desiredElevation && !isDigLocation(checkLoc) && distToHQ > 8 && elevation > -30 && distToHQ < terraformDistAwayFromHQ) {
+                            if (elevation < desiredElevation && !isDigLocation(checkLoc) && elevation > -30 && distToHQ < terraformDistAwayFromHQ && distToHQ > 8) {
                                 if (rc.isLocationOccupied(checkLoc)) {
                                     RobotInfo info = rc.senseRobotAtLocation(checkLoc);
-                                    if (isBuilding(info) && info.team == enemyTeam) {
+                                    if ((!isBuilding(info) || info.team == enemyTeam) || info.getID() == rc.getID()) {
                                         int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
                                         if (distToLoc < closestTerraformDist) {
                                             closestTerraformDist = distToLoc;
@@ -115,14 +118,14 @@ public class Landscaper extends RobotPlayer {
             // still no terraform location?
             // increase search dist
             //
-            attackLoc = HQLocation;
-            if(debug) System.out.println("No terraform loc, using " + attackLoc);
+            //attackLoc = HQLocation;
+            if(debug) System.out.println("No terraform loc!");
 
             if (!circling) {
                 startedCirclingRound = rc.getRoundNum();
                 circling = true;
             }
-            if (circling && rc.getRoundNum() - startedCirclingRound >= 28) {
+            if (circling && rc.getRoundNum() - startedCirclingRound >= 10) {
                 terraformDistAwayFromHQ = (int) Math.pow((Math.sqrt(terraformDistAwayFromHQ) + 1), 2);
                 circling = false;
                 //attackLoc = HQL;
@@ -252,7 +255,52 @@ public class Landscaper extends RobotPlayer {
 
             }
 
-            if (attackLoc == null && locToTerraform != null) {
+            if (!rc.getLocation().isAdjacentTo(attackLoc)) {
+                //targetLoc = attackLoc;
+                setTargetLoc(attackLoc);
+            }
+            else {
+                if (attackLoc.equals(HQLocation)) {
+                    role = DEFEND_HQ;
+                }
+                else {
+                    // adjacent to attack loc now
+                    Direction dirToAttack = rc.getLocation().directionTo(attackLoc);
+                    if (rc.getDirtCarrying() > 0) {
+                        // > 0, so unload all dirt to destory enemy
+                        if (rc.canDepositDirt(dirToAttack)) {
+                            rc.depositDirt(dirToAttack);
+                            // after depositing, if building robot is gone, we reset nearestEnemy if we used that
+                            if (!rc.isLocationOccupied(attackLoc) && nearestEnemy != null) {
+                                nearestEnemy = null;
+                            }
+                        }
+                    } else {
+                        // dig down to make wall building harder
+                        Direction digDir = Direction.CENTER; //dirToHQ.opposite();
+                        // if we are attacking a normal building, take dirt from elsewhere
+                        if (nearestEnemy != null) {
+                            // loop to 1 so we don't include center
+                            for (int i = directions.length; --i >= 1; ) {
+                                Direction testDir = directions[i];
+                                MapLocation testLoc = rc.adjacentLocation(testDir);
+                                // dig out from location that is not occupied, and if it is, it is occupied by enemy bot
+                                if (rc.canDigDirt(testDir) && (!rc.isLocationOccupied(testLoc) || rc.senseRobotAtLocation(testLoc).team == enemyTeam)) {
+                                    rc.digDirt(directions[i]);
+                                    break;
+                                }
+                            }
+                        }
+                        // otherwise proceed to dig down as we are digging enemy HQ
+                        else if (rc.canDigDirt(digDir)) {
+                            rc.digDirt(digDir);
+                        }
+                    }
+                }
+            }
+        }
+        else if (role == TERRAFORM) {
+            if (locToTerraform != null) {
                 // no enemy in sight!, TERRAFORM
                 if (debug) System.out.println("Terraform mode: elevating " + locToTerraform);
                 //targetLoc = locToTerraform;
@@ -285,46 +333,11 @@ public class Landscaper extends RobotPlayer {
                     }
                 }
             }
-            // move towards maybe enemy HQ if not next to it.
-            else if (!rc.getLocation().isAdjacentTo(attackLoc)) {
-                //targetLoc = attackLoc;
-                setTargetLoc(attackLoc);
-            }
             else {
-                // adjacent to attack loc now
-                Direction dirToAttack = rc.getLocation().directionTo(attackLoc);
-                if (rc.getDirtCarrying() > 0) {
-                    // > 0, so unload all dirt to destory enemy
-                    if (rc.canDepositDirt(dirToAttack)) {
-                        rc.depositDirt(dirToAttack);
-                        // after depositing, if building robot is gone, we reset nearestEnemy if we used that
-                        if (!rc.isLocationOccupied(attackLoc) && nearestEnemy != null) {
-                            nearestEnemy = null;
-                        }
-                    }
-                }
-                else {
-                    // dig down to make wall building harder
-                    Direction digDir = Direction.CENTER; //dirToHQ.opposite();
-                    // if we are attacking a normal building, take dirt from elsewhere
-                    if (nearestEnemy != null) {
-                        // loop to 1 so we don't include center
-                        for (int i = directions.length; --i>=1; ) {
-                            Direction testDir = directions[i];
-                            MapLocation testLoc = rc.adjacentLocation(testDir);
-                            // dig out from location that is not occupied, and if it is, it is occupied by enemy bot
-                            if (rc.canDigDirt(testDir) && (!rc.isLocationOccupied(testLoc) || rc.senseRobotAtLocation(testLoc).team == enemyTeam)) {
-                                rc.digDirt(directions[i]);
-                                break;
-                            }
-                        }
-                    }
-                    // otherwise proceed to dig down as we are digging enemy HQ
-                    else if (rc.canDigDirt(digDir)) {
-                        rc.digDirt(digDir);
-                    }
-                }
+                // otherwise just move in direction of enemy;
+                setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(HQLocation).opposite()));
             }
+
         }
         else if (role == DEFEND_HQ) {
 
@@ -761,7 +774,7 @@ public class Landscaper extends RobotPlayer {
             }
             // if no build loc is found, go away
             if (targetLoc == null) {
-                role = ATTACK;
+                role = TERRAFORM;
             }
             // if none found
         }
@@ -824,16 +837,8 @@ public class Landscaper extends RobotPlayer {
                 }
                 else {
                     RobotInfo info = rc.senseRobotAtLocation(checkLoc);
-                    if (info.type == RobotType.DELIVERY_DRONE) {
-                        if (rc.canDigDirt(testDir)) {
-                            return testDir;
-                        }
-                    }
-                    // if enemy and not building, dig from it
-                    else if (info.team == enemyTeam && !isBuilding(info)) {
-                        if (rc.canDigDirt(testDir)) {
-                            return testDir;
-                        }
+                    if (rc.canDigDirt(testDir)) {
+                        return testDir;
                     }
                 }
             }
@@ -907,7 +912,7 @@ public class Landscaper extends RobotPlayer {
 
                     // go away and attack if not near HQ
                     if (rc.getLocation().distanceSquaredTo(HQLocation) > 16) {
-                        role = ATTACK;
+                        role = TERRAFORM;
                     }
                 }
             }

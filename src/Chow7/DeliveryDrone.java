@@ -17,6 +17,7 @@ public class DeliveryDrone extends RobotPlayer {
     static MapLocation waterLoc;
 
     static int wallSpaces = 0;
+    static boolean toldToLockAndDefendByHQ = false;
     static boolean wallHasEmptySpot = true;
     static boolean wallSpotLeft = false;
     static boolean attackHQ = false;
@@ -93,6 +94,10 @@ public class DeliveryDrone extends RobotPlayer {
                     }
 
                 }
+                else if ((msg[1] ^ LOCK_AND_DEFEND) == 0) {
+                    lockAndDefend = true;
+                    toldToLockAndDefendByHQ = true;
+                }
             }
         }
 
@@ -109,7 +114,7 @@ public class DeliveryDrone extends RobotPlayer {
         if (nearbyEnemyRobots.length > 0) {
             lockAndDefend = true;
         }
-        else {
+        else if (!toldToLockAndDefendByHQ) {
             lockAndDefend = false;
         }
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
