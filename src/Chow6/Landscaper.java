@@ -83,19 +83,21 @@ public class Landscaper extends RobotPlayer {
                     switch (role) {
                         case ATTACK:
                             int elevation = rc.senseElevation(checkLoc);
-                            int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
+
                             int distToHQ = checkLoc.distanceSquaredTo(HQLocation);
                             // make sure its not too deep, not near HQ, but within some dist of HQ, and is not a dig location, and is lower than desired
                             if (elevation < desiredElevation && !isDigLocation(checkLoc) && distToHQ > 8 && elevation > -30 && distToHQ < terraformDistAwayFromHQ) {
                                 if (rc.isLocationOccupied(checkLoc)) {
                                     RobotInfo info = rc.senseRobotAtLocation(checkLoc);
                                     if (isBuilding(info) && info.team == enemyTeam) {
+                                        int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
                                         if (distToLoc < closestTerraformDist) {
                                             closestTerraformDist = distToLoc;
                                             locToTerraform = checkLoc;
                                         }
                                     }
                                 } else {
+                                    int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
                                     if (distToLoc < closestTerraformDist) {
                                         closestTerraformDist = distToLoc;
                                         locToTerraform = checkLoc;
@@ -106,12 +108,6 @@ public class Landscaper extends RobotPlayer {
                     }
 
                     soupNearby += rc.senseSoup(checkLoc);
-                } else {
-                    switch (role) {
-                        case DEFEND_HQ:
-                    }
-                    // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
-
                 }
             }
         }
@@ -163,8 +159,6 @@ public class Landscaper extends RobotPlayer {
                     node = node.next;
 
                 }
-            } else {
-                // dont swarm?
             }
 
             // if we can check location we are trying to head to, determine if its a enemy HQ or not
@@ -336,20 +330,23 @@ public class Landscaper extends RobotPlayer {
 
             // TODO: make some better defence code...
             // FIRST THING FIRST DIG OUT HQ if adjacent to it
-            Direction dirToHQ = rc.getLocation().directionTo(HQLocation);
-            if (rc.getLocation().distanceSquaredTo(HQLocation) <= 2 && rc.canDigDirt(dirToHQ)) {
-                rc.digDirt(dirToHQ);
-                if (debug) System.out.println("Digging out HQ at " + HQLocation);
-                if (debug) rc.setIndicatorLine(rc.getLocation(), HQLocation, 120, 0, 230);
+
+            if (rc.getLocation().isAdjacentTo(HQLocation)) {
+                Direction dirToHQ = rc.getLocation().directionTo(HQLocation);
+                if (rc.canDigDirt(dirToHQ)) {
+                    rc.digDirt(dirToHQ);
+                    if (debug) System.out.println("Digging out HQ at " + HQLocation);
+                    if (debug) rc.setIndicatorLine(rc.getLocation(), HQLocation, 120, 0, 230);
+                }
             }
             // ALSO IF U CAN DEPOSIT DIRT ON ADJACENT ENEMY DESIGN SCHOOL or NETGUN DO SO
-            for (Direction dir : directions) {
-                MapLocation adjacentLoc = rc.adjacentLocation(dir);
+            for (int i = directions.length; --i >= 1; ) {
+                MapLocation adjacentLoc = rc.adjacentLocation(directions[i]);
                 if (rc.canSenseLocation(adjacentLoc) && rc.isLocationOccupied(adjacentLoc)) {
                     RobotInfo info = rc.senseRobotAtLocation(adjacentLoc);
                     if (info.team == enemyTeam && (info.type == RobotType.NET_GUN || info.type == RobotType.DESIGN_SCHOOL)) {
-                        if (rc.canDepositDirt(dir)) {
-                            rc.depositDirt(dir);
+                        if (rc.canDepositDirt(directions[i])) {
+                            rc.depositDirt(directions[i]);
                             if (debug) System.out.println("Depositing at " + adjacentLoc);
                             if (debug) rc.setIndicatorLine(rc.getLocation(), adjacentLoc, 20, 50, 130);
                         }
@@ -459,7 +456,6 @@ public class Landscaper extends RobotPlayer {
                                     for (int j = directions.length; --j >= 0; ) {
                                         Direction dir = directions[j];
                                         MapLocation adjToSchool = checkLoc.add(dir);
-                                        int distToAdjToSchool = rc.getLocation().distanceSquaredTo(adjToSchool);
                                         if (adjToSchool.isAdjacentTo(HQLocation)) {
                                             boolean proceed = true;
                                             if (rc.canSenseLocation(adjToSchool) && rc.isLocationOccupied(adjToSchool)) {
@@ -467,6 +463,7 @@ public class Landscaper extends RobotPlayer {
                                                 proceed = false;
                                             }
                                             if (proceed) {
+                                                int distToAdjToSchool = rc.getLocation().distanceSquaredTo(adjToSchool);
                                                 if (distToAdjToSchool < minDistToDefendRushLoc) {
                                                     closestDefendRushLoc = adjToSchool;
                                                     minDistToDefendRushLoc = distToAdjToSchool;
@@ -491,6 +488,7 @@ public class Landscaper extends RobotPlayer {
                         minDist = dist;
                         closestBuildLoc = checkLoc;
                     }
+                    /*
                     if (valid) {
                         // count number of walls around
                         int locElevation = rc.senseElevation(rc.getLocation());
@@ -509,7 +507,7 @@ public class Landscaper extends RobotPlayer {
                             mostCloggedBuildLoc = checkLoc;
                             maxDiffWalls = diffWalls;
                         }
-                    }
+                    }*/
                 }
             }
             // if no closest one found from this set, check supporting build locations
@@ -519,7 +517,7 @@ public class Landscaper extends RobotPlayer {
                 for (int i = Constants.LandscaperPosAroundHQ.length; --i >= 0; ) {
                     int [] deltas = Constants.LandscaperPosAroundHQ[i];
                     MapLocation checkLoc = HQLocation.translate(deltas[0], deltas[1]);
-                    int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+
                     // valid build location if we can't see it
                     // valid if we see it and there's no friendly landscaper on it (or if there is one its not self)
                     boolean valid = false;
@@ -552,9 +550,12 @@ public class Landscaper extends RobotPlayer {
                         valid = false;
                     }
                     // if build location is buildable, and closer
-                    if (valid && dist < minDist) {
-                        minDist = dist; // we can still use minDist cuz it was never reset as closestBuildLoc == null
-                        closestSupportLoc = checkLoc;
+                    if (valid) {
+                        int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+                        if (dist < minDist) {
+                            minDist = dist; // we can still use minDist cuz it was never reset as closestBuildLoc == null
+                            closestSupportLoc = checkLoc;
+                        }
                     }
                 }
 
@@ -604,6 +605,9 @@ public class Landscaper extends RobotPlayer {
                                     if ((info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) || rc.getRoundNum() > 1400) {
                                         // one of us?, spread the dirt
                                         spread = true;
+                                    }
+                                    if (info.type == RobotType.HQ && info.team == rc.getTeam()) {
+                                        spread = false; // stop our units from depositing onto our base
                                     }
                                 } else {
                                     // if its too low or high rounds, spread
