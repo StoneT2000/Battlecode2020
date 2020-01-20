@@ -16,7 +16,7 @@ public class DesignSchool extends RobotPlayer {
         }
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         boolean willBuild = false;
-        if (rc.getTeamSoup() >= RobotType.LANDSCAPER.cost && landscapersBuilt < 1) {
+        if (rc.getTeamSoup() >= RobotType.LANDSCAPER.cost && landscapersBuilt < 2) {
             willBuild = true;
         }
         checkMessages(lastRoundsBlocks);
@@ -36,11 +36,13 @@ public class DesignSchool extends RobotPlayer {
             willBuild = false;
             dontBuild = false;
         }
+        if (debug) System.out.println("Trying to build: " + willBuild);
         if (willBuild) {
             // should rely on some signal
             boolean builtUnit = false;
+            buildDir = rc.getLocation().directionTo(HQLocation);
             for (int i = 9; --i >= 1; ) {
-                if (tryBuild(RobotType.LANDSCAPER, buildDir)) {
+                if (tryBuild(RobotType.LANDSCAPER, buildDir) && !isDigLocation(rc.adjacentLocation(buildDir))) {
                     builtUnit = true;
                     break;
                 } else {

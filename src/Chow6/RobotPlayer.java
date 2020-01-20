@@ -21,7 +21,7 @@ public strictfp class RobotPlayer {
     static MapLocation enemyBaseLocation = null; // the enemy HQ location
 
     static int turnCount;
-    static final boolean debug = false;
+    static final boolean debug = true;
     static final int UNIQUEKEY = -1139234321;
     static Team enemyTeam; // enemy team enum
 
@@ -77,7 +77,7 @@ public strictfp class RobotPlayer {
             try {
                 // Here, we've separated the controls into a different method for each RobotType.
                 // You can add the missing ones or rewrite this into your own control structure.
-                if (debug) System.out.println("I'm a " + rc.getType() + "! Location " + rc.getLocation());
+                if (debug) System.out.println("I'm a " + rc.getType() + "! Location " + rc.getLocation() + " | CD: " + rc.getCooldownTurns());
                 switch (rc.getType()) {
                     case HQ:                 HQ.run();                break;
                     case MINER:              Miner.run();             break;

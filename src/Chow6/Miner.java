@@ -226,13 +226,13 @@ public class Miner extends RobotPlayer {
             // 800 - something, subtract distance. Subtract less for the higher amount soup mined
             if (lastDepositedRefinery.equals(HQLocation)) {
                 // if refinery deposited at is HQ location, go all out to build this refinery at least
-                if (mined && soupNearbyCount > 800 - rc.getLocation().distanceSquaredTo(lastDepositedRefinery) * 8 && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
+                if (mined && soupNearbyCount > Math.max(800 - rc.getLocation().distanceSquaredTo(lastDepositedRefinery) * 8, RobotType.LANDSCAPER.cost + RobotType.REFINERY.cost) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75) {
                     role = BUILDING;
                     unitToBuild = RobotType.REFINERY;
                 }
             }
             else {
-                if (mined && soupNearbyCount > 800 - Math.sqrt(rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost) {
+                if (mined && soupNearbyCount > 800 - Math.sqrt(rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75) {
                     role = BUILDING;
                     unitToBuild = RobotType.REFINERY;
                 }
@@ -439,13 +439,15 @@ public class Miner extends RobotPlayer {
             if (isOurMessage((msg))) {
                 // if it is announce SOUP location message
                 if ((msg[1] ^ BUILD_A_CENTER) == 0) {
-                    if (rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost) {
+                    int soupThen = msg[2];
+                    if (rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost && soupThen - rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost / 2) {
                         role = BUILDING;
                         unitToBuild = RobotType.FULFILLMENT_CENTER;
                     }
                 }
                 else if ((msg[1] ^ BUILD_A_SCHOOL) == 0) {
-                    if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost) {
+                    int soupThen = msg[2];
+                    if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && soupThen - rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost / 2) {
                         role = BUILDING;
                         unitToBuild = RobotType.DESIGN_SCHOOL;
                     }
