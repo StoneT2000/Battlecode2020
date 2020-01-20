@@ -226,13 +226,13 @@ public class Miner extends RobotPlayer {
             // 800 - something, subtract distance. Subtract less for the higher amount soup mined
             if (lastDepositedRefinery.equals(HQLocation)) {
                 // if refinery deposited at is HQ location, go all out to build this refinery at least
-                if (mined && soupNearbyCount > Math.max(800 - rc.getLocation().distanceSquaredTo(lastDepositedRefinery) * 8, RobotType.LANDSCAPER.cost + RobotType.REFINERY.cost) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 36) {
+                if (mined && soupNearbyCount > Math.max(800 - rc.getLocation().distanceSquaredTo(lastDepositedRefinery) * 8, RobotType.LANDSCAPER.cost + RobotType.REFINERY.cost) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 25) {
                     role = BUILDING;
                     unitToBuild = RobotType.REFINERY;
                 }
             }
             else {
-                if (mined && soupNearbyCount > 800 - Math.sqrt(rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 36) {
+                if (mined && soupNearbyCount > 800 - Math.sqrt(rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 25) {
                     role = BUILDING;
                     unitToBuild = RobotType.REFINERY;
                 }
