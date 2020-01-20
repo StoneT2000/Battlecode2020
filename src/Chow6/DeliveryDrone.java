@@ -12,10 +12,15 @@ public class DeliveryDrone extends RobotPlayer {
     static final int DUMP_BAD_GUY = 2;
     static final int MOVE_LANDSCAPER = 3;
     static final int MOVE_OUR_UNIT_OUT = 4;
-    static final int LOCK_DEFEND = 5;
+    static boolean lockAndDefend = false;
     static int role = ATTACK;
     static MapLocation attackLoc;
+
     static MapLocation waterLoc;
+
+    static int wallSpaces = 0;
+    static boolean wallHasEmptySpot = true;
+    static boolean wallSpotLeft = false;
     static boolean attackHQ = false;
     static boolean holdingCow = false;
     static int receivedAttackHQMessageRound = -1;
@@ -158,6 +163,7 @@ public class DeliveryDrone extends RobotPlayer {
         int closestEmptyWallLocDist = 9999999;
         MapLocation closestEmptyWallLoc = null;
         MapLocation closesetEmptyMAINWALL = null;
+        boolean thisRoundFoundSpot = false;
         for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
             int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
             MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
@@ -165,6 +171,8 @@ public class DeliveryDrone extends RobotPlayer {
                 // determine if it has our landscaper or not, if not occupied and not flooded bring our unit in there, if occupied take it out
                 int dist = rc.getLocation().distanceSquaredTo(loc);
                 if (!rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
+                    wallSpotLeft = true;
+                    thisRoundFoundSpot = true;
                     if (dist < closestEmptyWallLocDist) {
                         closestEmptyWallLoc = loc;
                         closestEmptyWallLocDist = dist;
@@ -188,6 +196,8 @@ public class DeliveryDrone extends RobotPlayer {
                     // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
                     int dist = rc.getLocation().distanceSquaredTo(loc);
                     if (!rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
+                        wallSpotLeft = true;
+                        thisRoundFoundSpot = true;
                         if (dist < closestEmptyWallLocDist) {
                             closestEmptyWallLoc = loc;
                             closestEmptyWallLocDist = dist;
@@ -203,7 +213,9 @@ public class DeliveryDrone extends RobotPlayer {
                 }
             }
         }
-
+        if (!thisRoundFoundSpot) {
+            wallSpotLeft = false;
+        }
 
         int friendlyDrones = 0;
         RobotInfo nearestCow = null;
@@ -211,16 +223,16 @@ public class DeliveryDrone extends RobotPlayer {
         int distToNearestLandscaper = 99999999;
         RobotInfo nearestLandscaper = null; // nearest not on wall / available
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
-            RobotInfo info  =nearbyFriendlyRobots[i];
+            RobotInfo info = nearbyFriendlyRobots[i];
             switch(info.type) {
                 case DELIVERY_DRONE:
                     friendlyDrones++;
                     break;
                 case LANDSCAPER:
                     // if not on man wall, and we have a empty loc on main wall, consider it
-                    // if not on second wall either, consider ir
-                    if (!MainWall.contains(info.location)) {
-                        if (closesetEmptyMAINWALL != null || !SecondWall.contains(info.location)) {
+                    // if not on second wall either, consider ir. WE only consider if we think there is wall space left
+                    if (wallSpotLeft && !MainWall.contains(info.location)) {
+                        if (!SecondWall.contains(info.location)) {
                             int dist = rc.getLocation().distanceSquaredTo(info.location);
                             if (dist < distToNearestLandscaper) {
                                 distToNearestLandscaper = dist;
@@ -507,9 +519,6 @@ public class DeliveryDrone extends RobotPlayer {
                 // this shouldn't ever happen
             }
         }
-        else if (role == LOCK_DEFEND) {
-
-        }
         else if (role == ATTACK) {
 
             // if not ordered to attack enemy HQ, do normal defending and attack
@@ -551,7 +560,7 @@ public class DeliveryDrone extends RobotPlayer {
                 else {
                     int distToAttackLoc = rc.getLocation().distanceSquaredTo(attackLoc);
                     // stick around, don't move in too close
-                    if (attackLoc.equals(HQLocation)) {
+                    if (lockAndDefend && attackLoc.equals(HQLocation)) {
 
                         if ((distToAttackLoc <= 13 && distToAttackLoc >= 8) || distToAttackLoc == 18) {
                             // don't move, stay
@@ -671,17 +680,26 @@ public class DeliveryDrone extends RobotPlayer {
         }
         // For now, go to HQ anyway
         attackLoc = HQLocation;
-
+        wallSpaces = 0;
         for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
             int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
             MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
-            MainWall.add(loc);
+            if (rc.onTheMap(loc)) {
+                wallSpaces++;
+                MainWall.add(loc);
+            }
         }
         for (int i = Constants.LandscaperPosAroundHQ.length; --i>= 0; ) {
             int[] deltas = Constants.LandscaperPosAroundHQ[i];
             MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
-            SecondWall.add(loc);
+            if (rc.onTheMap(loc)) {
+                SecondWall.add(loc);
+                wallSpaces++;
+            }
+
         }
+
+        wallSpotLeft = true;
     }
     static Direction getBugPathMoveDrone(MapLocation target, HashTable<Direction> dangerousDirections) throws GameActionException {
 
