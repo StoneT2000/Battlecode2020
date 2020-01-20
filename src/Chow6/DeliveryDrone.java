@@ -3,9 +3,6 @@ package Chow6;
 import Chow6.utils.*;
 import battlecode.common.*;
 
-import java.awt.*;
-import java.util.Map;
-
 public class DeliveryDrone extends RobotPlayer {
     static final int DEFEND = 1;
     static final int ATTACK = 0;
@@ -108,6 +105,12 @@ public class DeliveryDrone extends RobotPlayer {
         int closestEnemyLandscaperDist = 99999999;
         int closestEnemyMinerDist = 999999;
 
+        if (nearbyEnemyRobots.length > 0) {
+            lockAndDefend = true;
+        }
+        else {
+            lockAndDefend = false;
+        }
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
             switch (role) {
