@@ -7,6 +7,7 @@ public class DesignSchool extends RobotPlayer {
     static int landscapersBuilt = 0;
     static int vaporatorsBuilt = 0;
     static boolean needLandscaper = false;
+    static boolean dontBuild = false;
     public static void run() throws GameActionException {
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
@@ -24,14 +25,17 @@ public class DesignSchool extends RobotPlayer {
             needLandscaper = false;
             if (debug) System.out.println("Building landscaper as asked by HQ ");
         }
-        if (vaporatorsBuilt * 3 + 3 > landscapersBuilt && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + 250) {
+        if (vaporatorsBuilt * 2 + 2 > landscapersBuilt && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + 250) {
             willBuild = true;
             if (debug) System.out.println("Building landscaper matching vaporators");
         }
         if (rc.getTeamSoup() > 1000) {
             willBuild = true;
         }
-
+        if (dontBuild) {
+            willBuild = false;
+            dontBuild = false;
+        }
         if (willBuild) {
             // should rely on some signal
             boolean builtUnit = false;
@@ -63,6 +67,9 @@ public class DesignSchool extends RobotPlayer {
                     if (soupSpent / msg[3] < RobotType.LANDSCAPER.cost) {
                         needLandscaper = true;
                     }
+                }
+                else if ((msg[1] ^ BUILD_DRONE_NOW) == 0) {
+                    dontBuild = true;
                 }
                 else if (msg[1] == RobotType.VAPORATOR.ordinal()) {
                     vaporatorsBuilt++;

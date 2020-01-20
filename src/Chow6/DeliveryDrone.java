@@ -12,6 +12,7 @@ public class DeliveryDrone extends RobotPlayer {
     static final int DUMP_BAD_GUY = 2;
     static final int MOVE_LANDSCAPER = 3;
     static final int MOVE_OUR_UNIT_OUT = 4;
+    static final int LOCK_DEFEND = 5;
     static int role = ATTACK;
     static MapLocation attackLoc;
     static MapLocation waterLoc;
@@ -21,6 +22,7 @@ public class DeliveryDrone extends RobotPlayer {
     static int roundsToWaitBeforeAttack = 0;
     static HashTable<MapLocation> MainWall = new HashTable<>(8);
     static HashTable<MapLocation> SecondWall = new HashTable<>(12);
+    static HashTable<MapLocation> BuildPositionsTaken = new HashTable<>(10);
     public static void run() throws GameActionException {
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         for (int i = lastRoundsBlocks.length; --i >= 0; ) {
@@ -28,20 +30,27 @@ public class DeliveryDrone extends RobotPlayer {
             decodeMsg(msg);
             if (isOurMessage((msg))) {
                 if ((msg[1] ^ DRONES_ATTACK) == 0) {
-                    if (msg[2] != -1) {
-                        enemyBaseLocation = parseLoc(msg[2]);
-                        // TODO: handle case when we dont know enemy base location
-                        attackLoc = enemyBaseLocation;
-                        attackHQ = true;
-                        receivedAttackHQMessageRound = rc.getRoundNum();
-                        // + 70 turns to wait for drones to reform a circle around ENEMY
-                        roundsToWaitBeforeAttack = (int) (2 * Math.max(Math.abs(attackLoc.x - HQLocation.x), Math.abs(HQLocation.y - attackLoc.y))) + 70;
+                    int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
+                    if ((distToHQ <= 13 && distToHQ >= 8) || distToHQ == 18) {
+                        // stay on wall dont do anything
                     }
                     else {
-                        // we don't know where enemy is, SCOUT!
-                        attackLoc = null;
-                        attackHQ  = true;
+                        if (msg[2] != -1) {
+                            enemyBaseLocation = parseLoc(msg[2]);
+                            // TODO: handle case when we dont know enemy base location
+                            attackLoc = enemyBaseLocation;
+                            attackHQ = true;
+                            receivedAttackHQMessageRound = rc.getRoundNum();
+                            // + 70 turns to wait for drones to reform a circle around ENEMY
+                            roundsToWaitBeforeAttack = (int) (2 * Math.max(Math.abs(attackLoc.x - HQLocation.x), Math.abs(HQLocation.y - attackLoc.y))) + 70;
+                        }
+                        else {
+                            // we don't know where enemy is, SCOUT!
+                            attackLoc = null;
+                            attackHQ  = true;
+                        }
                     }
+
                 }
                 else if ((msg[1] ^ ANNOUNCE_ENEMY_BASE_LOCATION) == 0) {
                     enemyBaseLocation = parseLoc(msg[2]);
@@ -162,6 +171,13 @@ public class DeliveryDrone extends RobotPlayer {
                         closesetEmptyMAINWALL = loc;
                     }
                 }
+                /*
+                else if(rc.isLocationOccupied(loc)) {
+                    RobotInfo info = rc.senseRobotAtLocation(loc);
+                    if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) {
+                        BuildPositionsTaken.add(loc);
+                    }
+                }*/
             }
         }
         if (closestEmptyWallLoc == null) {
@@ -177,6 +193,13 @@ public class DeliveryDrone extends RobotPlayer {
                             closestEmptyWallLocDist = dist;
                         }
                     }
+                    /*
+                    else if(rc.isLocationOccupied(loc)) {
+                        RobotInfo info = rc.senseRobotAtLocation(loc);
+                        if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) {
+                            BuildPositionsTaken.add(loc);
+                        }
+                    }*/
                 }
             }
         }
@@ -317,16 +340,18 @@ public class DeliveryDrone extends RobotPlayer {
             for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
                 int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
                 MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
-                if (rc.canSenseLocation(loc)) {
+                if (!BuildPositionsTaken.contains(loc) && rc.canSenseLocation(loc)) {
                     // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
                     if (rc.isLocationOccupied(loc)) {
                        RobotInfo info = rc.senseRobotAtLocation(loc);
                        if (info.type != RobotType.LANDSCAPER && info.team == rc.getTeam()) {
+                           if (debug) System.out.println("Found unit to move out");
                            if (rc.getLocation().isAdjacentTo(info.location)) {
                                blockingFriendlyUnit = info;
                                if (rc.canPickUpUnit(info.getID())) {
                                    rc.pickUpUnit(info.getID());
                                    role = MOVE_OUR_UNIT_OUT;
+
                                }
                            }
                            else {
@@ -337,6 +362,7 @@ public class DeliveryDrone extends RobotPlayer {
                        }
                     }
                     else {
+                        if (debug) System.out.println("Found unit to try and help");
                         // take nearest landscaper
                         if (distToNearestLandscaper <= 2) {
                             // adjacent, pick it up, drop in right place
@@ -357,12 +383,13 @@ public class DeliveryDrone extends RobotPlayer {
             for (int i = Constants.LandscaperPosAroundHQ.length; --i>= 0; ) {
                 int[] deltas = Constants.LandscaperPosAroundHQ[i];
                 MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
-                if (rc.canSenseLocation(loc)) {
+                if (!BuildPositionsTaken.contains(loc) && rc.canSenseLocation(loc)) {
                     // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
                     if (rc.isLocationOccupied(loc)) {
 
                     }
                     else {
+                        if (debug) System.out.println("Found unit to try and help");
                         // take nearest landscaper
                         if (distToNearestLandscaper <= 2) {
                             // adjacent, pick it up, drop in right place
@@ -480,6 +507,9 @@ public class DeliveryDrone extends RobotPlayer {
                 // this shouldn't ever happen
             }
         }
+        else if (role == LOCK_DEFEND) {
+
+        }
         else if (role == ATTACK) {
 
             // if not ordered to attack enemy HQ, do normal defending and attack
@@ -521,10 +551,27 @@ public class DeliveryDrone extends RobotPlayer {
                 else {
                     int distToAttackLoc = rc.getLocation().distanceSquaredTo(attackLoc);
                     // stick around, don't move in too close
-                    if (distToAttackLoc <= RobotType.DELIVERY_DRONE.sensorRadiusSquared) {
+                    if (attackLoc.equals(HQLocation)) {
+
+                        if ((distToAttackLoc <= 13 && distToAttackLoc >= 8) || distToAttackLoc == 18) {
+                            // don't move, stay
+                            setTargetLoc(null);
+                        }
+                        else {
+                            // otherwise move
+                            setTargetLoc(attackLoc);
+                        }
+                    }
+                    else if (distToAttackLoc <= RobotType.DELIVERY_DRONE.sensorRadiusSquared) {
                         //fuzzy
                         //targetLoc = rc.adjacentLocation(randomDirection());
-                        setTargetLoc(rc.adjacentLocation(randomDirection()));
+
+                        if (attackLoc.equals(HQLocation)) {
+                            // don't fuzzy, stay
+                        }
+                        else {
+                            setTargetLoc(rc.adjacentLocation(randomDirection()));
+                        }
                     } else {
                         //targetLoc = attackLoc; // move towards attack loc first if not near it yet.
                         setTargetLoc(attackLoc);

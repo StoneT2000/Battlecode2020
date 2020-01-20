@@ -18,7 +18,7 @@ public class HQ extends RobotPlayer {
     static boolean nearCenter;
     static boolean existsSoup = false;
     static boolean gettingRushed = false;
-    static int MIN_DRONE_FOR_ATTACK = 14;
+    static int MIN_DRONE_FOR_ATTACK = 14 + 24; // 24 for defence, 14 for attack
     static boolean criedForDroneHelp = false;
     static int designSchoolsBuilt = 0;
     static boolean saidNoMoreLandscapersNeeded = false;
@@ -129,6 +129,10 @@ public class HQ extends RobotPlayer {
             announceBuildDronesNow(4 - myDrones);
         }
 
+        // if we reach the number of wall bots we want, get drone defenders
+        if (wallBots == wallBotsMax && rc.getRoundNum() % 10 == 0 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
+            announceBuildDronesNow(24 - myDrones);
+        }
 
 
         if (!gettingRushed && enemyDesignSchools > 0) {
