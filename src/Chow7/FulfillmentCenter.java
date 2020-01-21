@@ -8,6 +8,7 @@ public class FulfillmentCenter extends RobotPlayer {
     static int dronesBuilt = 0;
     static int vaporatorsBuilt = 0;
     static boolean confirmBuild = false;
+    static boolean terraformingTime = false;
     public static void run() throws GameActionException {
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         checkForBuildInfo(lastRoundsBlocks);
@@ -115,6 +116,9 @@ public class FulfillmentCenter extends RobotPlayer {
                 }
                 else if (msg[1] == RobotType.VAPORATOR.ordinal()) {
                     vaporatorsBuilt++;
+                }
+                else if ((msg[1] ^ NO_MORE_LANDSCAPERS_NEEDED) == 0) {
+                    terraformingTime = true;
                 }
             }
         }

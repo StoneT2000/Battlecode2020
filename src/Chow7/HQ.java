@@ -165,7 +165,7 @@ public class HQ extends RobotPlayer {
         // if we reach the number of wall bots we want, get drone defenders
         if (wallBots >= wallBotsMax && rc.getRoundNum() % 15 == 0 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
             if (myDrones <= 24) {
-                announceBuildDronesNow(24 - myDrones);
+                //announceBuildDronesNow(24 - myDrones);
             }
             announceNoMoreLandscapersNeeded();
         }
@@ -324,15 +324,6 @@ public class HQ extends RobotPlayer {
         // TODO: CHANGE COSTS HERE, put -1 and a max 50 or smth to get suggested cost
         if (rc.canSubmitTransaction(message, 10)) {
             rc.submitTransaction(message, 10);
-        }
-    }
-    static void announceWantDronesForDefence() throws GameActionException {
-        // send teamsoup count to ensure we don't build too many drones?
-        int [] message = new int[] {generateUNIQUEKEY(), NEED_DRONES_FOR_DEFENCE, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
-        encodeMsg(message);
-        if (debug) System.out.println("ANNOUNCING WANT DRONES ");
-        if (rc.canSubmitTransaction(message, 1)) {
-            rc.submitTransaction(message, 1);
         }
     }
     static void announceWantLandscapers(int amount) throws GameActionException {
