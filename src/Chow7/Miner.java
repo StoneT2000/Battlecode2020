@@ -251,8 +251,10 @@ public class Miner extends RobotPlayer {
 
             }
             else if (rc.getTeamSoup() >= 500 + 250) {
-                role = BUILDING;
-                unitToBuild = RobotType.VAPORATOR;
+                if (!terraformTime || rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+                    role = BUILDING;
+                    unitToBuild = RobotType.VAPORATOR;
+                }
             }
             // build net guns around enemy base!
             if (enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 24 && NetGunCount < 1 && rc.getTeamSoup() >= RobotType.NET_GUN.cost + 400) {
@@ -266,21 +268,22 @@ public class Miner extends RobotPlayer {
                 unitToBuild = RobotType.NET_GUN;
             }
 
-            // EXPLORE if still no soup found
-            if (terraformTime == false) {
-                if (SoupLocation == null) {
-                    if (debug) System.out.println("Exploring to " + exploreLocs[exploreLocIndex]);
-                    //targetLoc = rc.adjacentLocation(getExploreDir());
-                    setTargetLoc(rc.adjacentLocation(getExploreDir()));
-                }
-                // otherwise we approach the soup location.
-                else {
+            // EXPLORE if still no soup found and we aren't terraforming
+            if (SoupLocation == null && terraformTime == false) {
+                if (debug) System.out.println("Exploring to " + exploreLocs[exploreLocIndex]);
+                //targetLoc = rc.adjacentLocation(getExploreDir());
+                setTargetLoc(rc.adjacentLocation(getExploreDir()));
+            }
+            // otherwise we approach the soup location.
+            else {
+                if (SoupLocation != null) {
 
                     // check if we sense the place, if not, we continue branch, otherwise check if there is soup left
                     if (!rc.canSenseLocation(SoupLocation) || rc.senseSoup(SoupLocation) > 0) {
                         // if not close enough to soup location, move towards it as it still has soup there
                         if (SoupLocation.distanceSquaredTo(rc.getLocation()) > 1) {
-                            if (debug) System.out.println("Heading to soup location " + SoupLocation + " with score " + soupLocScore);
+                            if (debug)
+                                System.out.println("Heading to soup location " + SoupLocation + " with score " + soupLocScore);
                             //targetLoc = SoupLocation;
                             setTargetLoc(SoupLocation);
                         } else {

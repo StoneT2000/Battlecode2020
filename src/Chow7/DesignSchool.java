@@ -8,6 +8,7 @@ public class DesignSchool extends RobotPlayer {
     static int vaporatorsBuilt = 0;
     static boolean needLandscaper = false;
     static boolean dontBuild = false;
+    static boolean terraformingTime = false;
     public static void run() throws GameActionException {
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
@@ -36,6 +37,11 @@ public class DesignSchool extends RobotPlayer {
             willBuild = false;
             dontBuild = false;
         }
+
+        if (terraformingTime && vaporatorsBuilt * 5+ 5 > landscapersBuilt && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost && rc.getLocation().distanceSquaredTo(HQLocation) <= 48) {
+            willBuild = true;
+        }
+
         if (debug) System.out.println("Trying to build: " + willBuild);
         if (willBuild) {
             // should rely on some signal
@@ -75,6 +81,9 @@ public class DesignSchool extends RobotPlayer {
                 }
                 else if (msg[1] == RobotType.VAPORATOR.ordinal()) {
                     vaporatorsBuilt++;
+                }
+                else if ((msg[1] ^ NO_MORE_LANDSCAPERS_NEEDED) == 0) {
+                    terraformingTime = true;
                 }
             }
         }

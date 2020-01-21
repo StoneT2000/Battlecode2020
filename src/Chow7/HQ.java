@@ -114,7 +114,7 @@ public class HQ extends RobotPlayer {
                     if (rc.canSenseLocation(adjLoc)) {
                         int asideElevation = rc.senseElevation(adjLoc);
                         if (debug) System.out.println("School e: " + elevation + " | asideE "  + asideElevation );
-                        if (asideElevation <= elevation + 3 && asideElevation >= elevation - 3) {
+                        if (asideElevation <= elevation + 3 && asideElevation >= elevation - 3 && !rc.isLocationOccupied(adjLoc)) {
                             if (debug) System.out.println("School at " + info.location + " has space");
                             blocked = false;
                             break;
