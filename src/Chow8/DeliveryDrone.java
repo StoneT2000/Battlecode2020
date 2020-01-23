@@ -732,9 +732,11 @@ public class DeliveryDrone extends RobotPlayer {
 
                 if (closestEnemyMiner != null || closestEnemyLandscaper != null || (nearestCow != null && nearbyEnemyRobots.length == 0)) {
                     RobotInfo enemyToEngage = closestEnemyLandscaper;
+
+                    // pick a new enemy to engage if we didnt find one or if the one we found is too close to enemy base
+                    if (enemyToEngage == null || (enemyBaseLocation != null && enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) <= 7)) enemyToEngage = closestEnemyMiner;
+                    if (enemyToEngage == null || (enemyBaseLocation != null && enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) <= 7)) enemyToEngage = nearestCow;
                     if (debug) System.out.println(enemyToEngage + " | enemy base?: " + enemyBaseLocation + " | enemy at? ");
-                    if (enemyToEngage == null || (enemyBaseLocation == null || enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) > 7)) enemyToEngage = closestEnemyMiner;
-                    if (enemyToEngage == null || (enemyBaseLocation == null || enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) > 7)) enemyToEngage = nearestCow;
                     if (enemyToEngage != null && (enemyBaseLocation == null || enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) > 7)) {
                         if (debug) System.out.println("ENGAGING ENEMY at " + enemyToEngage.location);
                         int distToEnemy = rc.getLocation().distanceSquaredTo(enemyToEngage.location);
@@ -819,6 +821,28 @@ public class DeliveryDrone extends RobotPlayer {
                         //move to just edge of base attack range.
                         setTargetLoc(attackLoc);
                         if (debug) rc.setIndicatorDot(rc.getLocation(), 10, 20,200);
+
+                        // see enemy along the way, dump it
+                        if (closestEnemyMiner != null || closestEnemyLandscaper != null) {
+                            RobotInfo enemyToEngage = closestEnemyLandscaper;
+                            if (enemyToEngage == null) enemyToEngage = closestEnemyMiner;
+                            if (debug) System.out.println("ENGAGING ENEMY at " + enemyToEngage.location);
+                            if (debug) rc.setIndicatorLine(rc.getLocation(), enemyToEngage.location, 100, 200, 10);
+                            int distToEnemy = rc.getLocation().distanceSquaredTo(enemyToEngage.location);
+                            if (distToEnemy <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) {
+                                // we are near enough, pick it up and prepare for destroy procedure
+                                if (rc.canPickUpUnit(enemyToEngage.getID())) {
+                                    rc.pickUpUnit(enemyToEngage.getID());
+                                    role = DUMP_BAD_GUY;
+                                    //targetLoc = waterLoc;
+                                    setTargetLoc(waterLoc);
+                                }
+                            } else {
+                                // not near enemy yet, set targetLoc to enemy location so we move towards enemey.
+                                //targetLoc = enemyToEngage.location;
+                                setTargetLoc(enemyToEngage.location);
+                            }
+                        }
 
                     } else {
                         // don't move there if it isn't time yet, just move around like vultures
