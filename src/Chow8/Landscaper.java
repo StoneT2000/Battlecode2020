@@ -347,7 +347,8 @@ public class Landscaper extends RobotPlayer {
                     for (int i = 0; i++ < 8; ) {
                         MapLocation digLoc = rc.adjacentLocation(dirToDig);
                         if (debug) System.out.println("Trying to dig " + digLoc + " | Dig loc? " + isDigLocation(digLoc));
-                        if (digLoc.distanceSquaredTo(HQLocation) > 8 && isDigLocation(digLoc)) {
+                        // dig from dig locs or places that are really deep
+                        if (digLoc.distanceSquaredTo(HQLocation) > 8 && (isDigLocation(digLoc) || rc.canSenseLocation(digLoc) && rc.senseElevation(digLoc) < -10000)) {
                             if (rc.canDigDirt(dirToDig)) {
                                 rc.digDirt(dirToDig);
                                 dug = true;

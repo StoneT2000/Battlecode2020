@@ -737,7 +737,7 @@ public class DeliveryDrone extends RobotPlayer {
                     if (enemyToEngage == null || (enemyBaseLocation != null && enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) <= 7)) enemyToEngage = closestEnemyMiner;
                     if (enemyToEngage == null || (enemyBaseLocation != null && enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) <= 7)) enemyToEngage = nearestCow;
                     if (debug) System.out.println(enemyToEngage + " | enemy base?: " + enemyBaseLocation + " | enemy at? ");
-                    if (enemyToEngage != null && (enemyBaseLocation == null || enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) > 7)) {
+                    if (enemyToEngage != null && (enemyBaseLocation == null || enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) >= 8)) {
                         if (debug) System.out.println("ENGAGING ENEMY at " + enemyToEngage.location);
                         int distToEnemy = rc.getLocation().distanceSquaredTo(enemyToEngage.location);
                         if (distToEnemy <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) {
@@ -759,6 +759,14 @@ public class DeliveryDrone extends RobotPlayer {
                             // not near enemy yet, set targetLoc to this so we move towards enemey.
                             //targetLoc = enemyToEngage.location;
                             setTargetLoc(enemyToEngage.location);
+
+                            // add dangerous directions to HQ
+                            if (enemyBaseLocation != null) {
+                                Direction dirToEnemyBase = rc.getLocation().directionTo(enemyBaseLocation);
+                                dangerousDirections.add(dirToEnemyBase);
+                                dangerousDirections.add(dirToEnemyBase.rotateLeft());
+                                dangerousDirections.add(dirToEnemyBase.rotateRight());
+                            }
                         }
                     }
                     else {

@@ -436,9 +436,23 @@ public strictfp class RobotPlayer {
         int i = 0;
         Direction dir = Direction.NORTH;
         while (i++ < 8) {
-            MapLocation adjLoc = rc.adjacentLocation(dir);
-            if (rc.onTheMap(adjLoc)) {
+            MapLocation adjLoc = loc.add(dir);
+            if (rc.canSenseLocation(adjLoc)) {
                 if (!rc.senseFlooding(adjLoc)) {
+                    return true;
+                }
+            }
+            dir = dir.rotateRight();
+        }
+        return false;
+    }
+    static boolean locHasFloodAdjacent(MapLocation loc) throws GameActionException {
+        int i = 0;
+        Direction dir = Direction.NORTH;
+        while (i++ < 8) {
+            MapLocation adjLoc = loc.add(dir);
+            if (rc.canSenseLocation(adjLoc)) {
+                if (rc.senseFlooding(adjLoc)) {
                     return true;
                 }
             }
