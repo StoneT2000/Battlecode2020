@@ -39,6 +39,7 @@ public class HQ extends RobotPlayer {
         int enemyDesignSchools = 0;
         int enemyDrones = 0;
         int enemyNetGuns = 0;
+        int miners = 0;
         int closestEnemyDroneDist = 99999999;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
@@ -83,12 +84,16 @@ public class HQ extends RobotPlayer {
         int wallBots = 0;
         int myDrones = 0;
         int designSchools = 0;
+        int myLandscapers = 0;
         int fulfillmentCenters = 0;
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
-            if (info.type == RobotType.LANDSCAPER && dist <= 16) {
-                wallBots ++;
+            if (info.type == RobotType.LANDSCAPER) {
+                myLandscapers++;
+                if (dist <= 16) {
+                    wallBots++;
+                }
             }
             if (info.type == RobotType.DELIVERY_DRONE) {
                 myDrones++;
@@ -99,6 +104,9 @@ public class HQ extends RobotPlayer {
                     wallBotsMax--;
                     // decrement one as a fulfillment center is in our wall area
                 }
+            }
+            else if (info.type == RobotType.MINER) {
+                miners++;
             }
             else if (info.type == RobotType.DESIGN_SCHOOL) {
                 designSchools++;
@@ -142,7 +150,7 @@ public class HQ extends RobotPlayer {
             announceBUILD_A_SCHOOL();
             criedForDesignSchool = true;
         }
-        if ((!criedForFC || rc.getRoundNum() % 10 == 0) && fulfillmentCenters == 0 && designSchools > 0 && wallBots >= Math.min(4, wallBotsMax) && enemyLandscapers > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
+        if ((!criedForFC || rc.getRoundNum() % 10 == 0) && fulfillmentCenters == 0 && designSchools > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
             announceBUILD_A_CENTER();
             criedForFC = true;
         }
@@ -154,27 +162,40 @@ public class HQ extends RobotPlayer {
         if (wallBots - 8 > myDrones && myDrones < 2) {
             announceBuildDronesNow(4 - myDrones);
         }
-        else if ((rc.getRoundNum() >= 300 || vaporatorsBuilt > 10) && wallBots < wallBotsMax && rc.getRoundNum() % 10 == 0) {
-            announceWantLandscapers(wallBotsMax - wallBots);
-        }
 
         if (rc.getRoundNum() >= 300 && myDrones < 2 && rc.getRoundNum() % 10 == 0) {
             announceBuildDronesNow(4 - myDrones);
         }
 
-        // if we reach the number of wall bots we want, get drone defenders
-        if (wallBots >= wallBotsMax && rc.getRoundNum() % 15 == 0 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
-            if (myDrones <= 24) {
-                //announceBuildDronesNow(24 - myDrones);
+        // if platform is closer to completion, we want everyone on terraforming duties or we have our wall
+        if ((wallBots >= wallBotsMax && rc.getRoundNum() % 10 == 0) || (rc.getRoundNum() >= 600 && rc.getRoundNum() % 10 == 0)) {
+            if (wallBots >= wallBotsMax) {
+                // keep terraforming and walling in.
+                announceTERRAFORM_AND_WALL_IN();
             }
-            announceNoMoreLandscapersNeeded();
+            else {
+                announceTERRAFORM_ALL_TIME();
+            }
         }
+
+        // triggered if its really late or we see enough landscapers in vision
+        if ((rc.getRoundNum() >= 1400 || myLandscapers >= wallBotsMax) && rc.getRoundNum() % 10 == 0) {
+            // every 15 rounds check if we have all our bots or not
+            if (wallBots <= wallBotsMax) {
+                announceWALL_IN();
+            }
+        }
+
+        // see enemy? ask drones to lock themselves in and defend, // FIXME not best strat when we dont have enough drones
         if (!criedForLockAndDefend && enemyDrones > 0) {
             announceLOCK_AND_DEFEND();
             criedForLockAndDefend = true;
         }
-        else if (enemyDrones == 0) {
+        // no more enemies when previously there were enemies.
+        else if (enemyDrones == 0 && criedForLockAndDefend) {
+            announceMessage(STOP_LOCK_AND_DEFEND);
             criedForLockAndDefend = false;
+
         }
 
 
@@ -222,6 +243,12 @@ public class HQ extends RobotPlayer {
             if (debug) System.out.println("closest soup: " + closestSoupLoc);
             build(closestSoupLoc);
         }
+        // if we see no miners and no soup is heard, build miner
+        else if (miners == 0 && rc.getTeamSoup() >= RobotType.MINER.cost && !existsSoup) {
+            unitToBuild = RobotType.MINER;
+            build(closestSoupLoc);
+            announceTERRAFORM_ALL_TIME(); // get everyone back
+        }
 
         if (myDrones >= MIN_DRONE_FOR_ATTACK && rc.getRoundNum() % 20 == 0) {
             announceDroneAttack();
@@ -263,6 +290,32 @@ public class HQ extends RobotPlayer {
             }
         }
     }
+    static void announceMessage(int msg) throws GameActionException {
+        // STOP_LOCK_AND_DEFEND
+        int[] message = new int[] {generateUNIQUEKEY(), msg, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING " + msg);
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+        }
+    }
+    static void announceTERRAFORM_AND_WALL_IN() throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), TERRAFORM_AND_WALL_IN, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING WALL IN!!!");
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+        }
+    }
+    // announce that we want landscapers to start building HQ wall
+    static void announceWALL_IN() throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), WALL_IN, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING WALL IN!!!");
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+        }
+    }
     static void announceLOCK_AND_DEFEND() throws GameActionException {
         int[] message = new int[] {generateUNIQUEKEY(), LOCK_AND_DEFEND, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
         encodeMsg(message);
@@ -296,19 +349,11 @@ public class HQ extends RobotPlayer {
             rc.submitTransaction(message, 1);
         }
     }
-    static void announceBuildDrones() throws GameActionException {
-        int[] message = new int[] {generateUNIQUEKEY(), BUILD_DRONES};
+    // announce that we want all units to work on platform now
+    static void announceTERRAFORM_ALL_TIME() throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), TERRAFORM_ALL_TIME, randomInt(), randomInt(), randomInt(), randomInt(), randomInt()};
         encodeMsg(message);
-        if (debug) System.out.println("ANNOUNCING BUILD DRONES!!!");
-        // TODO: CHANGE COSTS HERE, put -1 and a max 50 or smth to get suggested cost
-        if (rc.canSubmitTransaction(message, 10)) {
-            rc.submitTransaction(message, 10);
-        }
-    }
-    static void announceNoMoreLandscapersNeeded() throws GameActionException {
-        int[] message = new int[] {generateUNIQUEKEY(), NO_MORE_LANDSCAPERS_NEEDED, randomInt(), randomInt(), randomInt(), randomInt(), randomInt()};
-        encodeMsg(message);
-        if (debug) System.out.println("ANNOUNCING NO MORE SCAPERS NEEDED!!!");
+        if (debug) System.out.println("ANNOUNCING ALL TERRAFORM!!!");
         if (rc.canSubmitTransaction(message, 1)) {
             rc.submitTransaction(message, 1);
         }

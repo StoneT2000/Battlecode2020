@@ -229,7 +229,7 @@ public class Miner extends RobotPlayer {
             // 800 - something, subtract distance. Subtract less for the higher amount soup mined
             if (lastDepositedRefinery.equals(HQLocation)) {
                 // if refinery deposited at is HQ location, go all out to build this refinery at least
-                if (mined && soupNearbyCount > Math.max(800 - rc.getLocation().distanceSquaredTo(lastDepositedRefinery) * 8, RobotType.LANDSCAPER.cost + RobotType.REFINERY.cost) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 25) {
+                if (mined && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 10) {
                     role = BUILDING;
                     unitToBuild = RobotType.REFINERY;
                 }
@@ -243,13 +243,13 @@ public class Miner extends RobotPlayer {
             // early game
             // TODO: TUNE PARAM!
             if (rc.getRoundNum() <= 300) {
-                if (rc.getTeamSoup() >= 500) {
+                if (rc.getTeamSoup() >= 500 && rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                 }
 
             }
-            else if (rc.getTeamSoup() >= 500 + 250) {
+            else if (rc.getTeamSoup() >= 500) {
                 if (!terraformTime || rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
@@ -322,7 +322,7 @@ public class Miner extends RobotPlayer {
                     boolean proceed = true;
                     if (terraformTime) {
                         // only build on higher land
-                        if (rc.senseElevation(buildLoc) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+                        if (rc.canSenseLocation(buildLoc) && rc.senseElevation(buildLoc) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
                             proceed = false;
                         }
                     }
@@ -444,6 +444,7 @@ public class Miner extends RobotPlayer {
     }
 
     static void checkBlockForBuildInfo(Transaction[] transactions) throws GameActionException {
+        int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
         for (int i = transactions.length; --i >= 0;) {
             int[] msg = transactions[i].getMessage();
             decodeMsg(msg);
@@ -451,14 +452,14 @@ public class Miner extends RobotPlayer {
                 // if it is announce SOUP location message
                 if ((msg[1] ^ BUILD_A_CENTER) == 0) {
                     int soupThen = msg[2];
-                    if (rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost && soupThen - rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost / 2) {
+                    if (rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost && soupThen - rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost / 2 && distToHQ <= 25) {
                         role = BUILDING;
                         unitToBuild = RobotType.FULFILLMENT_CENTER;
                     }
                 }
                 else if ((msg[1] ^ BUILD_A_SCHOOL) == 0) {
                     int soupThen = msg[2];
-                    if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && soupThen - rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost / 2) {
+                    if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && soupThen - rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost / 2 && distToHQ <= 25) {
                         role = BUILDING;
                         unitToBuild = RobotType.DESIGN_SCHOOL;
                     }
@@ -476,7 +477,7 @@ public class Miner extends RobotPlayer {
                 else if (msg[1] == RobotType.FULFILLMENT_CENTER.ordinal()) {
                     firstFulfillmentCenterBuilt = true;
                 }
-                else if ((msg[1] ^ NO_MORE_LANDSCAPERS_NEEDED) == 0) {
+                else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0) {
                     // return to base if not near soup loc
                     if (SoupLocation == null || rc.getLocation().distanceSquaredTo(SoupLocation) >= 45) {
                         setTargetLoc(HQLocation);

@@ -9,14 +9,14 @@ public class Landscaper extends RobotPlayer {
     static final int ATTACK = 0;
     static final int DEFEND_HQ = 1;
     static final int TERRAFORM = 2;
-    static int role = DEFEND_HQ;
+    static int role = TERRAFORM;
     static boolean onSupportBlockDoNotMove = false;
     static boolean shouldDig = true;
     static RobotInfo nearestEnemy = null;
     static boolean circling = false;
     static int nearestEnemyDist = 9999999;
     static int startedCirclingRound = -1;
-    static int terraformDistAwayFromHQ = 36; // how far landscaper should go
+    static int terraformDistAwayFromHQ = 8; // how far landscaper should go
     static HashTable<MapLocation> DigDeltasAroundHQTable =  new HashTable<>(5);
     static HashTable<MapLocation> FirstLandscaperPosAroundHQTable =  new HashTable<>(9);
     static HashTable<MapLocation> BuildPositionsTaken = new HashTable<>(10);
@@ -72,11 +72,13 @@ public class Landscaper extends RobotPlayer {
 
         int closestTerraformDist = 9999999;
         MapLocation locToTerraform = null;
-
+        RobotInfo closestSchoolInHole = null;
+        int closestSchoolInHoleDist = 9999999;
+        boolean noTerraformLocBecauseTooHigh = true;
         int soupNearby = 0;
         if (debug) System.out.println("BFS start: " + Clock.getBytecodeNum());
-        if (debug) System.out.println("Are we on wall? " + FirstLandscaperPosAroundHQTable.contains(rc.getLocation()));
-        if (!FirstLandscaperPosAroundHQTable.contains(rc.getLocation())) {
+        // search for terraform locs if we aren't on wall and our role
+        if (role != DEFEND_HQ || !FirstLandscaperPosAroundHQTable.contains(rc.getLocation())) {
             for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
                 int[] deltas = Constants.BFSDeltas24[i];
                 MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
@@ -87,25 +89,38 @@ public class Landscaper extends RobotPlayer {
 
                             int distToHQ = checkLoc.distanceSquaredTo(HQLocation);
                             // make sure its not too deep, not near HQ, but within some dist of HQ, and is not a dig location, and is lower than desired
-                            if (elevation < DESIRED_ELEVATION_FOR_TERRAFORM && !isDigLocation(checkLoc) && elevation > -30 && distToHQ < terraformDistAwayFromHQ && distToHQ > 8) {
-                                if (rc.isLocationOccupied(checkLoc)) {
-                                    RobotInfo info = rc.senseRobotAtLocation(checkLoc);
-                                    if ((!isBuilding(info) || info.team == enemyTeam) || info.getID() == rc.getID()) {
+                            if (elevation < DESIRED_ELEVATION_FOR_TERRAFORM) {
+                                noTerraformLocBecauseTooHigh = false;
+                                if (!isDigLocation(checkLoc) && elevation > -100 && distToHQ < terraformDistAwayFromHQ && distToHQ > 2) {
+                                    if (rc.isLocationOccupied(checkLoc)) {
+                                        RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                                        if ((!isBuilding(info) || info.team == enemyTeam) || info.getID() == rc.getID()) {
+                                            int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
+                                            if (distToLoc < closestTerraformDist) {
+                                                closestTerraformDist = distToLoc;
+                                                locToTerraform = checkLoc;
+                                            }
+                                        }
+                                    } else {
                                         int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
                                         if (distToLoc < closestTerraformDist) {
                                             closestTerraformDist = distToLoc;
                                             locToTerraform = checkLoc;
                                         }
                                     }
-                                } else {
-                                    int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
-                                    if (distToLoc < closestTerraformDist) {
-                                        closestTerraformDist = distToLoc;
-                                        locToTerraform = checkLoc;
+                                }
+                            }
+                            if (rc.isLocationOccupied(checkLoc)) {
+                                RobotInfo info = rc.senseRobotAtLocation(checkLoc);
+                                if (info.type == RobotType.DESIGN_SCHOOL) {
+                                    int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+                                    if (dist < closestSchoolInHoleDist) {
+                                        closestSchoolInHole = info;
+                                        closestSchoolInHoleDist = dist;
                                     }
                                 }
-
                             }
+
                     }
 
                     soupNearby += rc.senseSoup(checkLoc);
@@ -124,14 +139,15 @@ public class Landscaper extends RobotPlayer {
                 circling = true;
             }
             if (circling && rc.getRoundNum() - startedCirclingRound >= 10) {
-                terraformDistAwayFromHQ = (int) Math.pow((Math.sqrt(terraformDistAwayFromHQ) + 1), 2);
+                // terraform farther and farther until max
+                terraformDistAwayFromHQ = (int) Math.min(Math.pow((Math.sqrt(terraformDistAwayFromHQ) + 1), 2), MAX_TERRAFORM_DIST);
                 circling = false;
                 //attackLoc = HQL;
             }
         }
 
         if (debug) System.out.println("BFS end: " + Clock.getBytecodeNum());
-        if (debug) System.out.println("Terraform range: " + terraformDistAwayFromHQ);
+        if (debug) System.out.println("Terraform range: " + terraformDistAwayFromHQ + " | Terraform to height: " + DESIRED_ELEVATION_FOR_TERRAFORM);
 
         // announce soup loc
         if (friendlyMiners == 0 && rc.getRoundNum() % 10 == 0 && soupNearby >= 100) {
@@ -298,6 +314,11 @@ public class Landscaper extends RobotPlayer {
             }
         }
         else if (role == TERRAFORM) {
+            /*
+            // if there is a school in a hole, remove it
+            if (closestSchoolInHole != null) {
+
+            }*/
             if (locToTerraform != null) {
                 // no enemy in sight!, TERRAFORM
                 if (debug) System.out.println("Terraform mode: elevating " + locToTerraform);
@@ -332,8 +353,13 @@ public class Landscaper extends RobotPlayer {
                 }
             }
             else {
-                // otherwise just move in direction of enemy;
-                setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(HQLocation).opposite()));
+                // otherwise circle around HQ at r radius
+                //if at max terraform dist, increase height to terraform at
+                // increase only if we didnt find a location to terraform because all of them were too high
+                if (terraformDistAwayFromHQ == MAX_TERRAFORM_DIST) {
+                    thisLandScapersDesiredHeightOffset ++;
+                }
+
             }
 
         }
@@ -404,6 +430,8 @@ public class Landscaper extends RobotPlayer {
                                     BuildPositionsTaken.add(checkLoc);
                                 } else if (info.type == RobotType.LANDSCAPER && info.team == enemyTeam) {
                                     valid = false;
+                                } else if (info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
+                                    valid = false;
                                 } else {
                                     valid = true;
                                 }
@@ -455,6 +483,9 @@ public class Landscaper extends RobotPlayer {
                                     BuildPositionsTaken.add(checkLoc);
                                 }
                                 else if (info.type == RobotType.LANDSCAPER && info.team == enemyTeam) {
+                                    valid = false;
+                                }
+                                else if (info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
                                     valid = false;
                                 }
                                 else {
@@ -542,6 +573,9 @@ public class Landscaper extends RobotPlayer {
                                 }
                                 else if (isBuilding(info) && info.team == rc.getTeam()) {
                                     BuildPositionsTaken.add(checkLoc);
+                                    valid = false;
+                                }
+                                else if (info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
                                     valid = false;
                                 }
                                 else {
@@ -812,12 +846,7 @@ public class Landscaper extends RobotPlayer {
 
     }
 
-    static boolean isBuilding(RobotInfo info) {
-        if (info.type == RobotType.HQ || info.type == RobotType.FULFILLMENT_CENTER || info.type == RobotType.NET_GUN || info.type == RobotType.REFINERY || info.type == RobotType.DESIGN_SCHOOL || info.type == RobotType.VAPORATOR) {
-            return true;
-        }
-        return false;
-    }
+
     // heuristic
 
     // dig in targeted areas around HQ. don't dig enemy buildings
@@ -900,15 +929,15 @@ public class Landscaper extends RobotPlayer {
             int[] msg = transactions[i].getMessage();
             decodeMsg(msg);
             if (isOurMessage((msg))) {
-                if ((msg[1] ^ NEED_LANDSCAPERS_FOR_DEFENCE) == 0) {
+                if ((msg[1] ^ WALL_IN) == 0) {
                     // go run to HQ
                     role = DEFEND_HQ;
                     //targetLoc = HQLocation;
                     setTargetLoc(HQLocation);
                 }
-                else if ((msg[1] ^ NO_MORE_LANDSCAPERS_NEEDED) == 0) {
+                else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0 || (msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
 
-                    // go away and attack if not near HQ
+                    // go away and terraform if not near HQ
                     if (rc.getLocation().distanceSquaredTo(HQLocation) > 16) {
                         role = TERRAFORM;
                     }

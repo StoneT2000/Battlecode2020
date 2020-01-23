@@ -22,7 +22,7 @@ public strictfp class RobotPlayer {
 
     static int turnCount;
     static final boolean debug = true;
-    static final int UNIQUEKEY = -1444234321;
+    static final int UNIQUEKEY = -1344234321;
     static Team enemyTeam; // enemy team enum
 
     static final int BASE_WALL_DIST = 1;
@@ -43,13 +43,21 @@ public strictfp class RobotPlayer {
     static final int BUILD_DRONES = 14;
     static final int NEED_DRONES_FOR_DEFENCE = 15;
     static final int BUILD_DRONE_NOW = 16;
-    static final int NO_MORE_LANDSCAPERS_NEEDED = 17;
+    static final int TERRAFORM_ALL_TIME = 17;
     static final int ANNOUNCE_NOT_ENEMY_BASE = 18;
     static final int BUILD_A_SCHOOL = 19;
     static final int BUILD_A_CENTER = 20;
-    static final int LOCK_AND_DEFEND = 21;
+    static final int LOCK_AND_DEFEND = 21; // tell drones to lock and defend position
+    static final int WALL_IN = 22; // tell landscapers and drones to build wall
+    static final int TERRAFORM_AND_WALL_IN = 23; // terraform and wall when possible
+    static final int STOP_LOCK_AND_DEFEND = 24; // tell drones to stop defending so hard.
 
-    static int DESIRED_ELEVATION_FOR_TERRAFORM = 8;
+
+    static int thisLandScapersDesiredHeightOffset = 0;
+
+    static int MAX_TERRAFORM_DIST = 94;
+
+    static int DESIRED_ELEVATION_FOR_TERRAFORM = 3;
 
     public static void run(RobotController rc) throws GameActionException {
 
@@ -76,7 +84,7 @@ public strictfp class RobotPlayer {
         }
         while (true) {
             turnCount += 1;
-            DESIRED_ELEVATION_FOR_TERRAFORM = Math.max(calculateWaterLevels() + 3, 8);
+            DESIRED_ELEVATION_FOR_TERRAFORM = Math.max(calculateWaterLevels() + 3, 8) + thisLandScapersDesiredHeightOffset;
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
                 // Here, we've separated the controls into a different method for each RobotType.
@@ -394,7 +402,12 @@ public strictfp class RobotPlayer {
                 (0.0028 - 1.38 * Math.cos(0.00157 * x - 1.73) * 0.00157);
         return waterLevelChange;
     }
-
+    static boolean isBuilding(RobotInfo info) {
+        if (info.type == RobotType.HQ || info.type == RobotType.FULFILLMENT_CENTER || info.type == RobotType.NET_GUN || info.type == RobotType.REFINERY || info.type == RobotType.DESIGN_SCHOOL || info.type == RobotType.VAPORATOR) {
+            return true;
+        }
+        return false;
+    }
     // location related
     // hash a location
     static int hashLoc(MapLocation loc) {

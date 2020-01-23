@@ -51,10 +51,11 @@ public class FulfillmentCenter extends RobotPlayer {
             }
         }
         // build one asap
+        /*
         if (dronesBuilt < 1 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
             confirmBuild = true;
             if (debug) System.out.println("Building first one");
-        }
+        }*/
         // in end game keep building
         /*
         if (inEndGame && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 200) {
@@ -117,7 +118,7 @@ public class FulfillmentCenter extends RobotPlayer {
                 else if (msg[1] == RobotType.VAPORATOR.ordinal()) {
                     vaporatorsBuilt++;
                 }
-                else if ((msg[1] ^ NO_MORE_LANDSCAPERS_NEEDED) == 0) {
+                else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0) {
                     terraformingTime = true;
                 }
             }

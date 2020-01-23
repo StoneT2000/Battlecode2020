@@ -26,10 +26,11 @@ public class DesignSchool extends RobotPlayer {
             needLandscaper = false;
             if (debug) System.out.println("Building landscaper as asked by HQ ");
         }
+        /*
         if (vaporatorsBuilt * 2 + 2 > landscapersBuilt && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + 250) {
             willBuild = true;
             if (debug) System.out.println("Building landscaper matching vaporators");
-        }
+        }*/
         if (rc.getTeamSoup() > 1000) {
             willBuild = true;
         }
@@ -71,6 +72,25 @@ public class DesignSchool extends RobotPlayer {
             buildDir = buildDir.rotateRight();
         }
 
+        // check if i should disintegrate
+        Direction dirCheck = Direction.NORTH;
+        int i = 0;
+        int elevation = rc.senseElevation(rc.getLocation());
+        boolean blocked = true;
+        while(i++ < 8) {
+            MapLocation adjLoc = rc.adjacentLocation(dirCheck);
+            int asideElevation = rc.senseElevation(adjLoc);
+            // within elevation and ( not occupied or if occupied by unit not building)
+            if (asideElevation <= elevation + 3 && asideElevation >= elevation - 3 && (!rc.isLocationOccupied(adjLoc) || !isBuilding(rc.senseRobotAtLocation(adjLoc)))) {
+                blocked = false;
+                break;
+            }
+
+            dirCheck = dirCheck.rotateLeft();
+        }
+        if (blocked && rc.getRoundNum() >= 1000) {
+            rc.disintegrate();
+        }
     }
     static void checkMessages(Transaction[] transactions) throws GameActionException {
         for (int i = transactions.length; --i >= 0;) {
@@ -92,7 +112,7 @@ public class DesignSchool extends RobotPlayer {
                 else if (msg[1] == RobotType.VAPORATOR.ordinal()) {
                     vaporatorsBuilt++;
                 }
-                else if ((msg[1] ^ NO_MORE_LANDSCAPERS_NEEDED) == 0) {
+                else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0) {
                     terraformingTime = true;
                 }
             }
