@@ -16,7 +16,7 @@ public class Landscaper extends RobotPlayer {
     static boolean circling = false;
     static int nearestEnemyDist = 9999999;
     static int startedCirclingRound = -1;
-    static int terraformDistAwayFromHQ = 8; // how far landscaper should go
+    static int terraformDistAwayFromHQ = 16; // how far landscaper should go
     static HashTable<MapLocation> DigDeltasAroundHQTable =  new HashTable<>(5);
     static HashTable<MapLocation> FirstLandscaperPosAroundHQTable =  new HashTable<>(9);
     static HashTable<MapLocation> BuildPositionsTaken = new HashTable<>(10);
@@ -72,9 +72,8 @@ public class Landscaper extends RobotPlayer {
 
         int closestTerraformDist = 9999999;
         MapLocation locToTerraform = null;
-        RobotInfo closestSchoolInHole = null;
-        int closestSchoolInHoleDist = 9999999;
-        boolean noTerraformLocBecauseTooHigh = true;
+        int closestDigLocationDist = 999999;
+        MapLocation closestDigLocation = null;
         int soupNearby = 0;
         if (debug) System.out.println("BFS start: " + Clock.getBytecodeNum());
         // search for terraform locs if we aren't on wall and our role
@@ -90,8 +89,7 @@ public class Landscaper extends RobotPlayer {
                             int distToHQ = checkLoc.distanceSquaredTo(HQLocation);
                             // make sure its not too deep, not near HQ, but within some dist of HQ, and is not a dig location, and is lower than desired
                             if (elevation < DESIRED_ELEVATION_FOR_TERRAFORM) {
-                                noTerraformLocBecauseTooHigh = false;
-                                if (!isDigLocation(checkLoc) && elevation > -100 && distToHQ < terraformDistAwayFromHQ && distToHQ > 2) {
+                                if (!isDigLocation(checkLoc) && elevation > -100 && distToHQ < terraformDistAwayFromHQ && distToHQ > HQ_LAND_RANGE) {
                                     if (rc.isLocationOccupied(checkLoc)) {
                                         RobotInfo info = rc.senseRobotAtLocation(checkLoc);
                                         if ((!isBuilding(info) || info.team == enemyTeam) || info.getID() == rc.getID()) {
@@ -110,14 +108,11 @@ public class Landscaper extends RobotPlayer {
                                     }
                                 }
                             }
-                            if (rc.isLocationOccupied(checkLoc)) {
-                                RobotInfo info = rc.senseRobotAtLocation(checkLoc);
-                                if (info.type == RobotType.DESIGN_SCHOOL) {
-                                    int dist = rc.getLocation().distanceSquaredTo(checkLoc);
-                                    if (dist < closestSchoolInHoleDist) {
-                                        closestSchoolInHole = info;
-                                        closestSchoolInHoleDist = dist;
-                                    }
+                            if (isDigLocation(checkLoc)) {
+                                int distToDigLoc = checkLoc.distanceSquaredTo(rc.getLocation());
+                                if (distToDigLoc < closestDigLocationDist) {
+                                    closestDigLocationDist = distToDigLoc;
+                                    closestDigLocation = checkLoc;
                                 }
                             }
 
@@ -327,12 +322,14 @@ public class Landscaper extends RobotPlayer {
                 //RobotType.LANDSCAPER.dirtLimit
                 if (shouldDig) {
                     Direction dirToDig = Direction.NORTH;
+                    boolean dug = false;
                     for (int i = 0; i++ < 8; ) {
                         MapLocation digLoc = rc.adjacentLocation(dirToDig);
-                        if (debug) System.out.println("Trying to dig " + digLoc + " | " + isDigLocation(digLoc));
+                        if (debug) System.out.println("Trying to dig " + digLoc + " | Dig loc? " + isDigLocation(digLoc));
                         if (digLoc.distanceSquaredTo(HQLocation) > 8 && isDigLocation(digLoc)) {
                             if (rc.canDigDirt(dirToDig)) {
                                 rc.digDirt(dirToDig);
+                                dug = true;
                                 if (rc.getDirtCarrying() == 25) {
                                     shouldDig = false;
                                 }
@@ -340,6 +337,10 @@ public class Landscaper extends RobotPlayer {
                             }
                         }
                         dirToDig = dirToDig.rotateRight();
+                    }
+                    // if no dig done, then setTargetLoc
+                    if (!dug) {
+                        setTargetLoc(closestDigLocation);
                     }
                 }
                 if (!shouldDig && rc.getLocation().isAdjacentTo(locToTerraform)) {

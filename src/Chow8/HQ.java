@@ -146,25 +146,17 @@ public class HQ extends RobotPlayer {
         if (debug) System.out.println("I need " + wallBotsMax + " wall bots");
         // make sure we get a school and FC all the time
         if (debug) System.out.println ("Asked for school: " + criedForDesignSchool + " soup atm:"  +rc.getTeamSoup());
-        if ((!criedForDesignSchool || rc.getRoundNum() % 10 == 0) && rc.getRoundNum() >= 15 && designSchools == 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
+        if ((!criedForDesignSchool || rc.getRoundNum() % 10 == 0) && rc.getRoundNum() >= 15 && designSchools == 0 && fulfillmentCenters > 0 && vaporatorsBuilt > 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
             announceBUILD_A_SCHOOL();
             criedForDesignSchool = true;
         }
-        if ((!criedForFC || rc.getRoundNum() % 10 == 0) && fulfillmentCenters == 0 && designSchools > 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
+        if ((!criedForFC || rc.getRoundNum() % 10 == 0) && fulfillmentCenters == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
             announceBUILD_A_CENTER();
             criedForFC = true;
-        }
-        else if ((!criedForFC || rc.getRoundNum() % 10 == 0) && fulfillmentCenters == 0 && designSchools > 0 && wallBots >= Math.min(8, wallBotsMax) && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
-            announceBUILD_A_CENTER();
-            criedForFC = true;
-        }
-        // get some drones if we have more wall bots
-        if (wallBots - 8 > myDrones && myDrones < 2) {
-            announceBuildDronesNow(4 - myDrones);
         }
 
         if (rc.getRoundNum() >= 300 && myDrones < 2 && rc.getRoundNum() % 10 == 0) {
-            announceBuildDronesNow(4 - myDrones);
+            //announceBuildDronesNow(4 - myDrones);
         }
 
         // if platform is closer to completion, we want everyone on terraforming duties or we have our wall
@@ -244,11 +236,12 @@ public class HQ extends RobotPlayer {
             build(closestSoupLoc);
         }
         // if we see no miners and no soup is heard, build miner
+        /*
         else if (miners == 0 && rc.getTeamSoup() >= RobotType.MINER.cost && !existsSoup) {
             unitToBuild = RobotType.MINER;
             build(closestSoupLoc);
             announceTERRAFORM_ALL_TIME(); // get everyone back
-        }
+        }*/
 
         if (myDrones >= MIN_DRONE_FOR_ATTACK && rc.getRoundNum() % 20 == 0) {
             announceDroneAttack();
@@ -445,11 +438,11 @@ public class HQ extends RobotPlayer {
             unitToBuild = RobotType.MINER;
             return;
         }
-        if (vaporatorsBuilt * 4 + 4 >= minersBuilt && existsSoup && designSchoolsBuilt > 0) {
+        if (vaporatorsBuilt * 2 + 4 >= minersBuilt && designSchoolsBuilt > 0 && existsSoup) {
             unitToBuild = RobotType.MINER;
             return;
         }
-        if (rc.getRoundNum() % 30 == 0 && rc.getTeamSoup() >= 350 && existsSoup) {
+        if (rc.getRoundNum() % 30 == 0 && rc.getTeamSoup() >= 350) {
             unitToBuild = RobotType.MINER;
         }
 

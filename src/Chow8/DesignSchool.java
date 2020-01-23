@@ -8,6 +8,7 @@ public class DesignSchool extends RobotPlayer {
     static int vaporatorsBuilt = 0;
     static boolean needLandscaper = false;
     static boolean dontBuild = false;
+    static boolean wallIn = false;
     static boolean terraformingTime = false;
     public static void run() throws GameActionException {
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
@@ -79,16 +80,22 @@ public class DesignSchool extends RobotPlayer {
         boolean blocked = true;
         while(i++ < 8) {
             MapLocation adjLoc = rc.adjacentLocation(dirCheck);
-            int asideElevation = rc.senseElevation(adjLoc);
+
             // within elevation and ( not occupied or if occupied by unit not building)
-            if (asideElevation <= elevation + 3 && asideElevation >= elevation - 3 && (!rc.isLocationOccupied(adjLoc) || !isBuilding(rc.senseRobotAtLocation(adjLoc)))) {
-                blocked = false;
-                break;
+            if (rc.onTheMap(adjLoc)) {
+                int asideElevation = rc.senseElevation(adjLoc);
+                if (asideElevation <= elevation + 3 && asideElevation >= elevation - 3 && (!rc.isLocationOccupied(adjLoc) || !isBuilding(rc.senseRobotAtLocation(adjLoc)))) {
+                    blocked = false;
+                    break;
+                }
             }
 
             dirCheck = dirCheck.rotateLeft();
         }
         if (blocked && rc.getRoundNum() >= 1000) {
+            rc.disintegrate();
+        }
+        if (rc.getLocation().distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && wallIn) {
             rc.disintegrate();
         }
     }
@@ -114,6 +121,9 @@ public class DesignSchool extends RobotPlayer {
                 }
                 else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0) {
                     terraformingTime = true;
+                }
+                else if ((msg[1] ^ WALL_IN) == 0) {
+                    wallIn = true;
                 }
             }
         }

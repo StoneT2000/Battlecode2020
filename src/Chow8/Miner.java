@@ -138,6 +138,9 @@ public class Miner extends RobotPlayer {
             else if (unitToBuild == RobotType.FULFILLMENT_CENTER && firstFulfillmentCenterBuilt && (FulfillmentCenterCount > 0 || rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost + 300)) {
                 role = MINER;
             }
+            else if (unitToBuild == RobotType.REFINERY && RefineryCount > 0) {
+                role = MINER;
+            }
             if (debug) System.out.println(" Im still a role: " + role);
         }
 
@@ -218,6 +221,29 @@ public class Miner extends RobotPlayer {
                 announceSoupLocation(SoupLocation, 1, soupNearbyCount, MinerCount);
             }
 
+            // reset soup score if needed, otherwise set target
+            if (SoupLocation != null && terraformTime == false) {
+
+                // check if we sense the place, if not, we continue branch, otherwise check if there is soup left
+                if (!rc.canSenseLocation(SoupLocation) || rc.senseSoup(SoupLocation) > 0) {
+                    // if not close enough to soup location, move towards it as it still has soup there
+                    if (SoupLocation.distanceSquaredTo(rc.getLocation()) > 1) {
+                        if (debug)
+                            System.out.println("Heading to soup location " + SoupLocation + " with score " + soupLocScore);
+                        //targetLoc = SoupLocation;
+                        setTargetLoc(SoupLocation);
+                    } else {
+                        // close enough...
+                    }
+                } else {
+                    // no soup left at location
+                    SoupLocation = null;
+                    soupLocScore = 0;
+                    if (debug) System.out.println("No soup left, reset score");
+                }
+
+            }
+
             // check messages for soup locations, possibly closer
             checkBlockForSoupLocations(lastRoundsBlocks);
 
@@ -229,7 +255,7 @@ public class Miner extends RobotPlayer {
             // 800 - something, subtract distance. Subtract less for the higher amount soup mined
             if (lastDepositedRefinery.equals(HQLocation)) {
                 // if refinery deposited at is HQ location, go all out to build this refinery at least
-                if (mined && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 10) {
+                if (mined && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && firstDesignSchoolBuilt && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 10) {
                     role = BUILDING;
                     unitToBuild = RobotType.REFINERY;
                 }
@@ -243,7 +269,7 @@ public class Miner extends RobotPlayer {
             // early game
             // TODO: TUNE PARAM!
             if (rc.getRoundNum() <= 300) {
-                if (rc.getTeamSoup() >= 500 && rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+                if (rc.getTeamSoup() >= 500) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                 }
@@ -275,91 +301,99 @@ public class Miner extends RobotPlayer {
             }
             // otherwise we approach the soup location.
             else {
-                if (SoupLocation != null) {
-
-                    // check if we sense the place, if not, we continue branch, otherwise check if there is soup left
-                    if (!rc.canSenseLocation(SoupLocation) || rc.senseSoup(SoupLocation) > 0) {
-                        // if not close enough to soup location, move towards it as it still has soup there
-                        if (SoupLocation.distanceSquaredTo(rc.getLocation()) > 1) {
-                            if (debug)
-                                System.out.println("Heading to soup location " + SoupLocation + " with score " + soupLocScore);
-                            //targetLoc = SoupLocation;
-                            setTargetLoc(SoupLocation);
-                        } else {
-                            // close enough...
-                        }
-                    } else {
-                        // no soup left at location
-                        SoupLocation = null;
-                        soupLocScore = 0;
-                    }
-
-                }
             }
         }
         // must be ready, if not ready and still on cooldown, we wait till next turn basically
         else if (role == BUILDING && rc.isReady()) {
+            boolean proceedWithBuild = true;
             Direction buildDir = Direction.NORTH;
             if (minedDirection != null && minedDirection != Direction.CENTER) {
                 if (unitToBuild == RobotType.REFINERY) {
                     buildDir = minedDirection;
-                }
-                else {
+                } else {
                     buildDir = minedDirection.opposite();
                 }
             }
             if (unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER) {
                 buildDir = rc.getLocation().directionTo(HQLocation);
             }
-            // if building a building, only build on odd x odd
-            boolean builtUnit = false;
-            for (int i = 9; --i >= 1;) {
-                MapLocation buildLoc = rc.adjacentLocation(buildDir);
-                // same parity and must not be too close
 
-                // if school or FC, just build asap
-                if ((unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER || buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && !isDigLocation(buildLoc) && HQLocation.distanceSquaredTo(buildLoc) >= 8) {
-                    boolean proceed = true;
-                    if (terraformTime) {
-                        // only build on higher land
-                        if (rc.canSenseLocation(buildLoc) && rc.senseElevation(buildLoc) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
-                            proceed = false;
+            if (unitToBuild == RobotType.VAPORATOR && rc.getRoundNum() <= 300 && rc.getLocation().distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
+                // make sure miner goes back to HQ to build this
+                proceedWithBuild = false;
+                setTargetLoc(HQLocation);
+            }
+            if (unitToBuild == RobotType.DESIGN_SCHOOL && rc.getRoundNum() <= 300 && rc.getLocation().distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
+                // make sure miner goes back to HQ to build this
+                proceedWithBuild = false;
+                setTargetLoc(HQLocation);
+            }
+            if (unitToBuild == RobotType.FULFILLMENT_CENTER && rc.getRoundNum() <= 300 && rc.getLocation().distanceSquaredTo(HQLocation) > 8) {
+                // make sure miner goes back to HQ to build this
+                proceedWithBuild = false;
+                setTargetLoc(HQLocation);
+            }
+
+            if (proceedWithBuild) {
+                // if building a building, only build on odd x odd
+                boolean builtUnit = false;
+                for (int i = 9; --i >= 1; ) {
+                    MapLocation buildLoc = rc.adjacentLocation(buildDir);
+                    // same parity and must not be too close
+
+                    // if school or FC, just build asap
+                    if ((unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER || buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) && !isDigLocation(buildLoc)) {
+                        boolean proceed = true;
+                        if (terraformTime) {
+                            // only build on higher land
+                            if (rc.canSenseLocation(buildLoc) && rc.senseElevation(buildLoc) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+                                proceed = false;
+                            }
+                        }
+                        else {
+                            if (!buildLoc.isAdjacentTo(HQLocation) && rc.getRoundNum() <= 300) {
+                                proceed = false;
+                            }
+                        }
+                        if (proceed && tryBuild(unitToBuild, buildDir)) {
+                            builtUnit = true;
+                            break;
                         }
                     }
-                    if (proceed && tryBuild(unitToBuild, buildDir)) {
-                        builtUnit = true;
-                        break;
+                    buildDir = buildDir.rotateRight();
+                }
+                if (builtUnit) {
+                    switch (unitToBuild) {
+                        case DESIGN_SCHOOL:
+                            DesignSchoolsBuilt++;
+                            break;
+                        case FULFILLMENT_CENTER:
+                            FulfillmentCentersBuilt++;
+                            break;
                     }
+                    // add to refinery locations list
+                    //RefineryLocations.add(rc.adjacentLocation(buildDir));
                 }
-                buildDir = buildDir.rotateRight();
-            }
-            if (builtUnit) {
-                switch (unitToBuild) {
-                    case DESIGN_SCHOOL:
-                        DesignSchoolsBuilt++;
-                        break;
-                    case FULFILLMENT_CENTER:
-                        FulfillmentCentersBuilt++;
-                        break;
-                }
-                // add to refinery locations list
-                //RefineryLocations.add(rc.adjacentLocation(buildDir));
-            }
-            // if we built a refinery, we also try and build a vaporator given funds
+                // if we built a refinery, we also try and build a vaporator given funds
 
-            // go back to miner role
-            role = MINER;
+                // go back to miner role
+                role = MINER;
+            }
         }
         else if (role == RETURNING) {
             // targetLoc should be place miner tries to return to
-            if (rc.getLocation().isAdjacentTo(targetLoc)) {
+            MapLocation depositLoc = targetLoc;
+            if (rc.getLocation().isAdjacentTo(HQLocation)) {
+                depositLoc = HQLocation;
+            }
+            if (rc.getLocation().isAdjacentTo(depositLoc)) {
                 // else we are there, deposit and start mining again
-                Direction depositDir = rc.getLocation().directionTo(targetLoc);
+                Direction depositDir = rc.getLocation().directionTo(depositLoc);
                 // TODO: do something if we can't deposit for some reason despite already next to refinery/HQ and right direction
                 if (rc.canDepositSoup(depositDir)) {
                     rc.depositSoup(depositDir, rc.getSoupCarrying());
-                    if (debug) System.out.println("Deposited soup to " + targetLoc);
-                    lastDepositedRefinery = targetLoc;
+                    if (debug) System.out.println("Deposited soup to " + depositLoc);
+                    lastDepositedRefinery = targetLoc; // update to targetLoc so we don't accidentally set HQ as a possible deposit loc
 
                     // reset roles
                     role = MINER;
@@ -396,7 +430,7 @@ public class Miner extends RobotPlayer {
             System.out.println("Miner " + role + " - Bytecode used: " + Clock.getBytecodeNum() +
                     " | Bytecode left: " + Clock.getBytecodesLeft() +
                     " | SoupLoc Target: " + SoupLocation + " | targetLoc: " + targetLoc +
-                    " | Cooldown: " + rc.getCooldownTurns());
+                    " | Cooldown: " + rc.getCooldownTurns() +" | soup: " + rc.getSoupCarrying());
         }
 
         // check if miner is in a build wall loc and STUCK
@@ -452,14 +486,14 @@ public class Miner extends RobotPlayer {
                 // if it is announce SOUP location message
                 if ((msg[1] ^ BUILD_A_CENTER) == 0) {
                     int soupThen = msg[2];
-                    if (rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost && soupThen - rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost / 2 && distToHQ <= 25) {
+                    if (rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost && soupThen - rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost / 2) {
                         role = BUILDING;
                         unitToBuild = RobotType.FULFILLMENT_CENTER;
                     }
                 }
                 else if ((msg[1] ^ BUILD_A_SCHOOL) == 0) {
                     int soupThen = msg[2];
-                    if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && soupThen - rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost / 2 && distToHQ <= 25) {
+                    if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && soupThen - rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost / 2 && distToHQ <= 48) {
                         role = BUILDING;
                         unitToBuild = RobotType.DESIGN_SCHOOL;
                     }

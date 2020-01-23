@@ -9,6 +9,7 @@ public class FulfillmentCenter extends RobotPlayer {
     static int vaporatorsBuilt = 0;
     static boolean confirmBuild = false;
     static boolean terraformingTime = false;
+    static boolean wallIn = false;
     public static void run() throws GameActionException {
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         checkForBuildInfo(lastRoundsBlocks);
@@ -96,6 +97,10 @@ public class FulfillmentCenter extends RobotPlayer {
         }
         // make false for next round to be confirmed again
         confirmBuild = false;
+
+        if (rc.getLocation().distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && wallIn) {
+            rc.disintegrate();
+        }
     }
     static void checkForBuildInfo(Transaction[] transactions) {
         for (int i = transactions.length; --i >= 0;) {
@@ -120,6 +125,9 @@ public class FulfillmentCenter extends RobotPlayer {
                 }
                 else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0) {
                     terraformingTime = true;
+                }
+                else if ((msg[1] ^ WALL_IN) == 0) {
+                    wallIn = true;
                 }
             }
         }

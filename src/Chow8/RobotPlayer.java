@@ -59,6 +59,8 @@ public strictfp class RobotPlayer {
 
     static int DESIRED_ELEVATION_FOR_TERRAFORM = 3;
 
+    static int HQ_LAND_RANGE = 5; // how big in r2 HQ's land (that is untouched untill walling) is
+
     public static void run(RobotController rc) throws GameActionException {
 
         // This is the RobotController object. You use it to perform actions from this robot,
@@ -419,7 +421,7 @@ public strictfp class RobotPlayer {
     }
     static boolean isDigLocation(MapLocation loc) {
         //if (loc.x)
-        if (loc.x % 3 == HQLocation.x % 3  && loc.y % 3 == HQLocation.y % 3) {
+        if (loc.x % 3 == HQLocation.x % 3  && loc.y % 3 == HQLocation.y % 3 && loc.distanceSquaredTo(HQLocation) > 9) {
             return true;
         }
         return false;

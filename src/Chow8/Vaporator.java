@@ -1,17 +1,17 @@
 package Chow8;
 
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.RobotInfo;
-
+import battlecode.common.*;
 public class Vaporator extends RobotPlayer {
     static boolean announcedSelf = false;
+    static boolean wallIn = false;
     public static void run() throws GameActionException {
 
         if (!announcedSelf && rc.getTeamSoup() >= 1) {
             announceSelfLocation(1);
             announcedSelf = true;
         }
+        Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
+        checkForBuildInfo(lastRoundsBlocks);
 
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
@@ -30,8 +30,24 @@ public class Vaporator extends RobotPlayer {
                 break;
             }
         }
+        if (rc.getLocation().distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && wallIn) {
+            rc.disintegrate();
+        }
+    }
+    static void checkForBuildInfo(Transaction[] transactions) {
+        for (int i = transactions.length; --i >= 0;) {
+            int[] msg = transactions[i].getMessage();
+            decodeMsg(msg);
+            if (isOurMessage((msg))) {
+                // if it is announce SOUP location message
+               if ((msg[1] ^ WALL_IN) == 0) {
+                    wallIn = true;
+                }
+            }
+        }
     }
     public static void setup() throws GameActionException {
+        storeHQLocation();
         if (rc.getTeamSoup() >= 1) {
             announceSelfLocation(1);
             announcedSelf = true;

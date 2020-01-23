@@ -10,14 +10,21 @@ public class DeliveryDrone extends RobotPlayer {
     static final int DUMP_BAD_GUY = 2;
     static final int MOVE_LANDSCAPER = 3;
     static final int MOVE_OUR_UNIT_OUT = 4;
-    static final int MOVE_MINER_TO_HIGH_LAND = 5;
+    static final int MOVE_UNIT_HIGH_LAND = 5;
+    static final int MOVING_TO_UNIT_TO_MOVE = 6;
     static boolean terraformTime = false;
+    static final int MOVE_OUR_UNIT_FAR = 7;
     static boolean moveMinersToHighland = false;
     static boolean lockAndDefend = false;
     static int role = ATTACK;
     static MapLocation attackLoc;
 
     static MapLocation waterLoc;
+
+    static int circledHQTimes = 0;
+
+    static Direction initialDirectionToHQ;
+    static boolean canCheckForCircling = false;
 
     static boolean wallIn = false; // whether or not HQ told us to start walling in BASE using landscapers
 
@@ -171,7 +178,7 @@ public class DeliveryDrone extends RobotPlayer {
                     break;
             }
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
-            if (dist <= 25 && info.type == RobotType.NET_GUN) {
+            if (dist <= 25 && (info.type == RobotType.NET_GUN)) {
                 // dangerous netgun, move somewhere not in range!
                 Direction badDir = rc.getLocation().directionTo(info.location);
                 dangerousDirections.add(badDir);
@@ -276,7 +283,7 @@ public class DeliveryDrone extends RobotPlayer {
                             }
                         }
                     }
-                    if (info.location.isAdjacentTo(HQLocation)) {
+                    if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
                         int dist = rc.getLocation().distanceSquaredTo(info.location);
                         if (dist < distToNearestAdjacentToHQLandscaper) {
                             distToNearestAdjacentToHQLandscaper = dist;
@@ -293,7 +300,9 @@ public class DeliveryDrone extends RobotPlayer {
                         }
                     }
                     // find nearest miner adjacent to HQ to remove, do so if they aren't carrying soup
-                    if (info.location.isAdjacentTo(HQLocation) && info.getSoupCarrying() == 0) {
+                    if (debug) System.out.println("Found miner at " + info.location + " | soup: " + info.getSoupCarrying());
+                    if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && info.getSoupCarrying() == 0) {
+
                         if (dist < distToNearestMinerAdjacentToHQ) {
                             distToNearestMinerAdjacentToHQ = dist;
                             nearestAdjacentToHQMiner = info;
@@ -499,23 +508,28 @@ public class DeliveryDrone extends RobotPlayer {
                 if (distToMiner <= 2) {
                     if (rc.canPickUpUnit(nearestLowMiner.getID())) {
                         rc.pickUpUnit(nearestLowMiner.getID());
-                        role = MOVE_MINER_TO_HIGH_LAND;
+                        role = MOVE_UNIT_HIGH_LAND;
                     }
                 }
             }
         }
+        boolean skipAttack = false;
 
         // if there is a adjacent miner to HQ, then take it out ( assumed to be valid to take out )
         if (nearestAdjacentToHQMiner != null) {
+            if (debug)
             if (rc.canPickUpUnit(nearestAdjacentToHQMiner.getID())) {
                 // pick them up
                 rc.pickUpUnit(nearestAdjacentToHQMiner.getID());
                 // set role
-                role = MOVE_OUR_UNIT_OUT;
+                //role = MOVE_OUR_UNIT_OUT;
+                role = MOVE_UNIT_HIGH_LAND;
             }
             // otherwise go to them
             else {
                 setTargetLoc(nearestAdjacentToHQMiner.location);
+                //role = MOVING_TO_UNIT_TO_MOVE;
+                skipAttack = true;
             }
         }
         else if (nearestAdjacentToHQLandscaper != null && !wallIn) {
@@ -523,15 +537,21 @@ public class DeliveryDrone extends RobotPlayer {
                 // pick them up
                 rc.pickUpUnit(nearestAdjacentToHQLandscaper.getID());
                 // set role
-                role = MOVE_OUR_UNIT_OUT;
+                //role = MOVE_OUR_UNIT_OUT;
+                role = MOVE_UNIT_HIGH_LAND;
             }
             // otherwise go to them
             else {
                 setTargetLoc(nearestAdjacentToHQLandscaper.location);
+                //role = MOVING_TO_UNIT_TO_MOVE;
+                skipAttack = true;
             }
         }
 
-        if (role == MOVE_MINER_TO_HIGH_LAND) {
+        if (role == MOVING_TO_UNIT_TO_MOVE) {
+
+        }
+        else if (role == MOVE_UNIT_HIGH_LAND) {
             if (nearestEmptyHighLand == null) {
                 setTargetLoc(HQLocation);
             }
@@ -615,6 +635,24 @@ public class DeliveryDrone extends RobotPlayer {
                 dropDir = dropDir.rotateLeft();
             }
         }
+        // move a unit out of our wall
+        else if (role == MOVE_OUR_UNIT_FAR) {
+            // drop our unit anywhere but on the wall
+            // if we are not in terraform time, we need to drop farther out outside of platform
+            Direction dropDir = rc.getLocation().directionTo(HQLocation).opposite();
+            int i = 0;
+            while(i++ < 8) {
+                MapLocation dropLoc = rc.adjacentLocation(dropDir);
+                if (!MainWall.contains(dropLoc) && !SecondWall.contains(dropLoc)) {
+                    if (rc.canDropUnit(dropDir)) {
+                        rc.dropUnit(dropDir);
+                        role = ATTACK;
+                        break;
+                    }
+                }
+                dropDir = dropDir.rotateLeft();
+            }
+        }
         else if (role == DUMP_BAD_GUY) {
             // if currently holding unit, it should be a bad guy
 
@@ -668,40 +706,62 @@ public class DeliveryDrone extends RobotPlayer {
                 // this shouldn't ever happen
             }
         }
-        else if (role == ATTACK) {
+        else if (role == ATTACK && !skipAttack) {
 
+            if (circledHQTimes >= 1) {
+                attackLoc = closestMaybeHQ; // always attempt to attack enemy HQ after we go once around our OWN HQ
+            }
+            else {
+                // check if we finished a circle
+                Direction dirToHQ = rc.getLocation().directionTo(HQLocation);
+                if (!canCheckForCircling) {
+                    if (!dirToHQ.equals(initialDirectionToHQ)) {
+                        canCheckForCircling = true;
+                    }
+                }
+                else if (rc.getLocation().directionTo(HQLocation) == initialDirectionToHQ) {
+                    circledHQTimes ++;
+                }
+            }
             // if not ordered to attack enemy HQ, do normal defending and attack
             if (attackHQ == false) {
 
                 // if there is enemy, engage!
                 // engage cows if there are 0 enemies and friend drones
-                if (closestEnemyMiner != null || closestEnemyLandscaper != null || (nearestCow != null && nearbyEnemyRobots.length == 0 && friendlyDrones > 1)) {
-                    RobotInfo enemyToEngage = closestEnemyLandscaper;
-                    if (enemyToEngage == null) enemyToEngage = closestEnemyMiner;
-                    if (enemyToEngage == null) enemyToEngage = nearestCow;
+                // don't engage if its near HQ
 
-                    if (debug) System.out.println("ENGAGING ENEMY at " + enemyToEngage.location);
-                    int distToEnemy = rc.getLocation().distanceSquaredTo(enemyToEngage.location);
-                    if (distToEnemy <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) {
-                        // we are adjacent, pick it up and prepare for destroy procedure
-                        if (rc.canPickUpUnit(enemyToEngage.getID())) {
-                            rc.pickUpUnit(enemyToEngage.getID());
-                            if (enemyToEngage.getType() != RobotType.COW) {
-                                role = DUMP_BAD_GUY;
-                                //targetLoc = waterLoc;
-                                setTargetLoc(waterLoc);
+                if (closestEnemyMiner != null || closestEnemyLandscaper != null || (nearestCow != null && nearbyEnemyRobots.length == 0)) {
+                    RobotInfo enemyToEngage = closestEnemyLandscaper;
+                    if (debug) System.out.println(enemyToEngage + " | enemy base?: " + enemyBaseLocation + " | enemy at? ");
+                    if (enemyToEngage == null || (enemyBaseLocation == null || enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) > 7)) enemyToEngage = closestEnemyMiner;
+                    if (enemyToEngage == null || (enemyBaseLocation == null || enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) > 7)) enemyToEngage = nearestCow;
+                    if (enemyToEngage != null && (enemyBaseLocation == null || enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) > 7)) {
+                        if (debug) System.out.println("ENGAGING ENEMY at " + enemyToEngage.location);
+                        int distToEnemy = rc.getLocation().distanceSquaredTo(enemyToEngage.location);
+                        if (distToEnemy <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) {
+                            // we are adjacent, pick it up and prepare for destroy procedure
+                            if (rc.canPickUpUnit(enemyToEngage.getID())) {
+                                rc.pickUpUnit(enemyToEngage.getID());
+                                if (enemyToEngage.getType() != RobotType.COW) {
+                                    role = DUMP_BAD_GUY;
+                                    //targetLoc = waterLoc;
+                                    setTargetLoc(waterLoc);
+                                } else {
+                                    role = DUMP_BAD_GUY;
+                                    holdingCow = true;
+                                    //targetLoc = closestMaybeHQ;
+                                    setTargetLoc(closestMaybeHQ);
+                                }
                             }
-                            else {
-                                role = DUMP_BAD_GUY;
-                                holdingCow = true;
-                                //targetLoc = closestMaybeHQ;
-                                setTargetLoc(closestMaybeHQ);
-                            }
+                        } else {
+                            // not near enemy yet, set targetLoc to this so we move towards enemey.
+                            //targetLoc = enemyToEngage.location;
+                            setTargetLoc(enemyToEngage.location);
                         }
-                    } else {
-                        // not near enemy yet, set targetLoc to this so we move towards enemey.
-                        //targetLoc = enemyToEngage.location;
-                        setTargetLoc(enemyToEngage.location);
+                    }
+                    else {
+                        // no dice?
+                        setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(attackLoc).opposite().rotateLeft().rotateLeft()));
                     }
                 }
 
@@ -720,7 +780,7 @@ public class DeliveryDrone extends RobotPlayer {
                             setTargetLoc(attackLoc);
                         }
                     }
-                    else if (distToAttackLoc <= RobotType.DELIVERY_DRONE.sensorRadiusSquared) {
+                    else if (distToAttackLoc <= RobotType.DELIVERY_DRONE.sensorRadiusSquared + 8 ) {
                         //fuzzy
                         //targetLoc = rc.adjacentLocation(randomDirection());
                         if (debug) System.out.println("moving randomly around attack location");
@@ -843,6 +903,8 @@ public class DeliveryDrone extends RobotPlayer {
             }
 
         }
+
+        initialDirectionToHQ = rc.getLocation().directionTo(HQLocation); // used to circle around HQ once
 
         wallSpotLeft = true;
     }
