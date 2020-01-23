@@ -171,7 +171,7 @@ public class HQ extends RobotPlayer {
         }
 
         // triggered if its really late or we see enough landscapers in vision
-        if ((rc.getRoundNum() >= 1400 || myLandscapers >= wallBotsMax) && rc.getRoundNum() % 10 == 0) {
+        if ((rc.getRoundNum() >= 1400 || (myLandscapers >= wallBotsMax && vaporatorsBuilt >= 15)) && rc.getRoundNum() % 10 == 0) {
             // every 15 rounds check if we have all our bots or not
             if (wallBots <= wallBotsMax) {
                 announceWALL_IN();
@@ -180,12 +180,12 @@ public class HQ extends RobotPlayer {
 
         // see enemy? ask drones to lock themselves in and defend, // FIXME not best strat when we dont have enough drones
         if (!criedForLockAndDefend && enemyDrones > 0) {
-            announceLOCK_AND_DEFEND();
+            //announceLOCK_AND_DEFEND();
             criedForLockAndDefend = true;
         }
         // no more enemies when previously there were enemies.
         else if (enemyDrones == 0 && criedForLockAndDefend) {
-            announceMessage(STOP_LOCK_AND_DEFEND);
+            //announceMessage(STOP_LOCK_AND_DEFEND);
             criedForLockAndDefend = false;
 
         }
@@ -243,7 +243,7 @@ public class HQ extends RobotPlayer {
             announceTERRAFORM_ALL_TIME(); // get everyone back
         }*/
 
-        if (myDrones >= MIN_DRONE_FOR_ATTACK && rc.getRoundNum() % 20 == 0) {
+        if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1800) {
             announceDroneAttack();
         }
 

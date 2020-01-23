@@ -30,7 +30,7 @@ public strictfp class RobotPlayer {
     static int closestToTargetLocSoFar = 9999999;
     // usually the position to move towards
     static MapLocation targetLoc;
-    static Direction lastDirMove;
+    static Direction lastDirMove = Direction.NORTH;
     static LinkedList<MapLocation> lastLocs = new LinkedList<>();
 
 
@@ -87,6 +87,9 @@ public strictfp class RobotPlayer {
         while (true) {
             turnCount += 1;
             DESIRED_ELEVATION_FOR_TERRAFORM = Math.max(calculateWaterLevels() + 3, 8) + thisLandScapersDesiredHeightOffset;
+            if (rc.getRoundNum() <= 500) {
+                DESIRED_ELEVATION_FOR_TERRAFORM = Math.max(calculateWaterLevels() + 3, 5) + thisLandScapersDesiredHeightOffset;
+            }
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
                 // Here, we've separated the controls into a different method for each RobotType.
@@ -159,12 +162,14 @@ public strictfp class RobotPlayer {
             }
         }
         Direction firstDirThatWorks = Direction.CENTER;
+        dir = lastDirMove;
         for (int i = 7; --i >= 0; ) {
             dir = dir.rotateLeft();
             MapLocation adjLoc = rc.adjacentLocation(dir);
             if (rc.canSenseLocation(adjLoc) && !rc.senseFlooding(adjLoc)) {
                 if (rc.canMove(dir)) {
                     firstDirThatWorks = dir;
+                    lastDirMove = dir;
                     //lastDirMove = dir;
                     //lastLoc = adjLoc;
 
@@ -423,6 +428,21 @@ public strictfp class RobotPlayer {
         //if (loc.x)
         if (loc.x % 3 == HQLocation.x % 3  && loc.y % 3 == HQLocation.y % 3 && loc.distanceSquaredTo(HQLocation) > 9) {
             return true;
+        }
+        return false;
+    }
+
+    static boolean locHasLandAdjacent(MapLocation loc) throws GameActionException {
+        int i = 0;
+        Direction dir = Direction.NORTH;
+        while (i++ < 8) {
+            MapLocation adjLoc = rc.adjacentLocation(dir);
+            if (rc.onTheMap(adjLoc)) {
+                if (!rc.senseFlooding(adjLoc)) {
+                    return true;
+                }
+            }
+            dir = dir.rotateRight();
         }
         return false;
     }

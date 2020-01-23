@@ -813,17 +813,20 @@ public class DeliveryDrone extends RobotPlayer {
                 if (attackLoc != null) {
                     int distToAttackLoc = rc.getLocation().distanceSquaredTo(attackLoc);
                     // stick around, don't move in
-                    if (distToAttackLoc >= 36) {
+                    // stick around farther if we know where enemy base is
+                    // stick around farther also if it isnt time to attack
+                    if (((enemyBaseLocation == null && distToAttackLoc >= 36) || (enemyBaseLocation != null && distToAttackLoc >= 48))) {
                         //move to just edge of base attack range.
-                        //targetLoc = attackLoc;
                         setTargetLoc(attackLoc);
                         if (debug) rc.setIndicatorDot(rc.getLocation(), 10, 20,200);
+
                     } else {
                         // don't move there if it isn't time yet, just move around like vultures
                         setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(attackLoc).opposite().rotateRight().rotateRight()));
                         // if we waited long enough,
                         if (roundsToWaitBeforeAttack <= rc.getRoundNum() - receivedAttackHQMessageRound) {
-
+                            if (debug) rc.setIndicatorDot(rc.getLocation(), 100, 20,200);
+                            setTargetLoc(attackLoc);
                             // begin attacking nearest enemy unit
                             if (closestEnemyMiner != null || closestEnemyLandscaper != null) {
 

@@ -141,6 +141,9 @@ public class Miner extends RobotPlayer {
             else if (unitToBuild == RobotType.REFINERY && RefineryCount > 0) {
                 role = MINER;
             }
+            else if (unitToBuild == RobotType.FULFILLMENT_CENTER && FulfillmentCenterCount > 0) {
+                role = MINER;
+            }
             if (debug) System.out.println(" Im still a role: " + role);
         }
 
@@ -212,6 +215,28 @@ public class Miner extends RobotPlayer {
             }
         }
 
+        // alwways prepare to build refinery
+        int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
+
+        // haven't built design school yet? BUILDDDDD
+
+        // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
+        // 800 - something, subtract distance. Subtract less for the higher amount soup mined
+        if (debug) System.out.println("Soup: " + rc.getTeamSoup() + " | mined? " + mined + " | first school? " + firstDesignSchoolBuilt);
+        if (lastDepositedRefinery.equals(HQLocation)) {
+            // if refinery deposited at is HQ location, go all out to build this refinery at least
+            if (mined && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && firstDesignSchoolBuilt && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 10) {
+                role = BUILDING;
+                unitToBuild = RobotType.REFINERY;
+            }
+        }
+        else {
+            if (mined && soupNearbyCount > 800 - Math.sqrt(rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 25) {
+                role = BUILDING;
+                unitToBuild = RobotType.REFINERY;
+            }
+        }
+
         if (role == MINER) {
             // TODO: cost of announcement should be upped in later rounds with many units.
             // announce soup location if we just made a new soup location
@@ -247,25 +272,7 @@ public class Miner extends RobotPlayer {
             // check messages for soup locations, possibly closer
             checkBlockForSoupLocations(lastRoundsBlocks);
 
-            int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
 
-            // haven't built design school yet? BUILDDDDD
-
-            // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
-            // 800 - something, subtract distance. Subtract less for the higher amount soup mined
-            if (lastDepositedRefinery.equals(HQLocation)) {
-                // if refinery deposited at is HQ location, go all out to build this refinery at least
-                if (mined && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && firstDesignSchoolBuilt && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 10) {
-                    role = BUILDING;
-                    unitToBuild = RobotType.REFINERY;
-                }
-            }
-            else {
-                if (mined && soupNearbyCount > 800 - Math.sqrt(rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 25) {
-                    role = BUILDING;
-                    unitToBuild = RobotType.REFINERY;
-                }
-            }
             // early game
             // TODO: TUNE PARAM!
             if (rc.getRoundNum() <= 300) {

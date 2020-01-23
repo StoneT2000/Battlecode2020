@@ -74,6 +74,8 @@ public class Landscaper extends RobotPlayer {
         MapLocation locToTerraform = null;
         int closestDigLocationDist = 999999;
         MapLocation closestDigLocation = null;
+        MapLocation closestFloodedHQSpaceLoc = null;
+        int closestFloodedHQSpaceLocDist = 999999;
         int soupNearby = 0;
         if (debug) System.out.println("BFS start: " + Clock.getBytecodeNum());
         // search for terraform locs if we aren't on wall and our role
@@ -108,12 +110,31 @@ public class Landscaper extends RobotPlayer {
                                     }
                                 }
                             }
+                            // if it is flooding and in the HQ's breahting space, FILL IT UP
+                            if (distToHQ <= HQ_LAND_RANGE && rc.senseFlooding(checkLoc)) {
+                                locToTerraform = checkLoc;
+                                int distToLoc = checkLoc.distanceSquaredTo(rc.getLocation());
+                                if (distToLoc < closestFloodedHQSpaceLocDist) {
+                                    closestFloodedHQSpaceLocDist = distToLoc;
+                                    closestFloodedHQSpaceLoc = checkLoc;
+                                }
+                            }
                             if (isDigLocation(checkLoc)) {
                                 int distToDigLoc = checkLoc.distanceSquaredTo(rc.getLocation());
-                                if (distToDigLoc < closestDigLocationDist) {
+                                // check dig loc isn't all water
+                                if (rc.senseFlooding(checkLoc)) {
+                                    if (locHasLandAdjacent(checkLoc)) {
+                                        if (distToDigLoc < closestDigLocationDist) {
+                                            closestDigLocationDist = distToDigLoc;
+                                            closestDigLocation = checkLoc;
+                                        }
+                                    }
+                                }
+                                else if (distToDigLoc < closestDigLocationDist) {
                                     closestDigLocationDist = distToDigLoc;
                                     closestDigLocation = checkLoc;
                                 }
+
                             }
 
                     }
@@ -315,8 +336,8 @@ public class Landscaper extends RobotPlayer {
 
             }*/
             if (locToTerraform != null) {
-                // no enemy in sight!, TERRAFORM
-                if (debug) System.out.println("Terraform mode: elevating " + locToTerraform);
+                if (closestFloodedHQSpaceLoc != null) locToTerraform = closestFloodedHQSpaceLoc;
+                if (debug) System.out.println("Terraform mode: elevating " + locToTerraform + " | flooded loc in hq space: " + closestFloodedHQSpaceLoc);
                 //targetLoc = locToTerraform;
                 setTargetLoc(locToTerraform);
                 //RobotType.LANDSCAPER.dirtLimit
