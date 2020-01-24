@@ -1,6 +1,6 @@
-package Chow8;
-import Chow8.utils.LinkedList;
-import Chow8.utils.Node;
+package Chow9;
+import Chow9.utils.LinkedList;
+import Chow9.utils.Node;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -21,8 +21,8 @@ public strictfp class RobotPlayer {
     static MapLocation enemyBaseLocation = null; // the enemy HQ location
 
     static int turnCount;
-    static final boolean debug = false;
-    static final int UNIQUEKEY = 918231923;
+    static final boolean debug = true;
+    static final int UNIQUEKEY = -1949234321;
     static Team enemyTeam; // enemy team enum
 
     static final int BASE_WALL_DIST = 1;
