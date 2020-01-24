@@ -54,6 +54,8 @@ public strictfp class RobotPlayer {
     static final int STOP_LOCK_AND_DEFEND = 24; // tell drones to stop defending so hard.
     static final int SWARM_IN = 25; // tell drones to swarm in with their UNITS!!!
 
+    static final int GETTING_RUSHED_HELP = 26; // HQ screaming for help
+    static final int NO_LONGER_RUSHED = 27; // HQ saying not rushed anymore!
 
     static int thisLandScapersDesiredHeightOffset = 0;
 

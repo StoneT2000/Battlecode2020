@@ -983,6 +983,13 @@ public class Landscaper extends RobotPlayer {
                         setTargetLoc(HQLocation);
                     }
                 }
+                else if ((msg[1] ^ GETTING_RUSHED_HELP) == 0) {
+                    role = DEFEND_HQ;
+                }
+                else if ((msg[1] ^ NO_LONGER_RUSHED) == 0) {
+                    if (debug) System.out.println("heard we aren't rushed, terraform please");
+                    role = TERRAFORM;
+                }
             }
         };
     }

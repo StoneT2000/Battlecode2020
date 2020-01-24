@@ -282,7 +282,8 @@ public class DeliveryDrone extends RobotPlayer {
                 int elevation = rc.senseElevation(checkLoc);
                 if (elevation >= DESIRED_ELEVATION_FOR_TERRAFORM && !rc.isLocationOccupied(checkLoc)) {
                     int dist = rc.getLocation().distanceSquaredTo(checkLoc);
-                    if (dist < distToHighLand) {
+                    // closest highland that isn't in HQ breahting space
+                    if (dist < distToHighLand && checkLoc.distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
                         nearestEmptyHighLand = checkLoc;
                         distToHighLand = dist;
                         if (debug) System.out.println(checkLoc + " is empty high land");
@@ -446,7 +447,7 @@ public class DeliveryDrone extends RobotPlayer {
 
         // if there is a adjacent miner to HQ, then take it out ( assumed to be valid to take out )
 
-        if (nearestAdjacentToHQMiner != null) {
+        if (nearestAdjacentToHQMiner != null && nearestEmptyHighLand != null) {
             if (debug)
             if (rc.canPickUpUnit(nearestAdjacentToHQMiner.getID())) {
                 // pick them up
@@ -464,7 +465,7 @@ public class DeliveryDrone extends RobotPlayer {
         }
 
         // we only do this if there is no enemy
-        if (nearestAdjacentToHQLandscaper != null && !wallIn && enemyInHQSpace == null) {
+        if (nearestAdjacentToHQLandscaper != null && !wallIn && enemyInHQSpace == null && nearestEmptyHighLand != null) {
             if (rc.canPickUpUnit(nearestAdjacentToHQLandscaper.getID())) {
                 // pick them up
                 rc.pickUpUnit(nearestAdjacentToHQLandscaper.getID());

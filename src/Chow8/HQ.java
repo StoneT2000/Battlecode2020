@@ -190,10 +190,16 @@ public class HQ extends RobotPlayer {
 
         if (!gettingRushed && enemyDesignSchools > 0) {
             gettingRushed = true;
+            // set this once and announce once
+            announceMessage(GETTING_RUSHED_HELP);
+        }
+        if (gettingRushed && rc.getRoundNum() % 10 == 0) {
+            announceMessage(GETTING_RUSHED_HELP);
         }
         // if we were rushed but no more design schools
         if (gettingRushed && enemyDesignSchools == 0) {
             gettingRushed = false;
+            announceMessage(NO_LONGER_RUSHED);
         }
         if (gettingRushed && enemyNetGuns == 0) {
 
