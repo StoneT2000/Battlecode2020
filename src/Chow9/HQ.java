@@ -294,8 +294,11 @@ public class HQ extends RobotPlayer {
         if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1800) {
             announceDroneAttack();
         }
-        if (rc.getRoundNum() >= 2000 && rc.getRoundNum() % 200 == 0) {
+        if (rc.getRoundNum() == 2000 && rc.getRoundNum() % 200 == 0) {
             announceMessage(SWARM_IN);
+        }
+        if (rc.getRoundNum() >= 1800 && rc.getRoundNum() % 10 == 0) {
+            announceMessage(SWARM_WITH_UNITS);
         }
 
 

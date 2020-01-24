@@ -18,6 +18,10 @@ public class DeliveryDrone extends RobotPlayer {
     static boolean lockAndDefend = false;
     static int role = ATTACK;
     static MapLocation attackLoc;
+    static boolean swarmIn = false;
+
+    static boolean holdingFriendly = false;
+    static boolean attackWithAllUnits = false;
 
     static MapLocation waterLoc;
 
@@ -194,6 +198,8 @@ public class DeliveryDrone extends RobotPlayer {
         RobotInfo nearestAdjacentToHQMiner = null;
         RobotInfo nearestLowMiner = null;
         RobotInfo nearestLandscaper = null; // nearest not on wall / available
+        RobotInfo nearestLandscaperForAttack = null;
+        int distToNearestLandscaperForAttack = 9999999;
         RobotInfo nearestAdjacentToHQLandscaper = null;
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
@@ -205,17 +211,24 @@ public class DeliveryDrone extends RobotPlayer {
 
                     // if not on man wall, and we have a empty loc on main wall, consider it
                     // if not on second wall either, consider ir. WE only consider if we think there is wall space left
+                    int dist = rc.getLocation().distanceSquaredTo(info.location);
                     if (wallSpotLeft && !MainWall.contains(info.location)) {
                         if (!SecondWall.contains(info.location)) {
-                            int dist = rc.getLocation().distanceSquaredTo(info.location);
                             if (dist < distToNearestLandscaper) {
                                 distToNearestLandscaper = dist;
                                 nearestLandscaper = info;
                             }
                         }
                     }
+                    // find nearest landscaper for attack
+                    if (attackWithAllUnits) {
+                        //nearestLandscaper
+                        if (dist < distToNearestLandscaperForAttack) {
+                            nearestLandscaperForAttack = info;
+                            distToNearestLandscaperForAttack = dist;
+                        }
+                    }
                     if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
-                        int dist = rc.getLocation().distanceSquaredTo(info.location);
                         if (dist < distToNearestAdjacentToHQLandscaper) {
                             distToNearestAdjacentToHQLandscaper = dist;
                             nearestAdjacentToHQLandscaper = info;
@@ -223,10 +236,10 @@ public class DeliveryDrone extends RobotPlayer {
                     }
                     break;
                 case MINER:
-                    int dist = rc.getLocation().distanceSquaredTo(info.location);
+                    int dist2 = rc.getLocation().distanceSquaredTo(info.location);
                     if (rc.senseElevation(info.location) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
-                        if (dist < distToNearestMiner) {
-                            distToNearestMiner = dist;
+                        if (dist2 < distToNearestMiner) {
+                            distToNearestMiner = dist2;
                             nearestLowMiner = info;
                         }
                     }
@@ -234,8 +247,8 @@ public class DeliveryDrone extends RobotPlayer {
                     if (debug) System.out.println("Found miner at " + info.location + " | soup: " + info.getSoupCarrying());
                     if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && info.getSoupCarrying() == 0) {
 
-                        if (dist < distToNearestMinerAdjacentToHQ) {
-                            distToNearestMinerAdjacentToHQ = dist;
+                        if (dist2 < distToNearestMinerAdjacentToHQ) {
+                            distToNearestMinerAdjacentToHQ = dist2;
                             nearestAdjacentToHQMiner = info;
                         }
                     }
@@ -761,7 +774,23 @@ public class DeliveryDrone extends RobotPlayer {
             }
             // otherwise we are ordered to try and attack enemy HQ
             else {
-                if (attackLoc != null) {
+                // if we are ordered to attackWithAllUnits, then pickup nearest landscaper and then head over
+                // pick up if unit not within 16 of enemy
+                boolean tryingToPickupUnit = false;
+                if (attackWithAllUnits && enemyBaseLocation != null) {
+                    if (nearestLandscaperForAttack != null && nearestLandscaperForAttack.location.distanceSquaredTo(enemyBaseLocation) > 16) {
+                        if (rc.canPickUpUnit(nearestLandscaperForAttack.getID())) {
+                            rc.pickUpUnit(nearestLandscaperForAttack.getID());
+                            holdingFriendly = true;
+                        }
+                        else {
+                            setTargetLoc(nearestLandscaperForAttack.location);
+                            tryingToPickupUnit = true;
+                        }
+                    }
+                }
+
+                if (attackLoc != null && !tryingToPickupUnit) {
                     int distToAttackLoc = rc.getLocation().distanceSquaredTo(attackLoc);
                     // stick around, don't move in
                     // stick around farther if we know where enemy base is
@@ -772,7 +801,7 @@ public class DeliveryDrone extends RobotPlayer {
                         if (debug) rc.setIndicatorDot(rc.getLocation(), 10, 20,200);
 
                         // see enemy along the way, dump it
-                        if (closestEnemyMiner != null || closestEnemyLandscaper != null) {
+                        if (!rc.isCurrentlyHoldingUnit() && (closestEnemyMiner != null || closestEnemyLandscaper != null)) {
                             RobotInfo enemyToEngage = closestEnemyLandscaper;
                             if (enemyToEngage == null) enemyToEngage = closestEnemyMiner;
                             if (debug) System.out.println("ENGAGING ENEMY at " + enemyToEngage.location);
@@ -797,11 +826,11 @@ public class DeliveryDrone extends RobotPlayer {
                         // don't move there if it isn't time yet, just move around like vultures
                         setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(attackLoc).opposite().rotateRight().rotateRight()));
                         // if we waited long enough,
-                        if (roundsToWaitBeforeAttack <= rc.getRoundNum() - receivedAttackHQMessageRound) {
+                        if (swarmIn) {
                             if (debug) rc.setIndicatorDot(rc.getLocation(), 100, 20,200);
                             setTargetLoc(attackLoc);
                             // begin attacking nearest enemy unit
-                            if (closestEnemyMiner != null || closestEnemyLandscaper != null) {
+                            if (!rc.isCurrentlyHoldingUnit() && (closestEnemyMiner != null || closestEnemyLandscaper != null)) {
 
                                 RobotInfo enemyToEngage = closestEnemyLandscaper;
                                 if (enemyToEngage == null) enemyToEngage = closestEnemyMiner;
@@ -820,6 +849,19 @@ public class DeliveryDrone extends RobotPlayer {
                                     // not near enemy yet, set targetLoc to enemy location so we move towards enemey.
                                     //targetLoc = enemyToEngage.location;
                                     setTargetLoc(enemyToEngage.location);
+                                }
+                            }
+                            if (attackWithAllUnits && rc.isCurrentlyHoldingUnit() && holdingFriendly && enemyBaseLocation != null) {
+                                // drop onto wall land near enemy HQ
+                                for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
+                                    int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+                                    MapLocation checkLoc = enemyBaseLocation.translate(deltas[0], deltas[1]);
+                                    if (rc.onTheMap(checkLoc) && rc.getLocation().isAdjacentTo(checkLoc)) {
+                                        Direction dirToWallLoc = rc.getLocation().directionTo(checkLoc);
+                                        if (rc.canSenseLocation(checkLoc) && !rc.senseFlooding(checkLoc) && rc.canDropUnit(dirToWallLoc)) {
+                                            rc.dropUnit(dirToWallLoc);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -956,6 +998,13 @@ public class DeliveryDrone extends RobotPlayer {
                         attackLoc = null;
                         attackHQ  = true;
                     }
+                }
+                // turn on option to take our own landscapers to attack
+                else if ((msg[1] ^ SWARM_WITH_UNITS) == 0) {
+                    attackWithAllUnits = true;
+                }
+                else if ((msg[1] ^ SWARM_IN) == 0) {
+                    swarmIn = true;
                 }
                 else if ((msg[1] ^ ANNOUNCE_ENEMY_BASE_LOCATION) == 0) {
                     enemyBaseLocation = parseLoc(msg[2]);

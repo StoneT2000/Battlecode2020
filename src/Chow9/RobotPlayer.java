@@ -60,6 +60,8 @@ public strictfp class RobotPlayer {
 
     static final int I_AM_DESIGNATED_BUILDER = 28; // miners saying tthey go back to build
 
+    static final int SWARM_WITH_UNITS = 29;
+
     static int thisLandScapersDesiredHeightOffset = 0;
 
     static int MAX_TERRAFORM_DIST = 94;

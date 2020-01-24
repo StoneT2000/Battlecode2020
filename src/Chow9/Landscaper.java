@@ -76,6 +76,11 @@ public class Landscaper extends RobotPlayer {
             }
         }
 
+        // if its high rounds and we are near enemy HQ, attack mode
+        if (rc.getRoundNum() >= 1500 && enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 32) {
+            role = ATTACK;
+        }
+
         if (moveAway) {
             // go to target with consideration of dangers
             Direction greedyDir = getBugPathMove(HQLocation, dangerousDirections); //TODO: should return a valid direction usually???
@@ -295,10 +300,10 @@ public class Landscaper extends RobotPlayer {
 
 
             if (enemyBaseLocation == null) {
-                //attackLoc = closestMaybeHQ;
+                attackLoc = closestMaybeHQ;
             }
             else {
-                //attackLoc = enemyBaseLocation;
+                attackLoc = enemyBaseLocation;
             }
             // prioritize destructing buildings
             if (nearestEnemy != null) {
@@ -321,6 +326,7 @@ public class Landscaper extends RobotPlayer {
                         // > 0, so unload all dirt to destory enemy
                         if (rc.canDepositDirt(dirToAttack)) {
                             rc.depositDirt(dirToAttack);
+                            if (debug) rc.setIndicatorLine(rc.getLocation(), attackLoc, 250, 245, 255);
                             // after depositing, if building robot is gone, we reset nearestEnemy if we used that
                             if (!rc.isLocationOccupied(attackLoc) && nearestEnemy != null) {
                                 nearestEnemy = null;
