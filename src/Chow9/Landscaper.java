@@ -39,6 +39,8 @@ public class Landscaper extends RobotPlayer {
         }
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
+        boolean moveAway = false;
+        HashTable<Direction> dangerousDirections = new HashTable<>(4); // directions that when moved in, will result in being picked
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
             int dist = rc.getLocation().distanceSquaredTo(info.location);
@@ -60,8 +62,25 @@ public class Landscaper extends RobotPlayer {
                         nearestEnemyDist = dist;
                     }
                     break;
+                case DELIVERY_DRONE:
+                    if (rc.getLocation().distanceSquaredTo(info.location) <= 13) {
+                        Direction dirToDrone = rc.getLocation().directionTo(info.location);
+                        dangerousDirections.add(dirToDrone);
+                        dangerousDirections.add(dirToDrone.rotateRight());
+                        dangerousDirections.add(dirToDrone.rotateLeft());
+                        dangerousDirections.add(Direction.CENTER); // don't idle
+                        moveAway = true;
+                    }
+                    break;
 
             }
+        }
+
+        if (moveAway) {
+            // go to target with consideration of dangers
+            Direction greedyDir = getBugPathMove(HQLocation, dangerousDirections); //TODO: should return a valid direction usually???
+            if (debug) System.out.println("Running away! To " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
+            tryMove(greedyDir);
         }
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         checkForEnemyBasesInBlocks(lastRoundsBlocks); // checks for where bases are and removes ones where they dont exist
@@ -842,7 +861,7 @@ public class Landscaper extends RobotPlayer {
 
         // whatever targetloc is, try to go to it
         if (targetLoc != null) {
-            Direction greedyDir = getBugPathMove(targetLoc); //TODO: should return a valid direction usually???
+            Direction greedyDir = getBugPathMove(targetLoc, dangerousDirections); //TODO: should return a valid direction usually???
             if (debug) System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
             tryMove(greedyDir); // wasting bytecode probably here
 

@@ -78,16 +78,34 @@ public class Miner extends RobotPlayer {
 
         /* BIG FRIENDLY BOTS SEARCH LOOP thing */
         int EnemyDroneCount = 0;
+        boolean moveAway = false;
+        HashTable<Direction> dangerousDirections = new HashTable<>(4); // directions that when moved in, will result in being picked
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
             switch (info.type) {
                 case DELIVERY_DRONE:
-                    EnemyDroneCount++;
+                    // if drone too close, run
+                    if (rc.getLocation().distanceSquaredTo(info.location) <= 8) {
+                        EnemyDroneCount++;
+                        Direction dirToDrone = rc.getLocation().directionTo(info.location);
+                        dangerousDirections.add(dirToDrone);
+                        dangerousDirections.add(dirToDrone.rotateRight());
+                        dangerousDirections.add(dirToDrone.rotateLeft());
+                        dangerousDirections.add(Direction.CENTER); // don't idle
+                        moveAway = true;
+                    }
                     break;
-
             }
         }
+        if (moveAway) {
+            // go to target with consideration of dangers
+            // go to nearest netgun/HQ?
+            Direction greedyDir = getBugPathMove(HQLocation, dangerousDirections); //TODO: should return a valid direction usually???
+            if (debug) System.out.println("Running away! To " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
+            tryMove(greedyDir);
+        }
+
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         int RefineryCount = 0;
         int NetGunCount = 0;
@@ -287,6 +305,7 @@ public class Miner extends RobotPlayer {
                 if (designatedBuilder && rc.getTeamSoup() >= 500 + 150) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
+                    //announceI_AM_DESIGNATED_BUILDER();
                 }
 
             }
@@ -295,6 +314,7 @@ public class Miner extends RobotPlayer {
                 if (!terraformTime || rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
+                    //announceI_AM_DESIGNATED_BUILDER();
                 }
             }
             // build net guns around enemy base!
@@ -314,7 +334,7 @@ public class Miner extends RobotPlayer {
             if (SoupLocation == null && terraformTime == false) {
                 if (debug) System.out.println("Exploring to " + exploreLocs[exploreLocIndex]);
                 //targetLoc = rc.adjacentLocation(getExploreDir());
-                setTargetLoc(rc.adjacentLocation(getExploreDir()));
+                setTargetLoc(rc.adjacentLocation(getExploreDir(dangerousDirections)));
             }
             // otherwise we approach the soup location.
             else {
@@ -360,7 +380,7 @@ public class Miner extends RobotPlayer {
 
                     // if school or FC, just build asap, otherwise build on grid, not dig locations, and can't be next to flood, if next to flood, height must be 12
                     if ((unitToBuild == RobotType.DESIGN_SCHOOL ||
-                            unitToBuild == RobotType.FULFILLMENT_CENTER || unitToBuild == RobotType.NET_GUN || unitToBuild == RobotType.REFINERY ||
+                            unitToBuild == RobotType.FULFILLMENT_CENTER || unitToBuild == RobotType.REFINERY ||
                             (buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2
                                     && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 12)
                             )
@@ -438,7 +458,8 @@ public class Miner extends RobotPlayer {
 
         // whatever targetloc is, try to go to it
         if (targetLoc != null) {
-            Direction greedyDir = getBugPathMove(targetLoc); //TODO: should return a valid direction usually???
+            // don't go to enemy!
+            Direction greedyDir = getBugPathMove(targetLoc, dangerousDirections); //TODO: should return a valid direction usually???
             if (debug) System.out.println("Moving to " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
             tryMove(greedyDir); // wasting bytecode probably here
         }
@@ -475,7 +496,7 @@ public class Miner extends RobotPlayer {
     // algorithm to allow miner to explore and attempt to generally move to new spaces
     // fuzzy pathing, go in general direction and sway side to side
     // general direction is direction away from HQ
-    static Direction getExploreDir() throws GameActionException {
+    static Direction getExploreDir(HashTable<Direction> dangerousDirections) throws GameActionException {
         if (timeSpentOnExploreLoc > Math.max(rc.getMapHeight(), rc.getMapWidth()) + 5) {
             exploreLocIndex = (exploreLocIndex + 1) % exploreLocs.length;
             timeSpentOnExploreLoc = 0;
@@ -495,7 +516,7 @@ public class Miner extends RobotPlayer {
                 generalDir = generalDir.rotateRight();
             }
         }
-        Direction dir = getBugPathMove(rc.adjacentLocation(generalDir));
+        Direction dir = getBugPathMove(rc.adjacentLocation(generalDir), dangerousDirections);
         timeSpentOnExploreLoc++;
         return dir;
     }
@@ -542,7 +563,28 @@ public class Miner extends RobotPlayer {
                         terraformTime = true;
                     }
                 }
+                else if ((msg[1] ^ I_AM_DESIGNATED_BUILDER) == 0) {
+                    MapLocation locOfOtherMiner = parseLoc(msg[3]);
+                    if (rc.getLocation().distanceSquaredTo(locOfOtherMiner) < 92) {
+                        // if two miners are close, resolve with ID
+                        int otherID = msg[2];
+                        if (otherID < rc.getID()) {
+                            if (role == BUILDING && unitToBuild == RobotType.VAPORATOR) {
+                                role = MINER;
+                            }
+                        }
+                    }
+                }
             }
+        }
+    }
+    static void announceI_AM_DESIGNATED_BUILDER() throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), I_AM_DESIGNATED_BUILDER, rc.getID(), hashLoc(rc.getLocation()), randomInt(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING I_AM_DESIGNATED_BUILDER");
+
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
         }
     }
     /**

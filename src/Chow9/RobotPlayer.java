@@ -1,4 +1,5 @@
 package Chow9;
+import Chow9.utils.HashTable;
 import Chow9.utils.LinkedList;
 import Chow9.utils.Node;
 import battlecode.common.*;
@@ -56,6 +57,8 @@ public strictfp class RobotPlayer {
 
     static final int GETTING_RUSHED_HELP = 26; // HQ screaming for help
     static final int NO_LONGER_RUSHED = 27; // HQ saying not rushed anymore!
+
+    static final int I_AM_DESIGNATED_BUILDER = 28; // miners saying tthey go back to build
 
     static int thisLandScapersDesiredHeightOffset = 0;
 
@@ -155,7 +158,7 @@ public strictfp class RobotPlayer {
         }
         return Direction.CENTER;
     }
-    static Direction getBugPathMove(MapLocation target) throws GameActionException {
+    static Direction getBugPathMove(MapLocation target, HashTable<Direction> dangerousDirections) throws GameActionException {
 
         // every 20 rounds, reset the closest distance
         if (roundsSinceLastResetOfClosestTargetdist >= 20) {
@@ -166,28 +169,37 @@ public strictfp class RobotPlayer {
         Direction dir = rc.getLocation().directionTo(target);
         Direction greedyDir = null;
         Direction wallDir = lastDirMove;
+        boolean foundNonDangerousDir = false;
         boolean wallDirSet = false;
         int closestGreedyDist = 99999999;
         for (int i = 8; --i >= 0; ) {
-            System.out.println("Checkign dir: " + dir);
-            MapLocation greedyLoc = rc.adjacentLocation(dir);
-            int greedyDist = greedyLoc.distanceSquaredTo(target);
+            if (debug) System.out.println("Checking dir: " + dir);
+            if (!dangerousDirections.contains(dir)) {
+                MapLocation greedyLoc = rc.adjacentLocation(dir);
+                int greedyDist = greedyLoc.distanceSquaredTo(target);
 
-            // if it is closer than the closest we have ever been, we can sense it as well and its not flooding
-            if (greedyDist < closestGreedyDist && rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc)) {
-                // if we can move there
-                if (rc.canMove(dir)) {
-                    // update and move
-                    closestGreedyDist = greedyDist;
-                    greedyDir = dir;
+                // if it is closer than the closest we have ever been, we can sense it as well and its not flooding
+                if (greedyDist < closestGreedyDist && rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc)) {
+                    // if we can move there
+                    if (rc.canMove(dir)) {
+                        // update and move
+                        closestGreedyDist = greedyDist;
+                        greedyDir = dir;
+                        foundNonDangerousDir = true;
+                    }
                 }
-            }
-            if (!wallDirSet && rc.canMove(dir)) {
-                wallDir = dir;
-                wallDirSet = true;
-            }
+                if (!wallDirSet && rc.canMove(dir)) {
+                    wallDir = dir;
+                    wallDirSet = true;
+                    foundNonDangerousDir = true;
+                }
 
 
+
+            }
+            else {
+                if (debug) System.out.println("Dir " + dir + " is dangerous!");
+            }
             dir = dir.rotateRight();
 
         }
@@ -196,7 +208,12 @@ public strictfp class RobotPlayer {
             return greedyDir;
         }
 
-        return wallDir;
+        if (foundNonDangerousDir) {
+            return wallDir;
+        }
+        else {
+            return Direction.CENTER;
+        }
 
         // closestToTargetLocSoFar
     }
