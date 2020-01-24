@@ -406,7 +406,7 @@ public class Miner extends RobotPlayer {
 
                     // if school or FC, just build asap, otherwise build on grid, not dig locations, and can't be next to flood, if next to flood, height must be 12
                     if (rc.onTheMap(buildLoc)) {
-                        if (unitToBuild == RobotType.REFINERY ||
+                        if (unitToBuild == RobotType.REFINERY || unitToBuild == RobotType.DESIGN_SCHOOL ||
                                 (buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2
                                         && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 12)
                                 )
