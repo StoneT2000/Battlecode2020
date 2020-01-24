@@ -172,7 +172,9 @@ public class Miner extends RobotPlayer {
             if (unitToBuild == RobotType.FULFILLMENT_CENTER && FulfillmentCenterCount > 0) {
                 role = MINER;
             }
-            if (debug) System.out.println(" Im still a role: " + role);
+            if (unitToBuild == RobotType.VAPORATOR && rc.getTeamSoup() < 450) {
+                role = MINER;
+            }
         }
 
         /* BIG BFS LOOP ISH */
@@ -327,7 +329,7 @@ public class Miner extends RobotPlayer {
             }
             // only designated builder builds vaporators
             else if (rc.getTeamSoup() >= 500 + 150) {
-                if (!terraformTime || rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+                if ((!terraformTime && designatedBuilder) || rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                     //announceI_AM_DESIGNATED_BUILDER();
@@ -371,7 +373,7 @@ public class Miner extends RobotPlayer {
                 buildDir = rc.getLocation().directionTo(HQLocation);
             }
 
-            if (unitToBuild == RobotType.VAPORATOR && rc.getRoundNum() <= 500 && rc.getLocation().distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
+            if (unitToBuild == RobotType.VAPORATOR && rc.getRoundNum() <= 500 && rc.getLocation().distanceSquaredTo(HQLocation) > HQ_LAND_RANGE * 2) {
                 // make sure miner goes back to HQ to build this
                 proceedWithBuild = false;
                 setTargetLoc(HQLocation);
@@ -395,8 +397,7 @@ public class Miner extends RobotPlayer {
                     // same parity and must not be too close
 
                     // if school or FC, just build asap, otherwise build on grid, not dig locations, and can't be next to flood, if next to flood, height must be 12
-                    if ((unitToBuild == RobotType.DESIGN_SCHOOL ||
-                            unitToBuild == RobotType.FULFILLMENT_CENTER || unitToBuild == RobotType.REFINERY ||
+                    if ((unitToBuild == RobotType.REFINERY ||
                             (buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2
                                     && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 12)
                             )
