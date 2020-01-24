@@ -225,7 +225,7 @@ public class DeliveryDrone extends RobotPlayer {
                     // find nearest landscaper for attack
                     if (attackWithAllUnits) {
                         //nearestLandscaper
-                        if (dist < distToNearestLandscaperForAttack && info.location.distanceSquaredTo(HQLocation) >= 16) {
+                        if (enemyBaseLocation != null && dist < distToNearestLandscaperForAttack && info.location.distanceSquaredTo(HQLocation) >= 16 && info.location.distanceSquaredTo(enemyBaseLocation) > DROP_ZONE_RANGE_OF_HQ) {
                             nearestLandscaperForAttack = info;
                             distToNearestLandscaperForAttack = dist;
                         }
@@ -254,9 +254,14 @@ public class DeliveryDrone extends RobotPlayer {
                             nearestAdjacentToHQMiner = info;
                         }
                     }
-                    if (dist2 < distToNearestMinerForAttack) {
-                        distToNearestMinerForAttack = dist2;
-                        nearestMinerForAttack = info;
+                    if (attackWithAllUnits) {
+                        // pick up miners for attack if they arent in the drop zone for attakc
+                        if (debug) System.out.println("Miner is contender for attack");
+                        if (enemyBaseLocation != null && dist2 < distToNearestMinerForAttack && info.location.distanceSquaredTo(enemyBaseLocation) > DROP_ZONE_RANGE_OF_HQ) {
+                            if (debug) System.out.println("Found nearest attack miner");
+                            distToNearestMinerForAttack = dist2;
+                            nearestMinerForAttack = info;
+                        }
                     }
                     break;
             }
@@ -287,22 +292,31 @@ public class DeliveryDrone extends RobotPlayer {
         int minDistToFlood = 999999999;
         MapLocation nearestEmptyHighLand = null;
         int distToHighLand = 999999999;
+
+        MapLocation nearestDropZoneLoc = null;
+        int distToNearestDropZoneLoc = 99999999;
+
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
             int[] deltas = Constants.BFSDeltas24[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
             // TODO: instead of canSenseLocation, maybe do the math and choose the right BFS deltas to iterate over
             if (rc.canSenseLocation(checkLoc)) {
+                int dist = rc.getLocation().distanceSquaredTo(checkLoc);
                 if (rc.senseFlooding(checkLoc)) {
-                    int dist = rc.getLocation().distanceSquaredTo(checkLoc);
+
                     if (dist < minDistToFlood && dist != 0) {
                         minDistToFlood = dist;
                         waterLoc = checkLoc;
                     }
-
+                }
+                else {
+                    if (enemyBaseLocation != null && dist < distToNearestDropZoneLoc && checkLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ) {
+                        nearestDropZoneLoc = checkLoc;
+                        distToNearestDropZoneLoc = dist;
+                    }
                 }
                 int elevation = rc.senseElevation(checkLoc);
                 if (elevation >= DESIRED_ELEVATION_FOR_TERRAFORM && !rc.isLocationOccupied(checkLoc)) {
-                    int dist = rc.getLocation().distanceSquaredTo(checkLoc);
                     // closest highland that isn't in HQ breahting space
                     if (dist < distToHighLand && checkLoc.distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
                         nearestEmptyHighLand = checkLoc;
@@ -310,10 +324,6 @@ public class DeliveryDrone extends RobotPlayer {
                         if (debug) System.out.println(checkLoc + " is empty high land");
                     }
                 }
-            }
-            else {
-                // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
-                break;
             }
         }
 
@@ -805,6 +815,12 @@ public class DeliveryDrone extends RobotPlayer {
                         }
                     }
                 }
+                // no nearby units to take from? go home
+                /*
+                if (nearestLandscaperForAttack == null && nearestMinerForAttack == null && attackWithAllUnits && !rc.isCurrentlyHoldingUnit()) {
+                    setTargetLoc(HQLocation);
+
+                } */
 
                 if (attackLoc != null && !tryingToPickupUnit) {
                     int distToAttackLoc = rc.getLocation().distanceSquaredTo(attackLoc);
@@ -869,7 +885,12 @@ public class DeliveryDrone extends RobotPlayer {
                             }
                             if (attackWithAllUnits && rc.isCurrentlyHoldingUnit() && friendlyUnitHeld != null && enemyBaseLocation != null) {
                                 // drop onto wall land near enemy HQ
+                                // 1. drop onto enemy wall
+                                // 2. drop adjacent to location of high land (happening because the wall is all filled up)
+                                // 3. head towards nearest drop zone location
+
                                 if (friendlyUnitHeld.type == RobotType.LANDSCAPER) {
+                                    boolean droppedUnit = false;
                                     for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
                                         int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
                                         MapLocation checkLoc = enemyBaseLocation.translate(deltas[0], deltas[1]);
@@ -877,7 +898,36 @@ public class DeliveryDrone extends RobotPlayer {
                                             Direction dirToWallLoc = rc.getLocation().directionTo(checkLoc);
                                             if (rc.canSenseLocation(checkLoc) && !rc.senseFlooding(checkLoc) && rc.canDropUnit(dirToWallLoc)) {
                                                 rc.dropUnit(dirToWallLoc);
+                                                droppedUnit = true;
+                                                break;
                                             }
+                                        }
+                                    }
+                                    // otherwise if we havent dropped it
+                                    // use closest visible highland near enough to HQ within DROP_ZONE_RANGE or smth
+                                    if (!droppedUnit && nearestDropZoneLoc != null) {
+                                        int i = 0;
+                                        if (debug) System.out.println("Has not dropped unit on to wall, trying to drop near " + nearestDropZoneLoc);
+                                        Direction dropDir = Direction.NORTH;
+                                        while (i++ < 8) {
+                                            MapLocation dropLoc = rc.adjacentLocation(dropDir);
+                                            // drop on place not flooding and is close enough to enemy base and has open land adjacent
+                                            if (dropLoc.isAdjacentTo(nearestDropZoneLoc) && dropLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ) {
+
+                                                if (!rc.senseFlooding(dropLoc)) {
+                                                    if (rc.canDropUnit(dropDir)) {
+                                                        rc.dropUnit(dropDir);
+                                                        droppedUnit = true;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+
+                                            dropDir = dropDir.rotateLeft();
+                                        }
+                                        // if still haven't dropped, head towards nearest drop zone location
+                                        if (!droppedUnit) {
+                                            setTargetLoc(nearestDropZoneLoc);
                                         }
                                     }
                                 }
@@ -887,7 +937,7 @@ public class DeliveryDrone extends RobotPlayer {
                                     while (i++ < 8) {
                                         MapLocation dropLoc = rc.adjacentLocation(dropDir);
                                         // drop on place not flooding and is close enough to enemy base and has open land adjacent
-                                        if (rc.canSenseLocation(dropLoc) && dropLoc.distanceSquaredTo(HQLocation) <= 72 && locHasLandAdjacent(dropLoc)) {
+                                        if (rc.canSenseLocation(dropLoc) && dropLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ && locHasLandAdjacent(dropLoc)) {
 
                                             if (!rc.senseFlooding(dropLoc)) {
                                                 if (rc.canDropUnit(dropDir)) {
@@ -898,6 +948,17 @@ public class DeliveryDrone extends RobotPlayer {
                                         }
 
                                         dropDir = dropDir.rotateLeft();
+                                    }
+                                    // check center, if center works, then disintegrate
+                                    MapLocation dropCenterLoc = rc.getLocation();
+                                    if (debug) System.out.println("Has not dropped miner anywhere adjacent, trying to drop by disintegration | Adjacent land? " + locHasLandAdjacent(dropCenterLoc) );
+                                    // drop on place not flooding and is close enough to enemy base and has open land adjacent
+                                    if (dropCenterLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ && locHasLandAdjacent(dropCenterLoc)) {
+                                        if (debug) System.out.println("I'm in range!");
+                                        if (!rc.senseFlooding(dropCenterLoc)) {
+                                            if (debug) System.out.println("I'm on flood!");
+                                            rc.disintegrate();
+                                        }
                                     }
                                 }
                             }

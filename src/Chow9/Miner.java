@@ -49,6 +49,7 @@ public class Miner extends RobotPlayer {
 
         // if getting build information, use it
         checkBlockForBuildInfo(lastRoundsBlocks);
+        checkForEnemyBasesInBlocks(lastRoundsBlocks);
 
         // if mining, always try to mine
         if (role == MINER) {
@@ -79,9 +80,10 @@ public class Miner extends RobotPlayer {
         }
 
         // if its high rounds and we are near enemy HQ, attack mode
-        if (rc.getRoundNum() >= 1500 && enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 32) {
+        if (rc.getRoundNum() >= 1650 && enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ + 40) {
             role = ATTACK;
         }
+
 
 
         /* BIG FRIENDLY BOTS SEARCH LOOP thing */
@@ -112,6 +114,24 @@ public class Miner extends RobotPlayer {
             Direction greedyDir = getBugPathMove(HQLocation, dangerousDirections); //TODO: should return a valid direction usually???
             if (debug) System.out.println("Running away! To " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
             tryMove(greedyDir);
+        }
+
+        if (role == ATTACK) {
+            // build net guns in face of drones
+            if (debug) System.out.println("ATTACKING | Soup: " + rc.getTeamSoup());
+            if (EnemyDroneCount > 0) {
+                int i = 0;
+                Direction buildDir = Direction.NORTH;
+                if (debug) System.out.println("Trying to build NETGUN in dir: " + buildDir);
+                while(i++ < 8) {
+                    if (rc.canBuildRobot(RobotType.NET_GUN, buildDir)) {
+                        rc.buildRobot(RobotType.NET_GUN, buildDir);
+                        break;
+                    }
+                    buildDir = buildDir.rotateRight();
+                }
+            }
+            return;
         }
 
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
@@ -225,10 +245,6 @@ public class Miner extends RobotPlayer {
                 }
 
             }
-            else {
-                // if we can no longer sense location, break out of for loop then as all other BFS deltas will be unsensorable
-                break;
-            }
         }
 
         // look for enemey location and see if its there
@@ -270,21 +286,8 @@ public class Miner extends RobotPlayer {
             }
         }
 
-        if (role == ATTACK) {
-            // build net guns in face of drones
-            if (EnemyDroneCount > 0) {
-                int i = 0;
-                Direction buildDir = Direction.NORTH;
-                while(i++ < 8) {
-                    if (rc.canBuildRobot(RobotType.NET_GUN, buildDir)) {
-                        rc.buildRobot(RobotType.NET_GUN, buildDir);
-                        break;
-                    }
-                    buildDir = buildDir.rotateRight();
-                }
-            }
-        }
-        else if (role == MINER) {
+
+        if (role == MINER) {
             // TODO: cost of announcement should be upped in later rounds with many units.
             // announce soup location if we just made a new soup location
             if (SoupLocation != null && newLocation) {
@@ -364,6 +367,7 @@ public class Miner extends RobotPlayer {
         }
         // must be ready, if not ready and still on cooldown, we wait till next turn basically
         else if (role == BUILDING && rc.isReady()) {
+            if (debug) System.out.println("Ready and trying to build a " + unitToBuild);
             boolean proceedWithBuild = true;
             Direction buildDir = Direction.NORTH;
             if (minedDirection != null && minedDirection != Direction.CENTER) {
@@ -563,6 +567,7 @@ public class Miner extends RobotPlayer {
                     if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && soupThen - rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost / 2 && distToHQ <= 48) {
                         role = BUILDING;
                         unitToBuild = RobotType.DESIGN_SCHOOL;
+                        if (debug) System.out.println("Told to build a school");
                     }
                 }
                 else if (msg[1] == RobotType.DESIGN_SCHOOL.ordinal()) {

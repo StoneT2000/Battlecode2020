@@ -22,7 +22,7 @@ public strictfp class RobotPlayer {
     static MapLocation enemyBaseLocation = null; // the enemy HQ location
 
     static int turnCount;
-    static final boolean debug = false;
+    static final boolean debug = true;
     static final int UNIQUEKEY = -1949234321;
     static Team enemyTeam; // enemy team enum
 
@@ -69,6 +69,8 @@ public strictfp class RobotPlayer {
     static int DESIRED_ELEVATION_FOR_TERRAFORM = 3;
 
     static int HQ_LAND_RANGE = 5; // how big in r2 HQ's land (that is untouched untill walling) is
+
+    static int DROP_ZONE_RANGE_OF_HQ = 72; // how far away are we allowed to drop our units for attack from HQ.
 
     public static void run(RobotController rc) throws GameActionException {
 

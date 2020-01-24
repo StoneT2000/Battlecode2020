@@ -162,7 +162,6 @@ public class Landscaper extends RobotPlayer {
                             }
 
                     }
-
                     soupNearby += rc.senseSoup(checkLoc);
                 }
             }
