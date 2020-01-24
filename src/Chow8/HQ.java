@@ -86,6 +86,7 @@ public class HQ extends RobotPlayer {
         int designSchools = 0;
         int myLandscapers = 0;
         int fulfillmentCenters = 0;
+        int vaporators = 0;
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
@@ -107,6 +108,9 @@ public class HQ extends RobotPlayer {
             }
             else if (info.type == RobotType.MINER) {
                 miners++;
+            }
+            else if (info.type == RobotType.VAPORATOR) {
+                vaporators++;
             }
             else if (info.type == RobotType.DESIGN_SCHOOL) {
                 designSchools++;
@@ -168,7 +172,7 @@ public class HQ extends RobotPlayer {
         }
 
         // triggered if its really late or we see enough landscapers in vision
-        if ((rc.getRoundNum() >= 1400 || (myLandscapers >= wallBotsMax && vaporatorsBuilt >= 15)) && rc.getRoundNum() % 10 == 0) {
+        if ((rc.getRoundNum() >= 1400 || (myLandscapers + 5 >= wallBotsMax && vaporators >= 10)) && rc.getRoundNum() % 10 == 0) {
             // every 15 rounds check if we have all our bots or not
             if (wallBots <= wallBotsMax) {
                 announceWALL_IN();
@@ -186,7 +190,6 @@ public class HQ extends RobotPlayer {
             criedForLockAndDefend = false;
 
         }
-
 
         if (!gettingRushed && enemyDesignSchools > 0) {
             gettingRushed = true;

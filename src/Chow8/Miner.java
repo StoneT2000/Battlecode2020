@@ -325,7 +325,7 @@ public class Miner extends RobotPlayer {
                 buildDir = rc.getLocation().directionTo(HQLocation);
             }
 
-            if (unitToBuild == RobotType.VAPORATOR && rc.getRoundNum() <= 300 && rc.getLocation().distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
+            if (unitToBuild == RobotType.VAPORATOR && rc.getRoundNum() <= 500 && rc.getLocation().distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
                 // make sure miner goes back to HQ to build this
                 proceedWithBuild = false;
                 setTargetLoc(HQLocation);

@@ -42,7 +42,7 @@ public class DesignSchool extends RobotPlayer {
 
         if (terraformingTime && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost && rc.getLocation().distanceSquaredTo(HQLocation) <= 48) {
             if (vaporatorsBuilt > 8) {
-                if (vaporatorsBuilt * 5+ 5 > landscapersBuilt) {
+                if (vaporatorsBuilt * 3 + 5 > landscapersBuilt) {
                     willBuild = true;
                 }
             }
@@ -124,6 +124,7 @@ public class DesignSchool extends RobotPlayer {
                 }
                 else if ((msg[1] ^ WALL_IN) == 0 || (msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
                     wallIn = true;
+                    vaporatorsBuilt -= 4;
                 }
             }
         }
