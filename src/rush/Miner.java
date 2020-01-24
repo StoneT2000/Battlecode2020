@@ -641,7 +641,7 @@ public class Miner extends RobotPlayer {
                 new MapLocation(rc.getMapWidth(), rc.getMapHeight())
         };
         exploreLocIndex = (int) (Math.random() * exploreLocs.length);
-        if (rc.getRoundNum() > 10) {
+        if (rc.getRoundNum() >= 10 && rc.getRoundNum() <= 20) {
             role = ATTACK;
         }
     }

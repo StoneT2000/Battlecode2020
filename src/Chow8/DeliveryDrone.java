@@ -21,6 +21,7 @@ public class DeliveryDrone extends RobotPlayer {
 
     static MapLocation waterLoc;
 
+    static boolean gettingRushed = false; // HQ tells us this
     static int circledHQTimes = 0;
 
     static Direction initialDirectionToHQ;
@@ -107,8 +108,9 @@ public class DeliveryDrone extends RobotPlayer {
                     break;
             }
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
-            if (dist <= 25 && (info.type == RobotType.NET_GUN)) {
+            if (dist <= 25 && (info.type == RobotType.NET_GUN) && info.getCooldownTurns() <= 2) {
                 // dangerous netgun, move somewhere not in range!
+
                 Direction badDir = rc.getLocation().directionTo(info.location);
                 dangerousDirections.add(badDir);
                 Direction badDirLeft = badDir.rotateLeft();
@@ -641,8 +643,11 @@ public class DeliveryDrone extends RobotPlayer {
         }
         else if (role == ATTACK && !skipAttack) {
 
-            if (circledHQTimes >= 1) {
+            if (circledHQTimes >= 1 && !gettingRushed) {
                 attackLoc = closestMaybeHQ; // always attempt to attack enemy HQ after we go once around our OWN HQ
+            }
+            else if (gettingRushed) {
+                attackLoc = HQLocation;
             }
             else {
                 // check if we finished a circle
@@ -1005,6 +1010,12 @@ public class DeliveryDrone extends RobotPlayer {
                 else if ((msg[1] ^ WALL_IN) == 0 || (msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
                     // time to put landscapers in their spots!
                     wallIn = true;
+                }
+                else if ((msg[1] ^ GETTING_RUSHED_HELP) == 0) {
+                    gettingRushed = true;
+                }
+                else if ((msg[1] ^ NO_LONGER_RUSHED) == 0) {
+                    gettingRushed = false;
                 }
             }
         }

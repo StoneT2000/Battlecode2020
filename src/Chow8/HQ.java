@@ -40,6 +40,7 @@ public class HQ extends RobotPlayer {
         int enemyDrones = 0;
         int enemyNetGuns = 0;
         int miners = 0;
+        int inHQSpaceEnemyLandscapers = 0;
         int closestEnemyDroneDist = 99999999;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
@@ -61,6 +62,9 @@ public class HQ extends RobotPlayer {
                     break;
                 case LANDSCAPER:
                     enemyLandscapers++;
+                    if (info.location.distanceSquaredTo(rc.getLocation()) <= HQ_LAND_RANGE) {
+                        inHQSpaceEnemyLandscapers++;
+                    }
                     break;
                 case DELIVERY_DRONE:
                     enemyDrones++;
@@ -200,7 +204,7 @@ public class HQ extends RobotPlayer {
             announceMessage(GETTING_RUSHED_HELP);
         }
         // if we were rushed but no more design schools
-        if (gettingRushed && enemyDesignSchools == 0) {
+        if (gettingRushed && enemyDesignSchools == 0 && enemyNetGuns == 0 && inHQSpaceEnemyLandscapers == 0) {
             gettingRushed = false;
             announceMessage(NO_LONGER_RUSHED);
         }
