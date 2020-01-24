@@ -20,7 +20,7 @@ public class DeliveryDrone extends RobotPlayer {
     static MapLocation attackLoc;
     static boolean swarmIn = false;
 
-    static boolean holdingFriendly = false;
+    static RobotInfo friendlyUnitHeld = null;
     static boolean attackWithAllUnits = false;
 
     static MapLocation waterLoc;
@@ -199,6 +199,8 @@ public class DeliveryDrone extends RobotPlayer {
         RobotInfo nearestLowMiner = null;
         RobotInfo nearestLandscaper = null; // nearest not on wall / available
         RobotInfo nearestLandscaperForAttack = null;
+        RobotInfo nearestMinerForAttack = null;
+        int distToNearestMinerForAttack = 9999999;
         int distToNearestLandscaperForAttack = 9999999;
         RobotInfo nearestAdjacentToHQLandscaper = null;
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
@@ -251,6 +253,10 @@ public class DeliveryDrone extends RobotPlayer {
                             distToNearestMinerAdjacentToHQ = dist2;
                             nearestAdjacentToHQMiner = info;
                         }
+                    }
+                    if (dist2 < distToNearestMinerForAttack) {
+                        distToNearestMinerForAttack = dist2;
+                        nearestMinerForAttack = info;
                     }
                     break;
             }
@@ -778,10 +784,20 @@ public class DeliveryDrone extends RobotPlayer {
                 // pick up if unit not within 16 of enemy
                 boolean tryingToPickupUnit = false;
                 if (attackWithAllUnits && enemyBaseLocation != null) {
-                    if (nearestLandscaperForAttack != null && nearestLandscaperForAttack.location.distanceSquaredTo(enemyBaseLocation) > 16) {
+                    if (nearestMinerForAttack != null) {
+                        if (rc.canPickUpUnit(nearestMinerForAttack.getID())) {
+                            rc.pickUpUnit(nearestMinerForAttack.getID());
+                            friendlyUnitHeld = nearestMinerForAttack;
+                        }
+                        else {
+                            setTargetLoc(nearestLandscaperForAttack.location);
+                            tryingToPickupUnit = true;
+                        }
+                    }
+                    else if (nearestLandscaperForAttack != null && nearestLandscaperForAttack.location.distanceSquaredTo(enemyBaseLocation) > 16) {
                         if (rc.canPickUpUnit(nearestLandscaperForAttack.getID())) {
                             rc.pickUpUnit(nearestLandscaperForAttack.getID());
-                            holdingFriendly = true;
+                            friendlyUnitHeld = nearestLandscaperForAttack;
                         }
                         else {
                             setTargetLoc(nearestLandscaperForAttack.location);
@@ -851,16 +867,36 @@ public class DeliveryDrone extends RobotPlayer {
                                     setTargetLoc(enemyToEngage.location);
                                 }
                             }
-                            if (attackWithAllUnits && rc.isCurrentlyHoldingUnit() && holdingFriendly && enemyBaseLocation != null) {
+                            if (attackWithAllUnits && rc.isCurrentlyHoldingUnit() && friendlyUnitHeld != null && enemyBaseLocation != null) {
                                 // drop onto wall land near enemy HQ
-                                for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
-                                    int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
-                                    MapLocation checkLoc = enemyBaseLocation.translate(deltas[0], deltas[1]);
-                                    if (rc.onTheMap(checkLoc) && rc.getLocation().isAdjacentTo(checkLoc)) {
-                                        Direction dirToWallLoc = rc.getLocation().directionTo(checkLoc);
-                                        if (rc.canSenseLocation(checkLoc) && !rc.senseFlooding(checkLoc) && rc.canDropUnit(dirToWallLoc)) {
-                                            rc.dropUnit(dirToWallLoc);
+                                if (friendlyUnitHeld.type == RobotType.LANDSCAPER) {
+                                    for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
+                                        int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+                                        MapLocation checkLoc = enemyBaseLocation.translate(deltas[0], deltas[1]);
+                                        if (rc.onTheMap(checkLoc) && rc.getLocation().isAdjacentTo(checkLoc)) {
+                                            Direction dirToWallLoc = rc.getLocation().directionTo(checkLoc);
+                                            if (rc.canSenseLocation(checkLoc) && !rc.senseFlooding(checkLoc) && rc.canDropUnit(dirToWallLoc)) {
+                                                rc.dropUnit(dirToWallLoc);
+                                            }
                                         }
+                                    }
+                                }
+                                else if (friendlyUnitHeld.type == RobotType.MINER) {
+                                    int i = 0;
+                                    Direction dropDir = Direction.NORTH;
+                                    while (i++ < 8) {
+                                        MapLocation dropLoc = rc.adjacentLocation(dropDir);
+                                        // drop on place not flooding and is close enough to enemy base
+                                        if (rc.canSenseLocation(dropLoc) && dropLoc.distanceSquaredTo(HQLocation) <= 36) {
+                                            if (!rc.senseFlooding(dropLoc)) {
+                                                if (rc.canDropUnit(dropDir)) {
+                                                    rc.dropUnit(dropDir);
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        dropDir = dropDir.rotateLeft();
                                     }
                                 }
                             }

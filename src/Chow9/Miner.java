@@ -10,6 +10,8 @@ public class Miner extends RobotPlayer {
     static final int RETURNING = 2; // RETURNING TO SOME REFINERY OR HQ TO DEPOSIT
     static final int BUILDING = 3;
 
+    static final int ATTACK = 4;
+
     static Direction minedDirection;
     static int FulfillmentCentersBuilt = 0;
     static boolean firstFulfillmentCenterBuilt = false;
@@ -76,6 +78,12 @@ public class Miner extends RobotPlayer {
             }
         }
 
+        // if its high rounds and we are near enemy HQ, attack mode
+        if (rc.getRoundNum() >= 1500 && enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 32) {
+            role = ATTACK;
+        }
+
+
         /* BIG FRIENDLY BOTS SEARCH LOOP thing */
         int EnemyDroneCount = 0;
         boolean moveAway = false;
@@ -98,7 +106,7 @@ public class Miner extends RobotPlayer {
                     break;
             }
         }
-        if (moveAway) {
+        if (moveAway && role != ATTACK) {
             // go to target with consideration of dangers
             // go to nearest netgun/HQ?
             Direction greedyDir = getBugPathMove(HQLocation, dangerousDirections); //TODO: should return a valid direction usually???
@@ -262,7 +270,21 @@ public class Miner extends RobotPlayer {
             }
         }
 
-        if (role == MINER) {
+        if (role == ATTACK) {
+            // build net guns in face of drones
+            if (EnemyDroneCount > 0) {
+                int i = 0;
+                Direction buildDir = Direction.NORTH;
+                while(i++ < 8) {
+                    if (rc.canBuildRobot(RobotType.NET_GUN, buildDir)) {
+                        rc.buildRobot(RobotType.NET_GUN, buildDir);
+                        break;
+                    }
+                    buildDir = buildDir.rotateRight();
+                }
+            }
+        }
+        else if (role == MINER) {
             // TODO: cost of announcement should be upped in later rounds with many units.
             // announce soup location if we just made a new soup location
             if (SoupLocation != null && newLocation) {
