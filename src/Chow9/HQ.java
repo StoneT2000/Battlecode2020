@@ -257,7 +257,7 @@ public class HQ extends RobotPlayer {
                         existsSoup = true;
                         int soupThere = msg[3];
                         int minersThere = msg[4];
-                        if (soupThere / minersThere >= 300) {
+                        if (soupThere / (minersThere + 1) >= 300) {
                             buildBecauseNeedMiners = true;
                         }
 

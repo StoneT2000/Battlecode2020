@@ -119,6 +119,7 @@ public class Miner extends RobotPlayer {
         int NetGunCount = 0;
         int MinerCount = 0;
         int DesignSchoolCount = 0;
+        int closeNetguns = 0;
         int VaporatorCount = 0;
         int FulfillmentCenterCount = 0;
         MapLocation nearestRefinery = HQLocation;
@@ -141,6 +142,9 @@ public class Miner extends RobotPlayer {
                     break;
                 case NET_GUN:
                     NetGunCount++;
+                    if (rc.getLocation().distanceSquaredTo(info.location) <= 5) {
+                        closeNetguns++;
+                    }
                     break;
                 case DESIGN_SCHOOL:
                     DesignSchoolCount++;
@@ -286,7 +290,7 @@ public class Miner extends RobotPlayer {
             if (SoupLocation != null && newLocation) {
                 // YELLOW means we found soup location, and we make announcement!
                 if (debug) rc.setIndicatorDot(SoupLocation, 255, 200, 20);
-                announceSoupLocation(SoupLocation, 1, soupNearbyCount, MinerCount);
+                announceSoupLocation(SoupLocation, 1, soupNearbyCount, MinerCount + 1);
             }
 
             // reset soup score if needed, otherwise set target
@@ -343,7 +347,7 @@ public class Miner extends RobotPlayer {
 
             // build netguns out of necessity to combat drones
             // FIXME: MAKE SURE WE BUILD IN RIGHT PLACES AND NOT JUST CHECK NETGUNCOUNT == 0
-            if (NetGunCount == 0 && EnemyDroneCount > 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost) {
+            if (EnemyDroneCount > 0 && closeNetguns == 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost) {
                 role = BUILDING;
                 unitToBuild = RobotType.NET_GUN;
             }
@@ -397,27 +401,29 @@ public class Miner extends RobotPlayer {
                     // same parity and must not be too close
 
                     // if school or FC, just build asap, otherwise build on grid, not dig locations, and can't be next to flood, if next to flood, height must be 12
-                    if ((unitToBuild == RobotType.REFINERY ||
-                            (buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2
-                                    && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 12)
-                            )
-                                    && !isDigLocation(buildLoc))) {
-                        boolean proceed = true;
-                        if (terraformTime) {
-                            // only build on higher land
-                            if (rc.canSenseLocation(buildLoc) && rc.senseElevation(buildLoc) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
-                                proceed = false;
+                    if (rc.onTheMap(buildLoc)) {
+                        if (unitToBuild == RobotType.REFINERY ||
+                                (buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2
+                                        && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 12)
+                                )
+                                        && !isDigLocation(buildLoc)) {
+                            boolean proceed = true;
+                            if (terraformTime) {
+                                // only build on higher land
+                                if (rc.canSenseLocation(buildLoc) && rc.senseElevation(buildLoc) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+                                    proceed = false;
+                                }
                             }
-                        }
-                        else {
-                            // has to be adjacent if early on and is school or FC
-                            if (!buildLoc.isAdjacentTo(HQLocation) && (unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER) && rc.getRoundNum() <= 200) {
-                                proceed = false;
+                            else {
+                                // has to be adjacent if early on and is school or FC
+                                if (!buildLoc.isAdjacentTo(HQLocation) && (unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER) && rc.getRoundNum() <= 200) {
+                                    proceed = false;
+                                }
                             }
-                        }
-                        if (proceed && tryBuild(unitToBuild, buildDir)) {
-                            builtUnit = true;
-                            break;
+                            if (proceed && tryBuild(unitToBuild, buildDir)) {
+                                builtUnit = true;
+                                break;
+                            }
                         }
                     }
                     buildDir = buildDir.rotateRight();

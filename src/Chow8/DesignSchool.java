@@ -42,7 +42,7 @@ public class DesignSchool extends RobotPlayer {
 
         if (terraformingTime && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost && rc.getLocation().distanceSquaredTo(HQLocation) <= 48) {
             if (vaporatorsBuilt > 8) {
-                if (vaporatorsBuilt * 3 + 5 > landscapersBuilt) {
+                if (vaporatorsBuilt * 2 + 5 > landscapersBuilt) {
                     willBuild = true;
                 }
             }

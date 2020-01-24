@@ -268,7 +268,7 @@ public class DeliveryDrone extends RobotPlayer {
                 case COW:
                     if (debug) System.out.println("Found COW at " + info.location);
                     int dist = rc.getLocation().distanceSquaredTo(info.location);
-                    if (dist < distToNearestCow) {
+                    if (info.location.distanceSquaredTo(HQLocation) <= MAX_TERRAFORM_DIST + 24 && dist < distToNearestCow) {
                         nearestCow = info;
                         distToNearestCow = dist;
                     }
@@ -790,7 +790,7 @@ public class DeliveryDrone extends RobotPlayer {
                             friendlyUnitHeld = nearestMinerForAttack;
                         }
                         else {
-                            setTargetLoc(nearestLandscaperForAttack.location);
+                            setTargetLoc(nearestMinerForAttack.location);
                             tryingToPickupUnit = true;
                         }
                     }
@@ -886,8 +886,9 @@ public class DeliveryDrone extends RobotPlayer {
                                     Direction dropDir = Direction.NORTH;
                                     while (i++ < 8) {
                                         MapLocation dropLoc = rc.adjacentLocation(dropDir);
-                                        // drop on place not flooding and is close enough to enemy base
-                                        if (rc.canSenseLocation(dropLoc) && dropLoc.distanceSquaredTo(HQLocation) <= 36) {
+                                        // drop on place not flooding and is close enough to enemy base and has open land adjacent
+                                        if (rc.canSenseLocation(dropLoc) && dropLoc.distanceSquaredTo(HQLocation) <= 72 && locHasLandAdjacent(dropLoc)) {
+
                                             if (!rc.senseFlooding(dropLoc)) {
                                                 if (rc.canDropUnit(dropDir)) {
                                                     rc.dropUnit(dropDir);
