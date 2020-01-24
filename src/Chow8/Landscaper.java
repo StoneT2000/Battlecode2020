@@ -220,8 +220,7 @@ public class Landscaper extends RobotPlayer {
             }
         }
 
-        // when do we protect?, when to attack??
-        // if we have nearby enemy,
+        // if we have nearby enemy, always attack it
         if (nearestEnemy != null) {
             // if adjacent, proceed with dump procedure
             if (rc.getLocation().isAdjacentTo(nearestEnemy.location)) {
@@ -268,6 +267,7 @@ public class Landscaper extends RobotPlayer {
             else {
                 //targetLoc = nearestEnemy.location;
                 setTargetLoc(nearestEnemy.location);
+                // NOTE this gets overriden by terraforming landscapers
             }
         }
 

@@ -295,6 +295,7 @@ public class Miner extends RobotPlayer {
             }
 
             // build netguns out of necessity to combat drones
+            // FIXME: MAKE SURE WE BUILD IN RIGHT PLACES AND NOT JUST CHECK NETGUNCOUNT == 0
             if (NetGunCount == 0 && EnemyDroneCount > 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost) {
                 role = BUILDING;
                 unitToBuild = RobotType.NET_GUN;
