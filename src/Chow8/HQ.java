@@ -234,13 +234,50 @@ public class HQ extends RobotPlayer {
             if (rc.canShootUnit(closestDroneBot.getID())) {
                 rc.shootUnit(closestDroneBot.getID());
                 if (debug) rc.setIndicatorDot(closestDroneBot.location, 255, 50,190);
+                //closestDroneBot.isCurrentlyHoldingUnit();
+            }
+        }
+
+        existsSoup = false;
+        boolean buildBecauseNeedMiners = false;
+        if (rc.getRoundNum() > 1) {
+            Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
+            //checkBlockForSoupLocations(lastRoundsBlocks);
+            checkForEnemyBasesInBlocks(lastRoundsBlocks);
+            for (int i = lastRoundsBlocks.length; --i >= 0; ) {
+                Transaction block = lastRoundsBlocks[i];
+                int[] msg = block.getMessage();
+                decodeMsg(msg);
+                if (isOurMessage((msg))) {
+                    if (msg[1] == RobotType.VAPORATOR.ordinal()) {
+                        vaporatorsBuilt++;
+                    }
+                    else if ((msg[1] ^ ANNOUNCE_SOUP_LOCATION) == 0) {
+                        existsSoup = true;
+                        int soupThere = msg[3];
+                        int minersThere = msg[4];
+                        if (soupThere / minersThere >= 300) {
+                            buildBecauseNeedMiners = true;
+                        }
+
+                    }
+                    else if (msg[1] == RobotType.DESIGN_SCHOOL.ordinal()) {
+                        designSchoolsBuilt++;
+                    }
+                }
             }
         }
 
         // decide on unit to build and set unitToBuild appropriately
         decideOnUnitToBuild();
         // if we are to build a unit, proceed
-        if (unitToBuild != null && (rc.getRoundNum() < 15 || (wallBots > 1 && designSchools > 0 ))) {
+        if (buildBecauseNeedMiners) {
+            unitToBuild = RobotType.MINER;
+        }
+        if  (rc.getRoundNum() < 15) {
+            unitToBuild = RobotType.MINER;
+        }
+        if (unitToBuild != null) {
             // proceed with building unit using default heurstics
             if (debug) System.out.println("closest soup: " + closestSoupLoc);
             build(closestSoupLoc);
@@ -260,28 +297,7 @@ public class HQ extends RobotPlayer {
             announceMessage(SWARM_IN);
         }
 
-        existsSoup = false;
-        if (rc.getRoundNum() > 1) {
-            Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
-            //checkBlockForSoupLocations(lastRoundsBlocks);
-            checkForEnemyBasesInBlocks(lastRoundsBlocks);
-            for (int i = lastRoundsBlocks.length; --i >= 0; ) {
-                Transaction block = lastRoundsBlocks[i];
-                int[] msg = block.getMessage();
-                decodeMsg(msg);
-                if (isOurMessage((msg))) {
-                    if (msg[1] == RobotType.VAPORATOR.ordinal()) {
-                        vaporatorsBuilt++;
-                    }
-                    else if ((msg[1] ^ ANNOUNCE_SOUP_LOCATION) == 0) {
-                        existsSoup = true;
-                    }
-                    else if (msg[1] == RobotType.DESIGN_SCHOOL.ordinal()) {
-                        designSchoolsBuilt++;
-                    }
-                }
-            }
-        }
+
 
     }
     static void checkTransactionsForBuildCounts(Transaction[] transactions) throws GameActionException {

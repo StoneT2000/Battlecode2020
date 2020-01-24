@@ -96,6 +96,7 @@ public class Miner extends RobotPlayer {
         int VaporatorCount = 0;
         int FulfillmentCenterCount = 0;
         MapLocation nearestRefinery = HQLocation;
+        boolean designatedBuilder = true;
         int minDist = rc.getLocation().distanceSquaredTo(HQLocation);
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
@@ -120,6 +121,9 @@ public class Miner extends RobotPlayer {
                     break;
                 case MINER:
                     MinerCount++;
+                    if (info.getID() < rc.getID()) {
+                        designatedBuilder = false;
+                    }
                     break;
                 case FULFILLMENT_CENTER:
                     FulfillmentCenterCount++;
@@ -225,16 +229,16 @@ public class Miner extends RobotPlayer {
 
         // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
         // 800 - something, subtract distance. Subtract less for the higher amount soup mined
-        if (debug) System.out.println("Soup: " + rc.getTeamSoup() + " | mined? " + mined + " | first school? " + firstDesignSchoolBuilt);
+        if (debug) System.out.println("Soup: " + rc.getTeamSoup() + " | mined? " + mined + " | first FC? " + firstFulfillmentCenterBuilt);
         if (lastDepositedRefinery.equals(HQLocation)) {
             // if refinery deposited at is HQ location, go all out to build this refinery at least
-            if (mined && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && firstDesignSchoolBuilt && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 10) {
+            if (mined && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && firstFulfillmentCenterBuilt && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 36) {
                 role = BUILDING;
                 unitToBuild = RobotType.REFINERY;
             }
         }
         else {
-            if (mined && soupNearbyCount > 800 - Math.sqrt(rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 25) {
+            if (mined && soupNearbyCount > 800 - Math.sqrt(rc.getLocation().distanceSquaredTo(lastDepositedRefinery)) && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && rc.getRoundNum() >= 75 && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 36) {
                 role = BUILDING;
                 unitToBuild = RobotType.REFINERY;
             }
@@ -279,13 +283,15 @@ public class Miner extends RobotPlayer {
             // early game
             // TODO: TUNE PARAM!
             if (rc.getRoundNum() <= 300) {
-                if (rc.getTeamSoup() >= 500 + 150) {
+                // only designated builder builds vaporators
+                if (designatedBuilder && rc.getTeamSoup() >= 500 + 150) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                 }
 
             }
-            else if (rc.getTeamSoup() >= 500 + 150) {
+            // only designated builder builds vaporators
+            else if (designatedBuilder && rc.getTeamSoup() >= 500 + 150) {
                 if (!terraformTime || rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
@@ -354,7 +360,7 @@ public class Miner extends RobotPlayer {
 
                     // if school or FC, just build asap, otherwise build on grid, not dig locations, and can't be next to flood, if next to flood, height must be 12
                     if ((unitToBuild == RobotType.DESIGN_SCHOOL ||
-                            unitToBuild == RobotType.FULFILLMENT_CENTER || unitToBuild == RobotType.NET_GUN ||
+                            unitToBuild == RobotType.FULFILLMENT_CENTER || unitToBuild == RobotType.NET_GUN || unitToBuild == RobotType.REFINERY ||
                             (buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2
                                     && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 12)
                             )
@@ -367,7 +373,8 @@ public class Miner extends RobotPlayer {
                             }
                         }
                         else {
-                            if (!buildLoc.isAdjacentTo(HQLocation) && rc.getRoundNum() <= 300) {
+                            // has to be adjacent if early on and is school or FC
+                            if (!buildLoc.isAdjacentTo(HQLocation) && (unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER) && rc.getRoundNum() <= 200) {
                                 proceed = false;
                             }
                         }
