@@ -154,11 +154,13 @@ public class Landscaper extends RobotPlayer {
                 startedCirclingRound = rc.getRoundNum();
                 circling = true;
             }
+            setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(HQLocation).rotateRight().rotateRight()));
             if (circling && rc.getRoundNum() - startedCirclingRound >= 10) {
                 // terraform farther and farther until max
                 terraformDistAwayFromHQ = (int) Math.min(Math.pow((Math.sqrt(terraformDistAwayFromHQ) + 1), 2), MAX_TERRAFORM_DIST);
                 circling = false;
                 //attackLoc = HQL;
+
             }
         }
 
@@ -968,7 +970,9 @@ public class Landscaper extends RobotPlayer {
                     setTargetLoc(HQLocation);
                 }
                 else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0) {
-                    role = TERRAFORM;
+                    if (role != DEFEND_HQ) {
+                        role = TERRAFORM;
+                    }
                 }
                 else if ((msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
                     // go away and terraform if not near HQ
@@ -996,6 +1000,10 @@ public class Landscaper extends RobotPlayer {
             MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
             FirstLandscaperPosAroundHQTable.add(loc);
         }
+
+        // update max terraform distance depending on where HQ is and how much space it has, we want specfically
+        // sqrt(MAX_TERRAFORM_DIST) is radius of our cookie, so we want MAX_TERRAFORM_DIST * Math.PI area
+        // MAX_TERRAFORM_DIST
 
     }
 }

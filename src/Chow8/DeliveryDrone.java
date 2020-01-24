@@ -41,87 +41,7 @@ public class DeliveryDrone extends RobotPlayer {
     static HashTable<MapLocation> BuildPositionsTaken = new HashTable<>(10);
     public static void run() throws GameActionException {
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
-        for (int i = lastRoundsBlocks.length; --i >= 0; ) {
-            int[] msg = lastRoundsBlocks[i].getMessage();
-            decodeMsg(msg);
-            if (isOurMessage((msg))) {
-                // havent received message yet and is now receiving it
-                if ((msg[1] ^ DRONES_ATTACK) == 0 && receivedAttackHQMessageRound == -1) {
-                    int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
-                    if (msg[2] != -1) {
-                        enemyBaseLocation = parseLoc(msg[2]);
-                        // TODO: handle case when we dont know enemy base location
-                        attackLoc = enemyBaseLocation;
-                        attackHQ = true;
-                        receivedAttackHQMessageRound = rc.getRoundNum();
-                        // + 70 turns to wait for drones to reform a circle around ENEMY
-                        roundsToWaitBeforeAttack = (int) (2 * Math.max(Math.abs(attackLoc.x - HQLocation.x), Math.abs(HQLocation.y - attackLoc.y))) + 70;
-                    }
-                    else {
-                        // we don't know where enemy is, SCOUT!
-                        attackLoc = null;
-                        attackHQ  = true;
-                    }
-                }
-                else if ((msg[1] ^ ANNOUNCE_ENEMY_BASE_LOCATION) == 0) {
-                    enemyBaseLocation = parseLoc(msg[2]);
-                    // if we found enemy base and we are attacking HQ but don't know where HQ is
-                    if (attackHQ && attackLoc == null) {
-                        attackLoc = enemyBaseLocation;
-                        receivedAttackHQMessageRound = rc.getRoundNum();
-                        roundsToWaitBeforeAttack = (int) (2 * Math.max(Math.abs(attackLoc.x - HQLocation.x), Math.abs(HQLocation.y - attackLoc.y))) + 70;
-
-                    }
-                }
-                else if ((msg[1] ^ ANNOUNCE_NOT_ENEMY_BASE) == 0) {
-                    // remove said base from enemy base locations
-                    MapLocation notBaseLocation = parseLoc(msg[2]);
-
-                    // iterate over list
-                    Node<MapLocation> node = enemyHQLocations.head;
-
-                    Node<MapLocation> nodeToRemove = null;
-                    if (node != null) {
-                        for (int j = 0; j++ < enemyHQLocations.size; ) {
-                            if (node.val.equals(notBaseLocation)) {
-                                nodeToRemove = node;
-                                break;
-                            }
-                            node = node.next;
-
-                        }
-                    }
-                    if (nodeToRemove != null) {
-                        enemyHQLocations.remove(nodeToRemove);
-                    }
-                }
-                else if ((msg[1] ^ BUILD_DRONE_NOW) == 0) {
-                    if (!attackHQ) {
-                        attackLoc = HQLocation;
-                    }
-
-                }
-                else if ((msg[1] ^ LOCK_AND_DEFEND) == 0) {
-                    lockAndDefend = true;
-                    toldToLockAndDefendByHQ = true;
-                }
-                else if ((msg[1] ^ STOP_LOCK_AND_DEFEND) == 0) {
-                    lockAndDefend = false;
-                    toldToLockAndDefendByHQ = false;
-                }
-                else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0) {
-                    // means that we want miners to stop mining and work on building stuff on platform
-                    moveMinersToHighland = true;
-                    terraformTime = true;
-                    // pick up any miners and drop on height 10 tiles
-
-                }
-                else if ((msg[1] ^ WALL_IN) == 0 || (msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
-                    // time to put landscapers in their spots!
-                    wallIn = true;
-                }
-            }
-        }
+        processBlocks(lastRoundsBlocks);
 
 
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
@@ -527,7 +447,7 @@ public class DeliveryDrone extends RobotPlayer {
                 skipAttack = true;
             }
         }
-        else if (nearestAdjacentToHQLandscaper != null && !wallIn) {
+        if (nearestAdjacentToHQLandscaper != null && !wallIn) {
             if (rc.canPickUpUnit(nearestAdjacentToHQLandscaper.getID())) {
                 // pick them up
                 rc.pickUpUnit(nearestAdjacentToHQLandscaper.getID());
@@ -937,6 +857,12 @@ public class DeliveryDrone extends RobotPlayer {
         initialDirectionToHQ = rc.getLocation().directionTo(HQLocation); // used to circle around HQ once
 
         wallSpotLeft = true;
+        for (int i = 8; --i>= 1; ) {
+            int rn = rc.getRoundNum() -i;
+            if (rn > 0) {
+                processBlocks(rc.getBlock(rn));
+            }
+        }
     }
     static Direction getBugPathMoveDrone(MapLocation target, HashTable<Direction> dangerousDirections) throws GameActionException {
 
@@ -981,5 +907,88 @@ public class DeliveryDrone extends RobotPlayer {
         }
         //lastLocs.dequeue();
         return firstDirThatWorks;
+    }
+    static void processBlocks(Transaction[] blocks)  {
+        for (int i = blocks.length; --i >= 0; ) {
+            int[] msg = blocks[i].getMessage();
+            decodeMsg(msg);
+            if (isOurMessage((msg))) {
+                // havent received message yet and is now receiving it
+                if ((msg[1] ^ DRONES_ATTACK) == 0 && receivedAttackHQMessageRound == -1) {
+                    int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
+                    if (msg[2] != -1) {
+                        enemyBaseLocation = parseLoc(msg[2]);
+                        // TODO: handle case when we dont know enemy base location
+                        attackLoc = enemyBaseLocation;
+                        attackHQ = true;
+                        receivedAttackHQMessageRound = rc.getRoundNum();
+                        // + 70 turns to wait for drones to reform a circle around ENEMY
+                        roundsToWaitBeforeAttack = (int) (2 * Math.max(Math.abs(attackLoc.x - HQLocation.x), Math.abs(HQLocation.y - attackLoc.y))) + 70;
+                    }
+                    else {
+                        // we don't know where enemy is, SCOUT!
+                        attackLoc = null;
+                        attackHQ  = true;
+                    }
+                }
+                else if ((msg[1] ^ ANNOUNCE_ENEMY_BASE_LOCATION) == 0) {
+                    enemyBaseLocation = parseLoc(msg[2]);
+                    // if we found enemy base and we are attacking HQ but don't know where HQ is
+                    if (attackHQ && attackLoc == null) {
+                        attackLoc = enemyBaseLocation;
+                        receivedAttackHQMessageRound = rc.getRoundNum();
+                        roundsToWaitBeforeAttack = (int) (2 * Math.max(Math.abs(attackLoc.x - HQLocation.x), Math.abs(HQLocation.y - attackLoc.y))) + 70;
+
+                    }
+                }
+                else if ((msg[1] ^ ANNOUNCE_NOT_ENEMY_BASE) == 0) {
+                    // remove said base from enemy base locations
+                    MapLocation notBaseLocation = parseLoc(msg[2]);
+
+                    // iterate over list
+                    Node<MapLocation> node = enemyHQLocations.head;
+
+                    Node<MapLocation> nodeToRemove = null;
+                    if (node != null) {
+                        for (int j = 0; j++ < enemyHQLocations.size; ) {
+                            if (node.val.equals(notBaseLocation)) {
+                                nodeToRemove = node;
+                                break;
+                            }
+                            node = node.next;
+
+                        }
+                    }
+                    if (nodeToRemove != null) {
+                        enemyHQLocations.remove(nodeToRemove);
+                    }
+                }
+                else if ((msg[1] ^ BUILD_DRONE_NOW) == 0) {
+                    if (!attackHQ) {
+                        attackLoc = HQLocation;
+                    }
+
+                }
+                else if ((msg[1] ^ LOCK_AND_DEFEND) == 0) {
+                    lockAndDefend = true;
+                    toldToLockAndDefendByHQ = true;
+                }
+                else if ((msg[1] ^ STOP_LOCK_AND_DEFEND) == 0) {
+                    lockAndDefend = false;
+                    toldToLockAndDefendByHQ = false;
+                }
+                else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0) {
+                    // means that we want miners to stop mining and work on building stuff on platform
+                    moveMinersToHighland = true;
+                    terraformTime = true;
+                    // pick up any miners and drop on height 10 tiles
+
+                }
+                else if ((msg[1] ^ WALL_IN) == 0 || (msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
+                    // time to put landscapers in their spots!
+                    wallIn = true;
+                }
+            }
+        }
     }
 }

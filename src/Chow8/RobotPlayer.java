@@ -91,6 +91,8 @@ public strictfp class RobotPlayer {
             if (rc.getRoundNum() <= 500) {
                 DESIRED_ELEVATION_FOR_TERRAFORM = Math.max(calculateWaterLevels() + 3, 5) + thisLandScapersDesiredHeightOffset;
             }
+
+
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
                 // Here, we've separated the controls into a different method for each RobotType.
