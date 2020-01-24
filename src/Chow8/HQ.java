@@ -145,7 +145,6 @@ public class HQ extends RobotPlayer {
         }
         if (debug) System.out.println("I need " + wallBotsMax + " wall bots");
         // make sure we get a school and FC all the time
-        if (debug) System.out.println ("Asked for school: " + criedForDesignSchool + " soup atm:"  +rc.getTeamSoup());
         if ((!criedForDesignSchool || rc.getRoundNum() % 10 == 0) && rc.getRoundNum() >= 15 && designSchools == 0 && fulfillmentCenters > 0 && vaporatorsBuilt > 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
             announceBUILD_A_SCHOOL();
             criedForDesignSchool = true;
@@ -153,10 +152,6 @@ public class HQ extends RobotPlayer {
         if ((!criedForFC || rc.getRoundNum() % 10 == 0) && fulfillmentCenters == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
             announceBUILD_A_CENTER();
             criedForFC = true;
-        }
-
-        if (rc.getRoundNum() >= 300 && myDrones < 2 && rc.getRoundNum() % 10 == 0) {
-            //announceBuildDronesNow(4 - myDrones);
         }
 
         // if platform is closer to completion, we want everyone on terraforming duties or we have our wall

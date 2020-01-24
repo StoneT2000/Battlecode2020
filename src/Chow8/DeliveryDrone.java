@@ -45,28 +45,23 @@ public class DeliveryDrone extends RobotPlayer {
             int[] msg = lastRoundsBlocks[i].getMessage();
             decodeMsg(msg);
             if (isOurMessage((msg))) {
-                if ((msg[1] ^ DRONES_ATTACK) == 0) {
+                // havent received message yet and is now receiving it
+                if ((msg[1] ^ DRONES_ATTACK) == 0 && receivedAttackHQMessageRound == -1) {
                     int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
-                    if (distToHQ <= 20) {
-                        // stay on wall dont do anything
+                    if (msg[2] != -1) {
+                        enemyBaseLocation = parseLoc(msg[2]);
+                        // TODO: handle case when we dont know enemy base location
+                        attackLoc = enemyBaseLocation;
+                        attackHQ = true;
+                        receivedAttackHQMessageRound = rc.getRoundNum();
+                        // + 70 turns to wait for drones to reform a circle around ENEMY
+                        roundsToWaitBeforeAttack = (int) (2 * Math.max(Math.abs(attackLoc.x - HQLocation.x), Math.abs(HQLocation.y - attackLoc.y))) + 70;
                     }
                     else {
-                        if (msg[2] != -1) {
-                            enemyBaseLocation = parseLoc(msg[2]);
-                            // TODO: handle case when we dont know enemy base location
-                            attackLoc = enemyBaseLocation;
-                            attackHQ = true;
-                            receivedAttackHQMessageRound = rc.getRoundNum();
-                            // + 70 turns to wait for drones to reform a circle around ENEMY
-                            roundsToWaitBeforeAttack = (int) (2 * Math.max(Math.abs(attackLoc.x - HQLocation.x), Math.abs(HQLocation.y - attackLoc.y))) + 70;
-                        }
-                        else {
-                            // we don't know where enemy is, SCOUT!
-                            attackLoc = null;
-                            attackHQ  = true;
-                        }
+                        // we don't know where enemy is, SCOUT!
+                        attackLoc = null;
+                        attackHQ  = true;
                     }
-
                 }
                 else if ((msg[1] ^ ANNOUNCE_ENEMY_BASE_LOCATION) == 0) {
                     enemyBaseLocation = parseLoc(msg[2]);
