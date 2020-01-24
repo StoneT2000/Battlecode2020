@@ -162,19 +162,14 @@ public class Miner extends RobotPlayer {
         if (role == BUILDING) {
             // if we are trying to build but we already have one, stop, or if we already built it cuz soup went down, STOP
             if (debug) System.out.println("Trying to build " + unitToBuild +" | soup rn: "+ rc.getTeamSoup());
-            if (unitToBuild == RobotType.DESIGN_SCHOOL && firstDesignSchoolBuilt && (DesignSchoolCount > 0 || rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost + 250)) {
+
+            if (unitToBuild == RobotType.REFINERY && RefineryCount > 0) {
                 role = MINER;
             }
-            else if (unitToBuild == RobotType.FULFILLMENT_CENTER && firstFulfillmentCenterBuilt && (FulfillmentCenterCount > 0 || rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost + 300)) {
+            if (unitToBuild == RobotType.DESIGN_SCHOOL && DesignSchoolCount > 0) {
                 role = MINER;
             }
-            else if (unitToBuild == RobotType.REFINERY && RefineryCount > 0) {
-                role = MINER;
-            }
-            else if (unitToBuild == RobotType.FULFILLMENT_CENTER && DesignSchoolCount > 0) {
-                role = MINER;
-            }
-            else if (unitToBuild == RobotType.FULFILLMENT_CENTER && FulfillmentCenterCount > 0) {
+            if (unitToBuild == RobotType.FULFILLMENT_CENTER && FulfillmentCenterCount > 0) {
                 role = MINER;
             }
             if (debug) System.out.println(" Im still a role: " + role);
@@ -255,7 +250,6 @@ public class Miner extends RobotPlayer {
 
         // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
         // 800 - something, subtract distance. Subtract less for the higher amount soup mined
-        if (debug) System.out.println("Soup: " + rc.getTeamSoup() + " | mined? " + mined + " | first FC? " + firstFulfillmentCenterBuilt);
         if (lastDepositedRefinery.equals(HQLocation)) {
             // if refinery deposited at is HQ location, go all out to build this refinery at least
             if (mined && RefineryCount == 0 && rc.getTeamSoup() >= RobotType.REFINERY.cost && firstFulfillmentCenterBuilt && rc.getLocation().distanceSquaredTo(lastDepositedRefinery) >= 36) {
@@ -332,7 +326,7 @@ public class Miner extends RobotPlayer {
 
             }
             // only designated builder builds vaporators
-            else if (designatedBuilder && rc.getTeamSoup() >= 500 + 150) {
+            else if (rc.getTeamSoup() >= 500 + 150) {
                 if (!terraformTime || rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
