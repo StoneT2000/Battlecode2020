@@ -382,7 +382,7 @@ public class Landscaper extends RobotPlayer {
                 //if at max terraform dist, increase height to terraform at
                 // increase only if we didnt find a location to terraform because all of them were too high
                 if (terraformDistAwayFromHQ == MAX_TERRAFORM_DIST) {
-                    thisLandScapersDesiredHeightOffset ++;
+                    thisLandScapersDesiredHeightOffset += 2;
                 }
 
             }

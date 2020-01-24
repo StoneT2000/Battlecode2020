@@ -105,7 +105,7 @@ public class HQ extends RobotPlayer {
             }
             else if (info.type == RobotType.FULFILLMENT_CENTER) {
                 fulfillmentCenters++;
-                if (dist <= 8) {
+                if (dist > HQ_LAND_RANGE && dist <= 8) {
                     wallBotsMax--;
                     // decrement one as a fulfillment center is in our wall area
                 }
@@ -118,7 +118,7 @@ public class HQ extends RobotPlayer {
             }
             else if (info.type == RobotType.DESIGN_SCHOOL) {
                 designSchools++;
-                if (dist <= 8) {
+                if (dist > HQ_LAND_RANGE && dist <= 8) {
                     wallBotsMax--;
                 }
                 // decrement one as a fulfillment center is in our wall area
@@ -176,8 +176,9 @@ public class HQ extends RobotPlayer {
         }
 
         // triggered if its really late or we see enough landscapers in vision
-        if ((rc.getRoundNum() >= 1400 || (myLandscapers + 5 >= wallBotsMax && vaporators >= 10)) && rc.getRoundNum() % 10 == 0) {
+        if ((rc.getRoundNum() >= 1400 || (myLandscapers - 5 >= wallBotsMax && vaporators >= 10)) && rc.getRoundNum() % 10 == 0) {
             // every 15 rounds check if we have all our bots or not
+            if (debug) System.out.println("I see " + myLandscapers + " landscapers and " + wallBots + " are on wall positions");
             if (wallBots <= wallBotsMax) {
                 announceWALL_IN();
             }
@@ -271,7 +272,7 @@ public class HQ extends RobotPlayer {
         // decide on unit to build and set unitToBuild appropriately
         decideOnUnitToBuild();
         // if we are to build a unit, proceed
-        if (buildBecauseNeedMiners) {
+        if (buildBecauseNeedMiners || (rc.getRoundNum() % 30 == 0 && miners == 0 && rc.getRoundNum() >= 300)) {
             unitToBuild = RobotType.MINER;
         }
         if  (rc.getRoundNum() < 15) {
@@ -471,9 +472,10 @@ public class HQ extends RobotPlayer {
             unitToBuild = RobotType.MINER;
             return;
         }
+        /*
         if (rc.getRoundNum() % 30 == 0 && rc.getTeamSoup() >= 350) {
             unitToBuild = RobotType.MINER;
-        }
+        }*/
 
 
 

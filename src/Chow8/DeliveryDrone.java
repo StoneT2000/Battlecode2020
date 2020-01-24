@@ -592,8 +592,9 @@ public class DeliveryDrone extends RobotPlayer {
             // if currently holding unit, it should be a bad guy
 
             if (rc.isCurrentlyHoldingUnit()) {
-                if (!holdingCow) {
-                    // find water and drop the enemy unit
+                //if (!holdingCow) {
+                    // find water and drop the enemy unit, drop cows as well. Literally dropping cows on enemy is bad because
+                    // we lose vision and die to netguns
                     if (waterLoc != null) {
                         if (debug) System.out.println("DUMPING BAD UNIT to " + waterLoc);
                         //targetLoc = waterLoc;
@@ -611,7 +612,8 @@ public class DeliveryDrone extends RobotPlayer {
                     else {
                         setTargetLoc(rc.adjacentLocation(randomDirection()));
                     }
-                }
+                //}
+                /*
                 else {
                     //targetLoc = closestMaybeHQ;
                     setTargetLoc(closestMaybeHQ);
@@ -636,6 +638,7 @@ public class DeliveryDrone extends RobotPlayer {
 
                     }
                 }
+                */
             }
             else {
                 // this shouldn't ever happen
