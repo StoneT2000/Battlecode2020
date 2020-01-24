@@ -40,7 +40,7 @@ public class Vaporator extends RobotPlayer {
             decodeMsg(msg);
             if (isOurMessage((msg))) {
                 // if it is announce SOUP location message
-               if ((msg[1] ^ WALL_IN) == 0) {
+               if ((msg[1] ^ WALL_IN) == 0 || (msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
                     wallIn = true;
                 }
             }

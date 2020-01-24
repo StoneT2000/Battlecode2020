@@ -33,6 +33,7 @@ public strictfp class RobotPlayer {
     static Direction lastDirMove = Direction.NORTH;
     static LinkedList<MapLocation> lastLocs = new LinkedList<>();
 
+    static int roundsSinceLastResetOfClosestTargetdist = 0;
 
     // SIGNAL Codes
     // 0 - 9 are for announcing what robot type was just created
@@ -150,50 +151,49 @@ public strictfp class RobotPlayer {
         return Direction.CENTER;
     }
     static Direction getBugPathMove(MapLocation target) throws GameActionException {
-        Direction dir = rc.getLocation().directionTo(target);
-        MapLocation greedyLoc = rc.adjacentLocation(dir);
-        int greedyDist = greedyLoc.distanceSquaredTo(target);
-        if (debug) System.out.println("Target: " + target + " | greedyLoc " + greedyLoc +
-                " | closestSoFar " + closestToTargetLocSoFar + " | this dist " + greedyDist);
-        if (greedyDist < closestToTargetLocSoFar && rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc)) {
-            if (rc.canMove(dir)) {
-                closestToTargetLocSoFar = greedyDist;
-                return dir;
-            }
-        }
-        Direction firstDirThatWorks = Direction.CENTER;
-        dir = lastDirMove;
-        for (int i = 7; --i >= 0; ) {
-            dir = dir.rotateLeft();
-            MapLocation adjLoc = rc.adjacentLocation(dir);
-            if (rc.canSenseLocation(adjLoc) && !rc.senseFlooding(adjLoc)) {
-                if (rc.canMove(dir)) {
-                    firstDirThatWorks = dir;
-                    lastDirMove = dir;
-                    //lastDirMove = dir;
-                    //lastLoc = adjLoc;
 
-                    // store past 2 positions
-                    /*
-                    if (lastLocs.size < 2) {
-                        lastLocs.add(adjLoc);
-                    }
-                    else {
-                        lastLocs.dequeue();
-                        lastLocs.add(adjLoc);
-                    }*/
-                    //return dir;
-                    int dist = adjLoc.distanceSquaredTo(target);
-                    if (dist < closestToTargetLocSoFar) {
-                        closestToTargetLocSoFar = greedyDist;
-                        return dir;
-                    }
+        // every 20 rounds, reset the closest distance
+        if (roundsSinceLastResetOfClosestTargetdist >= 20) {
+            roundsSinceLastResetOfClosestTargetdist = 0;
+            closestToTargetLocSoFar = 0;
+        }
+
+        Direction dir = rc.getLocation().directionTo(target);
+        Direction greedyDir = null;
+        Direction wallDir = lastDirMove;
+        boolean wallDirSet = false;
+        int closestGreedyDist = 99999999;
+        for (int i = 8; --i >= 0; ) {
+            System.out.println("Checkign dir: " + dir);
+            MapLocation greedyLoc = rc.adjacentLocation(dir);
+            int greedyDist = greedyLoc.distanceSquaredTo(target);
+
+            // if it is closer than the closest we have ever been, we can sense it as well and its not flooding
+            if (greedyDist < closestGreedyDist && rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc)) {
+                // if we can move there
+                if (rc.canMove(dir)) {
+                    // update and move
+                    closestGreedyDist = greedyDist;
+                    greedyDir = dir;
                 }
             }
+            if (!wallDirSet && rc.canMove(dir)) {
+                wallDir = dir;
+                wallDirSet = true;
+            }
+
+
+            dir = dir.rotateRight();
 
         }
-        //lastLocs.dequeue();
-        return firstDirThatWorks;
+        if (closestGreedyDist < closestToTargetLocSoFar) {
+            closestToTargetLocSoFar = closestGreedyDist;
+            return greedyDir;
+        }
+
+        return wallDir;
+
+        // closestToTargetLocSoFar
     }
 
     static Direction randomDirection() {

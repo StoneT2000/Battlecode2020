@@ -865,13 +865,22 @@ public class Landscaper extends RobotPlayer {
                 }
             }
         }
-        if (debug) System.out.println(" Carrying " + rc.getDirtCarrying() + " dirt | Cooldown: " + rc.getCooldownTurns());
+        if (debug) System.out.println(" Carrying " + rc.getDirtCarrying() + " dirt | Cooldown: " + rc.getCooldownTurns() + " | Role: " + mapRoleToString(role));
 
     }
 
 
-    // heuristic
-
+    static String mapRoleToString(int role) {
+        switch (role) {
+            case 0:
+                return "ATTACK";
+            case 1:
+                return "DEFEND";
+            case 2:
+                return "TERRAFORM";
+        }
+        return "";
+    }
     // dig in targeted areas around HQ. don't dig enemy buildings
     static Direction getDigDirectionForDefending() throws GameActionException {
         for (int i = Constants.DigDeltasAroundHQ.length; --i >= 0; ) {
@@ -958,11 +967,16 @@ public class Landscaper extends RobotPlayer {
                     //targetLoc = HQLocation;
                     setTargetLoc(HQLocation);
                 }
-                else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0 || (msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
-
+                else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0) {
+                    role = TERRAFORM;
+                }
+                else if ((msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
                     // go away and terraform if not near HQ
                     if (rc.getLocation().distanceSquaredTo(HQLocation) > 16) {
                         role = TERRAFORM;
+                    } else {
+                        role = DEFEND_HQ;
+                        setTargetLoc(HQLocation);
                     }
                 }
             }

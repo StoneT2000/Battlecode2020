@@ -126,7 +126,7 @@ public class FulfillmentCenter extends RobotPlayer {
                 else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0) {
                     terraformingTime = true;
                 }
-                else if ((msg[1] ^ WALL_IN) == 0) {
+                else if ((msg[1] ^ WALL_IN) == 0 || (msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
                     wallIn = true;
                 }
             }
