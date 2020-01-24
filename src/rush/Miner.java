@@ -16,6 +16,8 @@ public class Miner extends RobotPlayer {
     static int DesignSchoolsBuilt = 0; // how many design schools this robot knows have been built ??
     static boolean firstDesignSchoolBuilt = false;
 
+    static boolean firstattackschool = false;
+
     static MapLocation lastDepositedRefinery;
     static MapLocation enemyBaseLocation = null;
     // score of the souplocation it is probably heading towards
@@ -75,6 +77,7 @@ public class Miner extends RobotPlayer {
 
         /* BIG FRIENDLY BOTS SEARCH LOOP thing */
         int EnemyDroneCount = 0;
+        int enemyFCCount = 0;
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
@@ -82,6 +85,8 @@ public class Miner extends RobotPlayer {
                 case DELIVERY_DRONE:
                     EnemyDroneCount++;
                     break;
+                case FULFILLMENT_CENTER:
+                    enemyFCCount++;
 
             }
         }
@@ -253,12 +258,23 @@ public class Miner extends RobotPlayer {
                             MapLocation adjLoc = rc.adjacentLocation(dir);
                             if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, dir) && adjLoc.distanceSquaredTo(enemyBaseLocation) <= 1) {
                                 rc.buildRobot(RobotType.DESIGN_SCHOOL, dir);
+                                firstattackschool = true;
                             }
                         }
                         for (Direction dir : directions) {
                             MapLocation adjLoc = rc.adjacentLocation(dir);
                             if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, dir) && adjLoc.distanceSquaredTo(enemyBaseLocation) <= 2) {
                                 rc.buildRobot(RobotType.DESIGN_SCHOOL, dir);
+                                firstattackschool = true;
+                            }
+                        }
+                    }
+                    else if (enemyFCCount > 0 || EnemyDroneCount > 0 && NetGunCount == 0){
+                        for (Direction dir : directions) {
+                            MapLocation adjLoc = rc.adjacentLocation(dir);
+                            if (rc.canBuildRobot(RobotType.NET_GUN, dir) && adjLoc.distanceSquaredTo(enemyBaseLocation) <= 1) {
+                                rc.buildRobot(RobotType.NET_GUN, dir);
+                                //firstattackschool = true;
                             }
                         }
                     }
@@ -281,7 +297,7 @@ public class Miner extends RobotPlayer {
             int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
 
             // haven't built design school yet? BUILDDDDD
-
+/*
             if (!firstDesignSchoolBuilt && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && DesignSchoolCount == 0 && distToHQ <= 25) {
                 role = BUILDING;
                 unitToBuild = RobotType.DESIGN_SCHOOL;
@@ -301,6 +317,7 @@ public class Miner extends RobotPlayer {
                     unitToBuild = RobotType.REFINERY;
                 }
             }
+            */
             // early game
             // TODO: TUNE PARAM!
             if (rc.getRoundNum() <= 300) {

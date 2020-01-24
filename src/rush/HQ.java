@@ -98,13 +98,24 @@ public class HQ extends RobotPlayer {
                 if (debug) rc.setIndicatorDot(closestDroneBot.location, 255, 50,190);
             }
         }
+        MapLocation[] soupLocsNearby = rc.senseNearbySoup(-1);
+        int closestSoupDist = 9999999;
+        MapLocation closestSoupLoc = null;
+        for (int i = soupLocsNearby.length; --i >= 0; ) {
+            MapLocation soupLoc = soupLocsNearby[i];
+            int distToSoup = rc.getLocation().distanceSquaredTo(soupLoc);
+            if (distToSoup < closestSoupDist) {
+                closestSoupDist = distToSoup;
+                closestSoupLoc = soupLoc;
+            }
+        }
 
         // decide on unit to build and set unitToBuild appropriately
         decideOnUnitToBuild();
         // if we are to build a unit, proceed
         if (unitToBuild != null) {
             // proceed with building unit using default heurstics
-            build();
+            build(closestSoupLoc);
         }
 
         if (myDrones >= MIN_DRONE_FOR_ATTACK && rc.getRoundNum() % 20 == 0) {
@@ -223,7 +234,7 @@ public class HQ extends RobotPlayer {
         }
         return true;
     }
-    public static void build() throws GameActionException {
+    public static void build(MapLocation closestSoupLoc) throws GameActionException {
         // TODO: optimize bytecode here
         if (rc.getRoundNum() == 1) {
             // preferred build direction is towards middle if castle is not really close to center
@@ -234,9 +245,13 @@ public class HQ extends RobotPlayer {
         else if (rc.getRoundNum() == 2) {
 
         }
-        // keep trying to build in buildDir direction, rotate a little to find new build loc
-        // TODO: Optimize this by building in direction of known soup locations or refineries?
 
+        if (closestSoupLoc != null && !closestSoupLoc.equals(Direction.CENTER)) {
+            buildDir = rc.getLocation().directionTo(closestSoupLoc);
+        }
+        if (buildDir.equals(Direction.CENTER)) {
+            buildDir = Direction.NORTH;
+        }
         boolean builtUnit = false;
         for (int i = 9; --i >= 1;) {
             if (tryBuild(unitToBuild, buildDir)) {
