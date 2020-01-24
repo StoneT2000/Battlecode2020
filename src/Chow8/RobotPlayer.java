@@ -44,14 +44,15 @@ public strictfp class RobotPlayer {
     static final int BUILD_DRONES = 14;
     static final int NEED_DRONES_FOR_DEFENCE = 15;
     static final int BUILD_DRONE_NOW = 16;
-    static final int TERRAFORM_ALL_TIME = 17;
-    static final int ANNOUNCE_NOT_ENEMY_BASE = 18;
+    static final int TERRAFORM_ALL_TIME = 17; // tell units we are focusing on terraforming
+    static final int ANNOUNCE_NOT_ENEMY_BASE = 18; // tell us its not a enemy HQ
     static final int BUILD_A_SCHOOL = 19;
     static final int BUILD_A_CENTER = 20;
     static final int LOCK_AND_DEFEND = 21; // tell drones to lock and defend position
     static final int WALL_IN = 22; // tell landscapers and drones to build wall
     static final int TERRAFORM_AND_WALL_IN = 23; // terraform and wall when possible
     static final int STOP_LOCK_AND_DEFEND = 24; // tell drones to stop defending so hard.
+    static final int SWARM_IN = 25; // tell drones to swarm in with their UNITS!!!
 
 
     static int thisLandScapersDesiredHeightOffset = 0;

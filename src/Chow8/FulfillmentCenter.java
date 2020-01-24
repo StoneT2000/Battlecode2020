@@ -17,6 +17,7 @@ public class FulfillmentCenter extends RobotPlayer {
         RobotInfo[] nearbyFriendRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         int nearbyEnemyLandscapers = 0;
         int dronesNearby = 0;
+        int enemyMiners =  0;
         int netGunsnearby = 0;
         // count bots nearby
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
@@ -26,6 +27,9 @@ public class FulfillmentCenter extends RobotPlayer {
             }
             else if (info.getType() == RobotType.NET_GUN) {
                 netGunsnearby++;
+            }
+            else if (info.getType() == RobotType.MINER) {
+                enemyMiners ++;
             }
         }
 
@@ -64,7 +68,7 @@ public class FulfillmentCenter extends RobotPlayer {
         }
         */
         // build if there are enemy landscapers nearby
-        if (nearbyEnemyLandscapers > dronesNearby && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 250) {
+        if ((nearbyEnemyLandscapers + enemyMiners > dronesNearby) && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
             confirmBuild = true;
             if (debug) System.out.println("Building to fight landscapers");
         }

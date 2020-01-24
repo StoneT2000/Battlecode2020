@@ -276,13 +276,13 @@ public class Miner extends RobotPlayer {
             // early game
             // TODO: TUNE PARAM!
             if (rc.getRoundNum() <= 300) {
-                if (rc.getTeamSoup() >= 500) {
+                if (rc.getTeamSoup() >= 500 + 150) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                 }
 
             }
-            else if (rc.getTeamSoup() >= 500) {
+            else if (rc.getTeamSoup() >= 500 + 150) {
                 if (!terraformTime || rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
@@ -350,7 +350,7 @@ public class Miner extends RobotPlayer {
 
                     // if school or FC, just build asap, otherwise build on grid, not dig locations, and can't be next to flood, if next to flood, height must be 12
                     if ((unitToBuild == RobotType.DESIGN_SCHOOL ||
-                            unitToBuild == RobotType.FULFILLMENT_CENTER ||
+                            unitToBuild == RobotType.FULFILLMENT_CENTER || unitToBuild == RobotType.NET_GUN ||
                             (buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2
                                     && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 12)
                             )

@@ -59,6 +59,8 @@ public class DeliveryDrone extends RobotPlayer {
         else if (!toldToLockAndDefendByHQ) {
             lockAndDefend = false;
         }
+        RobotInfo enemyInHQSpace = null;
+        int closestEnemyInHQSpace = 888888889;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
             switch (role) {
@@ -71,6 +73,12 @@ public class DeliveryDrone extends RobotPlayer {
                                 closestEnemyLandscaper = info;
                                 if (debug) System.out.println("Found closer enemy landscaper at " + info.location);
                             }
+                            if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
+                                if (dist < closestEnemyInHQSpace) {
+                                    closestEnemyInHQSpace = dist;
+                                    enemyInHQSpace = info;
+                                }
+                            }
                             break;
                         case MINER:
                             int dist2 = rc.getLocation().distanceSquaredTo(info.getLocation());
@@ -78,6 +86,12 @@ public class DeliveryDrone extends RobotPlayer {
                                 closestEnemyMinerDist = dist2;
                                 closestEnemyMiner = info;
                                 if (debug) System.out.println("Found closer enemy miner at " + info.location);
+                            }
+                            if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
+                                if (dist2 < closestEnemyInHQSpace) {
+                                    closestEnemyInHQSpace = dist2;
+                                    enemyInHQSpace = info;
+                                }
                             }
                             break;
                         case HQ:
@@ -431,6 +445,7 @@ public class DeliveryDrone extends RobotPlayer {
         boolean skipAttack = false;
 
         // if there is a adjacent miner to HQ, then take it out ( assumed to be valid to take out )
+
         if (nearestAdjacentToHQMiner != null) {
             if (debug)
             if (rc.canPickUpUnit(nearestAdjacentToHQMiner.getID())) {
@@ -447,7 +462,9 @@ public class DeliveryDrone extends RobotPlayer {
                 skipAttack = true;
             }
         }
-        if (nearestAdjacentToHQLandscaper != null && !wallIn) {
+
+        // we only do this if there is no enemy
+        if (nearestAdjacentToHQLandscaper != null && !wallIn && enemyInHQSpace == null) {
             if (rc.canPickUpUnit(nearestAdjacentToHQLandscaper.getID())) {
                 // pick them up
                 rc.pickUpUnit(nearestAdjacentToHQLandscaper.getID());
@@ -646,10 +663,10 @@ public class DeliveryDrone extends RobotPlayer {
                 // don't engage if its near HQ
 
                 if (closestEnemyMiner != null || closestEnemyLandscaper != null || (nearestCow != null && nearbyEnemyRobots.length == 0)) {
-                    RobotInfo enemyToEngage = closestEnemyLandscaper;
+                    RobotInfo enemyToEngage = closestEnemyMiner;
 
                     // pick a new enemy to engage if we didnt find one or if the one we found is too close to enemy base
-                    if (enemyToEngage == null || (enemyBaseLocation != null && enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) <= 7)) enemyToEngage = closestEnemyMiner;
+                    if (enemyToEngage == null || (enemyBaseLocation != null && enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) <= 7)) enemyToEngage = closestEnemyLandscaper;
                     if (enemyToEngage == null || (enemyBaseLocation != null && enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) <= 7)) enemyToEngage = nearestCow;
                     if (debug) System.out.println(enemyToEngage + " | enemy base?: " + enemyBaseLocation + " | enemy at? ");
                     if (enemyToEngage != null && (enemyBaseLocation == null || enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) >= 8)) {

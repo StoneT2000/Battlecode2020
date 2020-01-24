@@ -145,9 +145,11 @@ public class HQ extends RobotPlayer {
         }
         if (debug) System.out.println("I need " + wallBotsMax + " wall bots");
         // make sure we get a school and FC all the time
-        if ((!criedForDesignSchool || rc.getRoundNum() % 10 == 0) && rc.getRoundNum() >= 15 && designSchools == 0 && fulfillmentCenters > 0 && vaporatorsBuilt > 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
-            announceBUILD_A_SCHOOL();
-            criedForDesignSchool = true;
+        if ((!criedForDesignSchool || rc.getRoundNum() % 10 == 0) && rc.getRoundNum() >= 15 && designSchools == 0 && fulfillmentCenters > 0 && rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost + 2) {
+            if (vaporatorsBuilt > 0 || (gettingRushed)) {
+                announceBUILD_A_SCHOOL();
+                criedForDesignSchool = true;
+            }
         }
         if ((!criedForFC || rc.getRoundNum() % 10 == 0) && fulfillmentCenters == 0 && rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost + 2) {
             announceBUILD_A_CENTER();
@@ -191,7 +193,7 @@ public class HQ extends RobotPlayer {
         }
         // if we were rushed but no more design schools
         if (gettingRushed && enemyDesignSchools == 0) {
-
+            gettingRushed = false;
         }
         if (gettingRushed && enemyNetGuns == 0) {
 
@@ -203,7 +205,7 @@ public class HQ extends RobotPlayer {
             // announce asap and then every 10 rounds
             if ((!criedForLandscapers || rc.getRoundNum() % 10 == 0) && wallBots < enemyLandscapers + enemyMiners + 1) {
                 if (wallBots < 8) {
-                    announceWantLandscapers(8 - wallBots);
+                    //announceWantLandscapers(8 - wallBots);
                     criedForLandscapers = true;
                 }
             }
@@ -240,6 +242,9 @@ public class HQ extends RobotPlayer {
 
         if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1800) {
             announceDroneAttack();
+        }
+        if (rc.getRoundNum() >= 2000 && rc.getRoundNum() % 200 == 0) {
+            announceMessage(SWARM_IN);
         }
 
         existsSoup = false;
