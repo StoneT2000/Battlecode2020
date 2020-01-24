@@ -56,11 +56,10 @@ public class FulfillmentCenter extends RobotPlayer {
             }
         }
         // build one asap
-        /*
-        if (dronesBuilt < 1 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
+        if (dronesBuilt < 1 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost && netGunsnearby == 0) {
             confirmBuild = true;
             if (debug) System.out.println("Building first one");
-        }*/
+        }
         // in end game keep building
         /*
         if (inEndGame && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 200) {

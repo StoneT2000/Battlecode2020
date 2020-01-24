@@ -1,11 +1,9 @@
 package Chow8;
 
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
+import battlecode.common.*;
 
 public class NetGun extends RobotPlayer {
+    static boolean wallIn = true;
     public static void run() throws GameActionException {
 
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
@@ -39,6 +37,22 @@ public class NetGun extends RobotPlayer {
             }
             else {
                 break;
+            }
+        }
+
+        if (rc.getLocation().distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && wallIn) {
+            rc.disintegrate();
+        }
+    }
+    static void checkForBuildInfo(Transaction[] transactions) {
+        for (int i = transactions.length; --i >= 0;) {
+            int[] msg = transactions[i].getMessage();
+            decodeMsg(msg);
+            if (isOurMessage((msg))) {
+                // if it is announce SOUP location message
+                if ((msg[1] ^ WALL_IN) == 0 || (msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
+                    wallIn = true;
+                }
             }
         }
     }

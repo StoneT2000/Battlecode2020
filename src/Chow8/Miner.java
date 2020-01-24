@@ -141,6 +141,9 @@ public class Miner extends RobotPlayer {
             else if (unitToBuild == RobotType.REFINERY && RefineryCount > 0) {
                 role = MINER;
             }
+            else if (unitToBuild == RobotType.FULFILLMENT_CENTER && DesignSchoolCount > 0) {
+                role = MINER;
+            }
             else if (unitToBuild == RobotType.FULFILLMENT_CENTER && FulfillmentCenterCount > 0) {
                 role = MINER;
             }
