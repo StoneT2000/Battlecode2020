@@ -223,7 +223,7 @@ public class DeliveryDrone extends RobotPlayer {
                     // find nearest landscaper for attack
                     if (attackWithAllUnits) {
                         //nearestLandscaper
-                        if (dist < distToNearestLandscaperForAttack) {
+                        if (dist < distToNearestLandscaperForAttack && info.location.distanceSquaredTo(HQLocation) >= 16) {
                             nearestLandscaperForAttack = info;
                             distToNearestLandscaperForAttack = dist;
                         }
