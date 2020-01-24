@@ -643,7 +643,7 @@ public class DeliveryDrone extends RobotPlayer {
         }
         else if (role == ATTACK && !skipAttack) {
 
-            if (circledHQTimes >= 1 && !gettingRushed) {
+            if (circledHQTimes >= 2 && !gettingRushed && friendlyDrones > 2) {
                 attackLoc = closestMaybeHQ; // always attempt to attack enemy HQ after we go once around our OWN HQ
             }
             else if (gettingRushed) {

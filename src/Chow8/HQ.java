@@ -165,7 +165,7 @@ public class HQ extends RobotPlayer {
         }
 
         // if platform is closer to completion, we want everyone on terraforming duties or we have our wall
-        if ((wallBots >= wallBotsMax && rc.getRoundNum() % 10 == 0) || (rc.getRoundNum() >= 600 && rc.getRoundNum() % 10 == 0)) {
+        if ((wallBots >= wallBotsMax && rc.getRoundNum() % 10 == 0) || (rc.getRoundNum() >= 500 && rc.getRoundNum() % 10 == 0)) {
             if (wallBots >= wallBotsMax) {
                 // keep terraforming and walling in.
                 announceTERRAFORM_AND_WALL_IN();
