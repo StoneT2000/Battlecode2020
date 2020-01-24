@@ -373,15 +373,24 @@ public class Landscaper extends RobotPlayer {
                     for (int i = 0; i++ < 8; ) {
                         MapLocation digLoc = rc.adjacentLocation(dirToDig);
                         if (debug) System.out.println("Trying to dig " + digLoc + " | Dig loc? " + isDigLocation(digLoc));
-                        // dig from dig locs or places that are really deep
-                        if (digLoc.distanceSquaredTo(HQLocation) > 8 && (isDigLocation(digLoc) || rc.canSenseLocation(digLoc) && rc.senseElevation(digLoc) < -10000)) {
-                            if (rc.canDigDirt(dirToDig)) {
-                                rc.digDirt(dirToDig);
-                                dug = true;
-                                if (rc.getDirtCarrying() == 25) {
-                                    shouldDig = false;
+
+
+                        if (digLoc.distanceSquaredTo(HQLocation) > 8) {
+                            int elevationThere = 0;
+                            boolean canSenseLoc = rc.canSenseLocation(digLoc);
+                            if (canSenseLoc) {
+                                elevationThere = rc.senseElevation(digLoc);
+                            }
+                            // dig from dig locs or places that are really deep or from places that are extremely high or from places that are much higher than terraform height
+                            if (isDigLocation(digLoc) || (canSenseLoc && (elevationThere < -10000 || elevationThere > 10000 || elevationThere > DESIRED_ELEVATION_FOR_TERRAFORM + 50))) {
+                                if (rc.canDigDirt(dirToDig)) {
+                                    rc.digDirt(dirToDig);
+                                    dug = true;
+                                    if (rc.getDirtCarrying() == 25) {
+                                        shouldDig = false;
+                                    }
+                                    break;
                                 }
-                                break;
                             }
                         }
                         dirToDig = dirToDig.rotateRight();

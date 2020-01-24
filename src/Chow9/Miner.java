@@ -116,23 +116,7 @@ public class Miner extends RobotPlayer {
             tryMove(greedyDir);
         }
 
-        if (role == ATTACK) {
-            // build net guns in face of drones
-            if (debug) System.out.println("ATTACKING | Soup: " + rc.getTeamSoup());
-            if (EnemyDroneCount > 0) {
-                int i = 0;
-                Direction buildDir = Direction.NORTH;
-                if (debug) System.out.println("Trying to build NETGUN in dir: " + buildDir);
-                while(i++ < 8) {
-                    if (rc.canBuildRobot(RobotType.NET_GUN, buildDir)) {
-                        rc.buildRobot(RobotType.NET_GUN, buildDir);
-                        break;
-                    }
-                    buildDir = buildDir.rotateRight();
-                }
-            }
-            return;
-        }
+
 
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         int RefineryCount = 0;
@@ -183,6 +167,40 @@ public class Miner extends RobotPlayer {
                     break;
             }
         }
+        if (role == ATTACK) {
+            // build net guns in face of drones
+            if (debug) System.out.println("ATTACKING | Soup: " + rc.getTeamSoup());
+            if (EnemyDroneCount > 0) {
+                int i = 0;
+                Direction buildDir = Direction.NORTH;
+
+                while(i++ < 8) {
+                    if (debug) System.out.println("Trying to build NETGUN in dir: " + buildDir);
+                    if (rc.canBuildRobot(RobotType.NET_GUN, buildDir)) {
+                        rc.buildRobot(RobotType.NET_GUN, buildDir);
+                        break;
+                    }
+                    buildDir = buildDir.rotateRight();
+                }
+            }
+            else if (DesignSchoolCount <= 0) {
+                // otherwise no design schools nor drones? build one on hq wall.
+
+                for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
+                    int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+                    MapLocation buildLoc = HQLocation.translate(deltas[0], deltas[1]);
+                    Direction buildDir = rc.getLocation().directionTo(buildLoc);
+                    if (debug) System.out.println("Trying to build NETGUN in dir: " + buildDir);
+                    // build school if adjacent to wall location
+                    if (rc.getLocation().isAdjacentTo(buildLoc) && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, buildDir)) {
+                        rc.buildRobot(RobotType.DESIGN_SCHOOL, buildDir);
+                        break;
+                    }
+                }
+            }
+            return;
+        }
+
         if (role == BUILDING) {
             // if we are trying to build but we already have one, stop, or if we already built it cuz soup went down, STOP
             if (debug) System.out.println("Trying to build " + unitToBuild +" | soup rn: "+ rc.getTeamSoup());
