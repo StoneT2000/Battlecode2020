@@ -178,7 +178,7 @@ public class Landscaper extends RobotPlayer {
                 circling = true;
             }
             setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(HQLocation).rotateRight().rotateRight()));
-            if (circling && rc.getRoundNum() - startedCirclingRound >= 10) {
+            if (circling && rc.getRoundNum() - startedCirclingRound >= 4) {
                 // terraform farther and farther until max
                 terraformDistAwayFromHQ = (int) Math.min(Math.pow((Math.sqrt(terraformDistAwayFromHQ) + 1), 2), MAX_TERRAFORM_DIST);
                 circling = false;
@@ -363,7 +363,7 @@ public class Landscaper extends RobotPlayer {
             }*/
             if (locToTerraform != null) {
                 if (closestFloodedHQSpaceLoc != null) locToTerraform = closestFloodedHQSpaceLoc;
-                if (debug) System.out.println("Terraform mode: elevating " + locToTerraform + " | flooded loc in hq space: " + closestFloodedHQSpaceLoc);
+                if (debug) System.out.println("Terraform mode: elevating " + locToTerraform + " | flooded loc in hq space: " + closestFloodedHQSpaceLoc + " | " );
                 //targetLoc = locToTerraform;
                 setTargetLoc(locToTerraform);
                 //RobotType.LANDSCAPER.dirtLimit
@@ -397,16 +397,22 @@ public class Landscaper extends RobotPlayer {
                     }
                     // if no dig done, then setTargetLoc
                     if (!dug) {
+
+                        if (debug) System.out.println("No dig locs, trying " + closestDigLocation);
                         setTargetLoc(closestDigLocation);
+                        if (closestDigLocation == null) {
+                            setTargetLoc(rc.adjacentLocation(randomDirection()));
+                        }
                     }
                 }
                 if (!shouldDig && rc.getLocation().isAdjacentTo(locToTerraform)) {
                     Direction dirToLoc = rc.getLocation().directionTo(locToTerraform);
                     if (rc.canDepositDirt(dirToLoc)) {
                         rc.depositDirt(dirToLoc);
-                        if (rc.getDirtCarrying() <= 0) {
-                            shouldDig = true;
-                        }
+
+                    }
+                    if (rc.getDirtCarrying() <= 0) {
+                        shouldDig = true;
                     }
                 }
             }

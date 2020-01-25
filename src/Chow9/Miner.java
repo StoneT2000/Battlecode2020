@@ -51,6 +51,24 @@ public class Miner extends RobotPlayer {
         checkBlockForBuildInfo(lastRoundsBlocks);
         checkForEnemyBasesInBlocks(lastRoundsBlocks);
 
+        // look for enemey location and see if its there
+        if (enemyBaseLocation == null) {
+            Node<MapLocation> node = enemyHQLocations.head;
+            for (int i = 0; i++ < enemyHQLocations.size; ) {
+                // check if there is enemey base
+                if (rc.canSenseLocation(node.val) && rc.isLocationOccupied(node.val)) {
+                    RobotInfo maybeEnemyHQ = rc.senseRobotAtLocation(node.val);
+                    if (maybeEnemyHQ.type == RobotType.HQ && maybeEnemyHQ.team == enemyTeam) {
+                        if (debug) System.out.println("MINER FOUND ENEMY HQ at " + node.val);
+                        enemyBaseLocation = maybeEnemyHQ.location;
+                        break;
+                    }
+                }
+                node = node.next;
+
+            }
+        }
+        
         // if mining, always try to mine
         if (role == MINER) {
             // Strat: MINE if possible!
@@ -265,23 +283,7 @@ public class Miner extends RobotPlayer {
             }
         }
 
-        // look for enemey location and see if its there
-        if (enemyBaseLocation == null) {
-            Node<MapLocation> node = enemyHQLocations.head;
-            for (int i = 0; i++ < enemyHQLocations.size; ) {
-                // check if there is enemey base
-                if (rc.canSenseLocation(node.val) && rc.isLocationOccupied(node.val)) {
-                    RobotInfo maybeEnemyHQ = rc.senseRobotAtLocation(node.val);
-                    if (maybeEnemyHQ.type == RobotType.HQ && maybeEnemyHQ.team == enemyTeam) {
-                        if (debug) System.out.println("MINER FOUND ENEMY HQ at " + node.val);
-                        enemyBaseLocation = maybeEnemyHQ.location;
-                        break;
-                    }
-                }
-                node = node.next;
 
-            }
-        }
 
         // alwways prepare to build refinery
         int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
