@@ -39,6 +39,8 @@ public class Miner extends RobotPlayer {
     static int role = MINER; // default ROLE
     static int HQParity; // parity of HQLocation.x + HQLocation.y
 
+    static final int roundsOfDesignatedBuilder = 300;
+
     public static void run() throws GameActionException {
         // try to get out of water, checks if in water for you
         getOutOfWater();
@@ -185,7 +187,7 @@ public class Miner extends RobotPlayer {
                     break;
             }
         }
-        if (!designatedBuilder && role != ATTACK) {
+        if (!designatedBuilder && role != ATTACK && rc.getRoundNum() <= roundsOfDesignatedBuilder) {
             if (unitToBuild == RobotType.FULFILLMENT_CENTER || unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.VAPORATOR) {
                 role = MINER;
                 unitToBuild = null;
@@ -351,7 +353,7 @@ public class Miner extends RobotPlayer {
 
             // early game
             // TODO: TUNE PARAM!
-            if (rc.getRoundNum() <= 300) {
+            if (rc.getRoundNum() <= roundsOfDesignatedBuilder) {
                 // only designated builder builds vaporators
                 if (designatedBuilder && rc.getTeamSoup() >= 500 + 150) {
                     role = BUILDING;
