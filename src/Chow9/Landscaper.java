@@ -119,14 +119,15 @@ public class Landscaper extends RobotPlayer {
                                     if (rc.isLocationOccupied(checkLoc)) {
                                         RobotInfo info = rc.senseRobotAtLocation(checkLoc);
                                         if ((!isBuilding(info) || info.team == enemyTeam) || info.getID() == rc.getID()) {
-                                            int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
+                                            // use a score with weak weight to prefer terraforming near HQ first
+                                            int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * 1.2);
                                             if (distToLoc < closestTerraformDist) {
                                                 closestTerraformDist = distToLoc;
                                                 locToTerraform = checkLoc;
                                             }
                                         }
                                     } else {
-                                        int distToLoc = rc.getLocation().distanceSquaredTo(checkLoc);
+                                        int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * 1.2);
                                         if (distToLoc < closestTerraformDist) {
                                             closestTerraformDist = distToLoc;
                                             locToTerraform = checkLoc;
@@ -137,7 +138,7 @@ public class Landscaper extends RobotPlayer {
                             // if it is flooding and in the HQ's breahting space, FILL IT UP
                             if (distToHQ <= HQ_LAND_RANGE && rc.senseFlooding(checkLoc)) {
                                 locToTerraform = checkLoc;
-                                int distToLoc = checkLoc.distanceSquaredTo(rc.getLocation());
+                                int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * 1.2);
                                 if (distToLoc < closestFloodedHQSpaceLocDist) {
                                     closestFloodedHQSpaceLocDist = distToLoc;
                                     closestFloodedHQSpaceLoc = checkLoc;
