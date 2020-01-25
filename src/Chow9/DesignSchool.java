@@ -1,5 +1,6 @@
 package Chow9;
 
+import Chow9.utils.Node;
 import battlecode.common.*;
 
 public class DesignSchool extends RobotPlayer {
@@ -11,6 +12,26 @@ public class DesignSchool extends RobotPlayer {
     static boolean wallIn = false;
     static boolean terraformingTime = false;
     public static void run() throws GameActionException {
+
+        // look for enemy location and see if its there
+        if (enemyBaseLocation == null) {
+            Node<MapLocation> node = enemyHQLocations.head;
+            for (int i = 0; i++ < enemyHQLocations.size; ) {
+                // check if there is enemey base
+                if (rc.canSenseLocation(node.val) && rc.isLocationOccupied(node.val)) {
+                    RobotInfo maybeEnemyHQ = rc.senseRobotAtLocation(node.val);
+                    if (maybeEnemyHQ.type == RobotType.HQ && maybeEnemyHQ.team == enemyTeam) {
+                        if (debug) System.out.println("MINER FOUND ENEMY HQ at " + node.val);
+                        enemyBaseLocation = maybeEnemyHQ.location;
+                        break;
+                    }
+                }
+                node = node.next;
+
+            }
+        }
+
+
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
@@ -52,6 +73,13 @@ public class DesignSchool extends RobotPlayer {
                 }
             }
 
+        }
+
+        // if built next to enemy base, build landscapers
+        if (rc.getRoundNum() >= 1650 && enemyBaseLocation != null && enemyBaseLocation.distanceSquaredTo(rc.getLocation()) <= 2) {
+            if (rc.getTeamSoup() >= RobotType.LANDSCAPER.cost) {
+                willBuild = true;
+            }
         }
 
         if (debug) System.out.println("Trying to build: " + willBuild);

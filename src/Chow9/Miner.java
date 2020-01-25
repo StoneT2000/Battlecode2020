@@ -194,7 +194,7 @@ public class Miner extends RobotPlayer {
         if (role == ATTACK) {
             // build net guns in face of drones
             if (debug) System.out.println("ATTACKING | Soup: " + rc.getTeamSoup());
-            if (EnemyDroneCount > 0) {
+            if (EnemyDroneCount > 0 && closeNetguns == 0) {
                 int i = 0;
                 Direction buildDir = Direction.NORTH;
 
@@ -207,14 +207,14 @@ public class Miner extends RobotPlayer {
                     buildDir = buildDir.rotateRight();
                 }
             }
-            else if (DesignSchoolCount <= 0) {
+            else if (DesignSchoolCount <= 0 && enemyBaseLocation != null) {
                 // otherwise no design schools nor drones? build one on hq wall.
 
                 for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
                     int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
-                    MapLocation buildLoc = HQLocation.translate(deltas[0], deltas[1]);
+                    MapLocation buildLoc = enemyBaseLocation.translate(deltas[0], deltas[1]);
                     Direction buildDir = rc.getLocation().directionTo(buildLoc);
-                    if (debug) System.out.println("Trying to build NETGUN in dir: " + buildDir);
+                    if (debug) System.out.println("Trying to build SCHOOL in dir: " + buildDir);
                     // build school if adjacent to wall location
                     if (rc.getLocation().isAdjacentTo(buildLoc) && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, buildDir)) {
                         rc.buildRobot(RobotType.DESIGN_SCHOOL, buildDir);
