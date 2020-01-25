@@ -1,5 +1,6 @@
 package Chow9;
 
+import Chow6.utils.HashTable;
 import battlecode.common.*;
 
 public class HQ extends RobotPlayer {
@@ -26,6 +27,9 @@ public class HQ extends RobotPlayer {
     static int vaporatorsBuilt = 0;
     static int wallBotsMax = 20; // max landscapers that can be on wall and second wall
     static int wallSpaces = 20;
+
+    static HashTable<Integer> idsOfRushUnitsCalledOut = new HashTable<>(10);
+
     public static void run() throws GameActionException {
         if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup() + " | Miners Built: " + minersBuilt + " FulfillmentCenters Built: " + FulfillmentCentersBuilt);
         wallBotsMax = wallSpaces;
@@ -42,6 +46,10 @@ public class HQ extends RobotPlayer {
         int miners = 0;
         int inHQSpaceEnemyLandscapers = 0;
         int closestEnemyDroneDist = 99999999;
+        int distToClosestEarlyEnemyMiner = 99999999;
+        RobotInfo closestEarlyEnemyMiner = null;
+        int distToClosestEarlyEnemyDroneWithUnit = 99999999;
+        RobotInfo closestEarlyEnemyDroneWithUnit = null;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
             // TODO: Check if info.getLocation() vs info.location is more efficient?
@@ -59,6 +67,11 @@ public class HQ extends RobotPlayer {
                     break;
                 case MINER:
                     enemyMiners++;
+                    // for rush dealing...
+                    if (rc.getRoundNum() <= 300 && dist < distToClosestEarlyEnemyMiner) {
+                        closestEarlyEnemyMiner = info;
+                        distToClosestEarlyEnemyMiner = dist;
+                    }
                     break;
                 case LANDSCAPER:
                     enemyLandscapers++;
@@ -68,6 +81,11 @@ public class HQ extends RobotPlayer {
                     break;
                 case DELIVERY_DRONE:
                     enemyDrones++;
+                    // for rush dealing...
+                    if (rc.getRoundNum() <= 300 && dist < distToClosestEarlyEnemyDroneWithUnit && info.isCurrentlyHoldingUnit()) {
+                        closestEarlyEnemyDroneWithUnit = info;
+                        distToClosestEarlyEnemyDroneWithUnit = dist;
+                    }
                     break;
             }
         }
@@ -81,6 +99,17 @@ public class HQ extends RobotPlayer {
                 closestSoupDist = distToSoup;
                 closestSoupLoc = soupLoc;
             }
+        }
+
+        // shout rush units out once
+        if (closestEarlyEnemyMiner != null && !idsOfRushUnitsCalledOut.contains(closestEarlyEnemyMiner.getID())) {
+            // tell drones to chase!
+            announceATTACK_ENEMY_UNIT(closestEarlyEnemyMiner);
+            idsOfRushUnitsCalledOut.add(closestEarlyEnemyMiner.getID());
+        }
+        if (closestEarlyEnemyDroneWithUnit != null && !idsOfRushUnitsCalledOut.contains(closestEarlyEnemyDroneWithUnit.getID())) {
+            announceATTACK_ENEMY_UNIT(closestEarlyEnemyDroneWithUnit);
+            idsOfRushUnitsCalledOut.add(closestEarlyEnemyDroneWithUnit.getID());
         }
 
 
@@ -201,13 +230,15 @@ public class HQ extends RobotPlayer {
             // set this once and announce once
             announceMessage(GETTING_RUSHED_HELP);
         }
-        if (gettingRushed && rc.getRoundNum() % 10 == 0) {
-            announceMessage(GETTING_RUSHED_HELP);
-        }
+
         // if we were rushed but no more design schools
+        if (debug) System.out.println("Rushed? " + gettingRushed + " | Enemy... schools: " + enemyDesignSchools + ", netguns: " + enemyNetGuns + " inHQSpaceLandscapers: " + inHQSpaceEnemyLandscapers);
         if (gettingRushed && enemyDesignSchools == 0 && enemyNetGuns == 0 && inHQSpaceEnemyLandscapers == 0) {
             gettingRushed = false;
             announceMessage(NO_LONGER_RUSHED);
+        }
+        if (gettingRushed && rc.getRoundNum() % 10 == 0) {
+            announceMessage(GETTING_RUSHED_HELP);
         }
         if (gettingRushed && enemyNetGuns == 0) {
 
@@ -316,6 +347,14 @@ public class HQ extends RobotPlayer {
             }
         }
     }
+    static void announceATTACK_ENEMY_UNIT(RobotInfo enemy) throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), ATTACK_ENEMY_UNIT_FOR_RUSH, hashLoc(enemy.location), enemy.getID(), enemy.type.ordinal(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING TO ATTACK UNIT AT " + enemy.location + " | ID: "+ enemy.ID);
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+        }
+    }
     static void announceMessage(int msg) throws GameActionException {
         // STOP_LOCK_AND_DEFEND
         int[] message = new int[] {generateUNIQUEKEY(), msg, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
@@ -396,37 +435,6 @@ public class HQ extends RobotPlayer {
         if (rc.canSubmitTransaction(message, 10)) {
             rc.submitTransaction(message, 10);
         }
-    }
-    static void announceWantLandscapers(int amount) throws GameActionException {
-        // send teamsoup count to ensure we don't build too many landscapers
-        int [] message = new int[] {generateUNIQUEKEY(), NEED_LANDSCAPERS_FOR_DEFENCE, rc.getTeamSoup(), amount, randomInt(), randomInt(), randomInt()};
-        encodeMsg(message);
-        if (debug) System.out.println("ANNOUNCING WANT LANDSCAPERS ");
-        if (rc.canSubmitTransaction(message, 1)) {
-           rc.submitTransaction(message, 1);
-        }
-    }
-    static boolean surroundedByFlood() throws GameActionException {
-        int sideLength = (BASE_WALL_DIST+1) * 2 + 1;
-        //int side2 = (BASE_WALL_DIST+1)*2 - 1;
-        for (int i = 0; i < sideLength; i++) {
-            if (!rc.senseFlooding(new MapLocation(rc.getLocation().x - BASE_WALL_DIST - 1 + i, rc.getLocation().y - BASE_WALL_DIST - 1))) {
-                return false;
-            }
-            if (!rc.senseFlooding(new MapLocation(rc.getLocation().x - BASE_WALL_DIST - 1 + i, rc.getLocation().y + BASE_WALL_DIST + 1))) {
-                return false;
-            }
-        }
-        //TODO OPTIMIZE BYTECODE
-        for (int i = 0; i < sideLength; i++) {
-            if (!rc.senseFlooding(new MapLocation(rc.getLocation().x - BASE_WALL_DIST - 1, rc.getLocation().y - BASE_WALL_DIST + i))) {
-                return false;
-            }
-            if (!rc.senseFlooding(new MapLocation(rc.getLocation().x + BASE_WALL_DIST + 1, rc.getLocation().y - BASE_WALL_DIST + i))) {
-                return false;
-            }
-        }
-        return true;
     }
     public static void build(MapLocation closestSoupLoc) throws GameActionException {
         // TODO: optimize bytecode here

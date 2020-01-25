@@ -14,6 +14,13 @@ public class DeliveryDrone extends RobotPlayer {
     static final int MOVING_TO_UNIT_TO_MOVE = 6;
     static boolean terraformTime = false;
     static final int MOVE_OUR_UNIT_FAR = 7;
+
+    static final int RUSH_DEFEND = 8;
+    static MapLocation locOfRushUnit = null;
+    static int IDOfRushUnit = -1;
+
+    static boolean skipHelping = false;
+
     static boolean moveMinersToHighland = false;
     static boolean lockAndDefend = false;
     static int role = ATTACK;
@@ -66,9 +73,43 @@ public class DeliveryDrone extends RobotPlayer {
         }
         RobotInfo enemyInHQSpace = null;
         int closestEnemyInHQSpace = 888888889;
+
+        RobotInfo rushUnitToAttack = null;
+
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
             switch (role) {
+                case RUSH_DEFEND:
+                    if (info.getID() == IDOfRushUnit) {
+                        // we found the rushing unit
+                        // if rushing unit is a miner, switch roles and proceed as if we were in ATTACK mode
+                        rushUnitToAttack = info;
+                        if (info.type == RobotType.MINER) {
+                            role = ATTACK;
+
+                            // code copied from miner switch case when attacking
+                            int dist2 = rc.getLocation().distanceSquaredTo(info.getLocation());
+                            if (dist2 < closestEnemyMinerDist) {
+                                closestEnemyMinerDist = dist2;
+                                closestEnemyMiner = info;
+                                if (debug) System.out.println("Found closer enemy miner at " + info.location);
+                            }
+                            if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
+                                if (dist2 < closestEnemyInHQSpace) {
+                                    closestEnemyInHQSpace = dist2;
+                                    enemyInHQSpace = info;
+                                }
+                            }
+                        }
+                        // else if delivery drone, stay in role because in this role we follow that delivery drone until we see a miner
+                        else if (info.type == RobotType.DELIVERY_DRONE) {
+                            // if rushing drone isn't carrying anything, stop, go back to attack mode
+                            if (!info.isCurrentlyHoldingUnit()) {
+                                role = ATTACK;
+                            }
+                        }
+                    }
+                    // don't break here, we want rush defenders to look for closest units as well.
                 case ATTACK:
                     switch(info.type) {
                         case LANDSCAPER:
@@ -110,6 +151,7 @@ public class DeliveryDrone extends RobotPlayer {
                             break;
                     }
                     break;
+
             }
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
             if (dist <= 25 && (info.type == RobotType.NET_GUN) && info.getCooldownTurns() <= 2) {
@@ -469,6 +511,7 @@ public class DeliveryDrone extends RobotPlayer {
                 if (distToMiner <= 2) {
                     if (rc.canPickUpUnit(nearestLowMiner.getID())) {
                         rc.pickUpUnit(nearestLowMiner.getID());
+                        friendlyUnitHeld = nearestLowMiner;
                         role = MOVE_UNIT_HIGH_LAND;
                     }
                 }
@@ -478,11 +521,12 @@ public class DeliveryDrone extends RobotPlayer {
 
         // if there is a adjacent miner to HQ, then take it out ( assumed to be valid to take out )
 
-        if (nearestAdjacentToHQMiner != null && nearestEmptyHighLand != null) {
+        if (nearestAdjacentToHQMiner != null && nearestEmptyHighLand != null && enemyInHQSpace == null && !skipHelping) {
             if (debug)
             if (rc.canPickUpUnit(nearestAdjacentToHQMiner.getID())) {
                 // pick them up
                 rc.pickUpUnit(nearestAdjacentToHQMiner.getID());
+                friendlyUnitHeld = nearestAdjacentToHQMiner;
                 // set role
                 //role = MOVE_OUR_UNIT_OUT;
                 role = MOVE_UNIT_HIGH_LAND;
@@ -496,10 +540,11 @@ public class DeliveryDrone extends RobotPlayer {
         }
 
         // we only do this if there is no enemy
-        if (nearestAdjacentToHQLandscaper != null && !wallIn && enemyInHQSpace == null && nearestEmptyHighLand != null) {
+        if (nearestAdjacentToHQLandscaper != null && !wallIn && enemyInHQSpace == null && nearestEmptyHighLand != null && !skipHelping) {
             if (rc.canPickUpUnit(nearestAdjacentToHQLandscaper.getID())) {
                 // pick them up
                 rc.pickUpUnit(nearestAdjacentToHQLandscaper.getID());
+                friendlyUnitHeld = nearestAdjacentToHQLandscaper;
                 // set role
                 //role = MOVE_OUR_UNIT_OUT;
                 role = MOVE_UNIT_HIGH_LAND;
@@ -515,6 +560,20 @@ public class DeliveryDrone extends RobotPlayer {
         if (role == MOVING_TO_UNIT_TO_MOVE) {
 
         }
+        // special case of ATTACK. We don't circle, we are given an enemy coordinate and we go there
+        else if (role == RUSH_DEFEND) {
+            setTargetLoc(locOfRushUnit);
+            if (rc.canSenseLocation(locOfRushUnit) && rushUnitToAttack == null) {
+                // if we can see the posted location and see no rush unit and we are still in this role, something is clearly wrong
+                role = ATTACK;
+            }
+            else if (rushUnitToAttack != null) {
+                if (debug) System.out.println("Following rushing drone at " + rushUnitToAttack.location);
+                // found rushing unit, it is a drone so follow it
+                setTargetLoc(rushUnitToAttack.location);
+
+            }
+        }
         else if (role == MOVE_UNIT_HIGH_LAND) {
             if (nearestEmptyHighLand == null) {
                 setTargetLoc(HQLocation);
@@ -525,6 +584,7 @@ public class DeliveryDrone extends RobotPlayer {
                     Direction dropDir = rc.getLocation().directionTo(nearestEmptyHighLand);
                     if (rc.canDropUnit(dropDir)) {
                         rc.dropUnit(dropDir);
+                        friendlyUnitHeld = null;
                         role = ATTACK;
                     }
                     else {
@@ -538,6 +598,7 @@ public class DeliveryDrone extends RobotPlayer {
                                 if (ele >= DESIRED_ELEVATION_FOR_TERRAFORM) {
                                     if (rc.canDropUnit(dropDir)) {
                                         rc.dropUnit(dropDir);
+                                        friendlyUnitHeld = null;
                                         role = ATTACK;
                                         break;
                                     }
@@ -561,6 +622,7 @@ public class DeliveryDrone extends RobotPlayer {
                 while(i++ < 8) {
                     if (rc.canDropUnit(dropDir)) {
                         rc.dropUnit(dropDir);
+                        friendlyUnitHeld = null;
                         role = ATTACK;
                         break;
                     }
@@ -573,6 +635,7 @@ public class DeliveryDrone extends RobotPlayer {
                     Direction dropDir = rc.getLocation().directionTo(closestEmptyWallLoc);
                     if (rc.canDropUnit(dropDir)) {
                         rc.dropUnit(dropDir);
+                        friendlyUnitHeld = null;
                         role = ATTACK;
                     }
                 }
@@ -592,6 +655,7 @@ public class DeliveryDrone extends RobotPlayer {
                 if (!MainWall.contains(dropLoc) && !SecondWall.contains(dropLoc)) {
                     if (rc.canDropUnit(dropDir)) {
                         rc.dropUnit(dropDir);
+                        friendlyUnitHeld = null;
                         role = ATTACK;
                         break;
                     }
@@ -610,6 +674,7 @@ public class DeliveryDrone extends RobotPlayer {
                 if (!MainWall.contains(dropLoc) && !SecondWall.contains(dropLoc)) {
                     if (rc.canDropUnit(dropDir)) {
                         rc.dropUnit(dropDir);
+                        friendlyUnitHeld = null;
                         role = ATTACK;
                         break;
                     }
@@ -718,6 +783,11 @@ public class DeliveryDrone extends RobotPlayer {
                                     role = DUMP_BAD_GUY;
                                     //targetLoc = waterLoc;
                                     setTargetLoc(waterLoc);
+
+                                    // if we were previously skipping helping code, enable it again
+                                    if (skipHelping) {
+                                        skipHelping = false;
+                                    }
                                 } else {
                                     role = DUMP_BAD_GUY;
                                     holdingCow = true;
@@ -825,9 +895,9 @@ public class DeliveryDrone extends RobotPlayer {
                 if (attackLoc != null && !tryingToPickupUnit) {
                     int distToAttackLoc = rc.getLocation().distanceSquaredTo(attackLoc);
                     // stick around, don't move in
-                    // stick around farther if we know where enemy base is
+                    // stick around farther if we know where enemy base is (ourside of HQ vision approx)
                     // stick around farther also if it isnt time to attack
-                    if (((enemyBaseLocation == null && distToAttackLoc >= 36) || (enemyBaseLocation != null && distToAttackLoc >= 48))) {
+                    if (((enemyBaseLocation == null && distToAttackLoc >= 36) || (enemyBaseLocation != null && distToAttackLoc >= 65))) {
                         //move to just edge of base attack range.
                         setTargetLoc(attackLoc);
                         if (debug) rc.setIndicatorDot(rc.getLocation(), 10, 20,200);
@@ -899,6 +969,7 @@ public class DeliveryDrone extends RobotPlayer {
                                             if (rc.canSenseLocation(checkLoc) && !rc.senseFlooding(checkLoc) && rc.canDropUnit(dirToWallLoc)) {
                                                 rc.dropUnit(dirToWallLoc);
                                                 droppedUnit = true;
+                                                friendlyUnitHeld = null;
                                                 break;
                                             }
                                         }
@@ -918,6 +989,7 @@ public class DeliveryDrone extends RobotPlayer {
                                                     if (rc.canDropUnit(dropDir)) {
                                                         rc.dropUnit(dropDir);
                                                         droppedUnit = true;
+                                                        friendlyUnitHeld = null;
                                                         break;
                                                     }
                                                 }
@@ -942,6 +1014,7 @@ public class DeliveryDrone extends RobotPlayer {
                                             if (!rc.senseFlooding(dropLoc)) {
                                                 if (rc.canDropUnit(dropDir)) {
                                                     rc.dropUnit(dropDir);
+                                                    friendlyUnitHeld = null;
                                                     break;
                                                 }
                                             }
@@ -1074,7 +1147,7 @@ public class DeliveryDrone extends RobotPlayer {
         //lastLocs.dequeue();
         return firstDirThatWorks;
     }
-    static void processBlocks(Transaction[] blocks)  {
+    static void processBlocks(Transaction[] blocks) throws GameActionException {
         for (int i = blocks.length; --i >= 0; ) {
             int[] msg = blocks[i].getMessage();
             decodeMsg(msg);
@@ -1166,6 +1239,28 @@ public class DeliveryDrone extends RobotPlayer {
                 }
                 else if ((msg[1] ^ NO_LONGER_RUSHED) == 0) {
                     gettingRushed = false;
+                }
+                else if ((msg[1] ^ ATTACK_ENEMY_UNIT_FOR_RUSH) == 0) {
+                    MapLocation loc = parseLoc(msg[2]);
+                    int id = msg[3];
+                    int type = msg[4];
+                    role = RUSH_DEFEND;
+                    IDOfRushUnit = id;
+                    locOfRushUnit = loc;
+                    skipHelping = true;
+                    if (rc.isCurrentlyHoldingUnit() && friendlyUnitHeld != null) {
+                        // drop it!
+                        int k = 0;
+                        Direction dir = Direction.NORTH;
+                        while(k++ < 8) {
+                            if (rc.canDropUnit(dir)) {
+                                rc.dropUnit(dir);
+                                friendlyUnitHeld = null;
+                            }
+                            dir = dir.rotateRight();
+                        }
+                    }
+
                 }
             }
         }

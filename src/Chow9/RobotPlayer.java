@@ -62,6 +62,8 @@ public strictfp class RobotPlayer {
 
     static final int SWARM_WITH_UNITS = 29;
 
+    static final int ATTACK_ENEMY_UNIT_FOR_RUSH = 30;
+
     static int thisLandScapersDesiredHeightOffset = 0;
 
     static int MAX_TERRAFORM_DIST = 94;
