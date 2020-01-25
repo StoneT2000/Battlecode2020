@@ -22,7 +22,7 @@ public strictfp class RobotPlayer {
     static MapLocation enemyBaseLocation = null; // the enemy HQ location
 
     static int turnCount;
-    static final boolean debug = true;
+    static final boolean debug = false;
     static final int UNIQUEKEY = -19934321;
     static Team enemyTeam; // enemy team enum
 
@@ -165,15 +165,23 @@ public strictfp class RobotPlayer {
         }
         return Direction.CENTER;
     }
+    static void rotateCircularly(MapLocation target) {
+        if (rc.getID() % 2 == 0) {
+            setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(target).opposite().rotateRight().rotateRight()));
+        }
+        else {
+            setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(target).opposite().rotateLeft().rotateLeft()));
+        }
+    }
     static Direction getBugPathMove(MapLocation target, HashTable<Direction> dangerousDirections) throws GameActionException {
-
+        roundsSinceLastResetOfClosestTargetdist++;
         if (rc.getLocation().equals(target)) {
             return Direction.CENTER;
         }
         // every 20 rounds, reset the closest distance
         if (roundsSinceLastResetOfClosestTargetdist >= 20) {
             roundsSinceLastResetOfClosestTargetdist = 0;
-            closestToTargetLocSoFar = 0;
+            closestToTargetLocSoFar = 99999999;
         }
 
         Direction dir = lastDirMove;

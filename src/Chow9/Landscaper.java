@@ -188,7 +188,8 @@ public class Landscaper extends RobotPlayer {
                 startedCirclingRound = rc.getRoundNum();
                 circling = true;
             }
-            setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(HQLocation).rotateRight().rotateRight()));
+            //setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(HQLocation).rotateRight().rotateRight()));
+            rotateCircularly(HQLocation);
             if (circling && rc.getRoundNum() - startedCirclingRound >= 4) {
                 // terraform farther and farther until max
                 terraformDistAwayFromHQ = (int) Math.min(Math.pow((Math.sqrt(terraformDistAwayFromHQ) + 1), 2), MAX_TERRAFORM_DIST);

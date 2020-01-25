@@ -343,12 +343,11 @@ public class DeliveryDrone extends RobotPlayer {
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
             int[] deltas = Constants.BFSDeltas24[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
-            // TODO: instead of canSenseLocation, maybe do the math and choose the right BFS deltas to iterate over
             if (rc.canSenseLocation(checkLoc)) {
                 int dist = rc.getLocation().distanceSquaredTo(checkLoc);
                 if (rc.senseFlooding(checkLoc)) {
 
-                    if (dist < minDistToFlood && dist != 0) {
+                    if (dist < minDistToFlood && dist != 0 && !rc.isLocationOccupied(checkLoc)) {
                         minDistToFlood = dist;
                         waterLoc = checkLoc;
                     }
@@ -699,6 +698,7 @@ public class DeliveryDrone extends RobotPlayer {
                         if (debug) System.out.println("DUMPING BAD UNIT to " + waterLoc);
                         //targetLoc = waterLoc;
                         setTargetLoc(waterLoc);
+                        // if can't dump, look around adjacent locs
                         if (rc.getLocation().isAdjacentTo(waterLoc)) {
                             // if drone is adjacent to waterLoc, drop the enemy unit
                             Direction dropDir = rc.getLocation().directionTo(waterLoc);
@@ -822,7 +822,7 @@ public class DeliveryDrone extends RobotPlayer {
                     }
                     else {
                         // no dice?
-                        setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(attackLoc).opposite().rotateLeft().rotateLeft()));
+                        rotateCircularly(attackLoc);
                     }
                 }
 
@@ -846,7 +846,7 @@ public class DeliveryDrone extends RobotPlayer {
                         //targetLoc = rc.adjacentLocation(randomDirection());
                         if (debug) System.out.println("moving randomly around attack location");
                         // move outside range
-                        setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(attackLoc).opposite().rotateLeft().rotateLeft()));
+                        rotateCircularly(attackLoc);
                     } else {
                         //targetLoc = attackLoc; // move towards attack loc first if not near it yet.
                         setTargetLoc(attackLoc);
@@ -912,7 +912,17 @@ public class DeliveryDrone extends RobotPlayer {
                     // stick around, don't move in
                     // stick around farther if we know where enemy base is (ourside of HQ vision approx)
                     // stick around farther also if it isnt time to attack
-                    if (((enemyBaseLocation == null && distToAttackLoc >= 36) || (enemyBaseLocation != null && distToAttackLoc >= 65))) {
+                    // stick around distance depends on positioning
+                    int strayDist = 65;
+                    if (friendlyUnitHeld != null) {
+                        if (friendlyUnitHeld.type == RobotType.LANDSCAPER) {
+                            strayDist = 128;
+                        }
+                        else if (friendlyUnitHeld.type == RobotType.MINER) {
+                            strayDist = 92;
+                        }
+                    }
+                    if (((enemyBaseLocation == null && distToAttackLoc >= 36) || (enemyBaseLocation != null && distToAttackLoc >= strayDist))) {
                         //move to just edge of base attack range.
                         setTargetLoc(attackLoc);
                         if (debug) rc.setIndicatorDot(rc.getLocation(), 10, 20,200);
@@ -941,7 +951,7 @@ public class DeliveryDrone extends RobotPlayer {
 
                     } else {
                         // don't move there if it isn't time yet, just move around like vultures
-                        setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(attackLoc).opposite().rotateRight().rotateRight()));
+                        rotateCircularly(attackLoc);
                         // if we waited long enough,
                         if (swarmIn) {
                             if (debug) rc.setIndicatorDot(rc.getLocation(), 100, 20,200);
