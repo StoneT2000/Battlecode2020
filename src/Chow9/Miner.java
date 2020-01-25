@@ -68,7 +68,7 @@ public class Miner extends RobotPlayer {
 
             }
         }
-        
+
         // if mining, always try to mine
         if (role == MINER) {
             // Strat: MINE if possible!
