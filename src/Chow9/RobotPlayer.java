@@ -32,6 +32,7 @@ public strictfp class RobotPlayer {
     // usually the position to move towards
     static MapLocation targetLoc;
     static Direction lastDirMove = Direction.NORTH;
+    static MapLocation lastWallChecked = null;
     static LinkedList<MapLocation> lastLocs = new LinkedList<>();
 
     static int roundsSinceLastResetOfClosestTargetdist = 0;
@@ -166,18 +167,28 @@ public strictfp class RobotPlayer {
     }
     static Direction getBugPathMove(MapLocation target, HashTable<Direction> dangerousDirections) throws GameActionException {
 
+        if (rc.getLocation().equals(target)) {
+            return Direction.CENTER;
+        }
         // every 20 rounds, reset the closest distance
         if (roundsSinceLastResetOfClosestTargetdist >= 20) {
             roundsSinceLastResetOfClosestTargetdist = 0;
             closestToTargetLocSoFar = 0;
         }
 
-        Direction dir = rc.getLocation().directionTo(target);
+        Direction dir = lastDirMove;
         Direction greedyDir = null;
         Direction wallDir = lastDirMove;
+        if (lastWallChecked != null) {
+            wallDir = rc.getLocation().directionTo(lastWallChecked);
+            dir = rc.getLocation().directionTo(lastWallChecked);
+        }
+
         boolean foundNonDangerousDir = false;
         boolean wallDirSet = false;
+        boolean lastWallUpdated = false;
         int closestGreedyDist = 99999999;
+        if (debug) System.out.println("Last dir: " + lastDirMove + " | Last Wall checked " + lastWallChecked + " | Closest Target Dist So Far " + closestToTargetLocSoFar);
         for (int i = 8; --i >= 0; ) {
             if (debug) System.out.println("Checking dir: " + dir);
             if (!dangerousDirections.contains(dir)) {
@@ -186,19 +197,33 @@ public strictfp class RobotPlayer {
 
                 // if it is closer than the closest we have ever been, we can sense it as well and its not flooding
                 if (greedyDist < closestGreedyDist && rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc)) {
+                    if (debug) System.out.println(dir +" is greedier " + greedyDist);
                     // if we can move there
                     if (rc.canMove(dir)) {
+                        if (debug) System.out.println(dir +" can move ");
                         // update and move
                         closestGreedyDist = greedyDist;
                         greedyDir = dir;
                         foundNonDangerousDir = true;
                     }
                 }
-                if (!wallDirSet && rc.canMove(dir)) {
-                    wallDir = dir;
-                    wallDirSet = true;
-                    foundNonDangerousDir = true;
+                if (!wallDirSet) {
+                    if (rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc) && rc.canMove(dir)) {
+                        wallDir = dir;
+                        wallDirSet = true;
+                        foundNonDangerousDir = true;
+                        if (!lastWallUpdated) {
+                            // not updated ever?
+                            lastWallChecked = null;
+                        }
+                        if (debug) System.out.println(dir + ": new wall near direction now set ");
+                    }
+                    else {
+                        lastWallChecked = greedyLoc; // last wall checked that is blocked
+                        lastWallUpdated = true;
+                    }
                 }
+
 
 
 
@@ -211,10 +236,12 @@ public strictfp class RobotPlayer {
         }
         if (closestGreedyDist < closestToTargetLocSoFar) {
             closestToTargetLocSoFar = closestGreedyDist;
+            lastDirMove = greedyDir;
             return greedyDir;
         }
 
         if (foundNonDangerousDir) {
+            lastDirMove = wallDir;
             return wallDir;
         }
         else {
