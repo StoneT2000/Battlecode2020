@@ -360,8 +360,9 @@ public class DeliveryDrone extends RobotPlayer {
                     }
                 }
                 int elevation = rc.senseElevation(checkLoc);
-                if (elevation >= DESIRED_ELEVATION_FOR_TERRAFORM && !rc.isLocationOccupied(checkLoc)) {
-                    // closest highland that isn't in HQ breahting space
+                // must be high enough and not too high
+                if (elevation >= DESIRED_ELEVATION_FOR_TERRAFORM && elevation <= DESIRED_ELEVATION_FOR_TERRAFORM + 6 && !rc.isLocationOccupied(checkLoc)) {
+                    // closest highland that isn't in HQ breathing space
                     if (dist < distToHighLand && checkLoc.distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
                         nearestEmptyHighLand = checkLoc;
                         distToHighLand = dist;
@@ -521,6 +522,9 @@ public class DeliveryDrone extends RobotPlayer {
         }
         boolean skipAttack = false;
 
+        if (rc.getRoundNum() <= 100) {
+            skipHelping = true;
+        }
         // if there is a adjacent miner to HQ, then take it out ( assumed to be valid to take out )
 
         if (nearestAdjacentToHQMiner != null && nearestEmptyHighLand != null && enemyInHQSpace == null && !skipHelping) {
@@ -760,6 +764,15 @@ public class DeliveryDrone extends RobotPlayer {
                     circledHQTimes ++;
                 }
             }
+
+            if (enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 25 && swarmIn == false) {
+                Direction dirToEnemyBase = rc.getLocation().directionTo(enemyBaseLocation);
+                dangerousDirections.add(dirToEnemyBase);
+                dangerousDirections.add(dirToEnemyBase.rotateLeft());
+                dangerousDirections.add(dirToEnemyBase.rotateRight());
+                if (debug) System.out.println("Adding enemy base bad dirs: " + dirToEnemyBase + ", " + dirToEnemyBase.rotateRight() + ", " + dirToEnemyBase.rotateLeft());
+            }
+
             // if not ordered to attack enemy HQ, do normal defending and attack
             if (attackHQ == false) {
 
@@ -773,7 +786,7 @@ public class DeliveryDrone extends RobotPlayer {
                     // pick a new enemy to engage if we didnt find one or if the one we found is too close to enemy base
                     if (enemyToEngage == null || (enemyBaseLocation != null && enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) <= 7)) enemyToEngage = closestEnemyLandscaper;
                     if (enemyToEngage == null || (enemyBaseLocation != null && enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) <= 7)) enemyToEngage = nearestCow;
-                    if (debug) System.out.println(enemyToEngage + " | enemy base?: " + enemyBaseLocation + " | enemy at? ");
+                    if (debug) System.out.println(enemyToEngage + " | enemy base: " + enemyBaseLocation + " | enemy at? ");
                     if (enemyToEngage != null && (enemyBaseLocation == null || enemyToEngage.location.distanceSquaredTo(enemyBaseLocation) >= 8)) {
                         if (debug) System.out.println("ENGAGING ENEMY at " + enemyToEngage.location);
                         int distToEnemy = rc.getLocation().distanceSquaredTo(enemyToEngage.location);
@@ -803,12 +816,8 @@ public class DeliveryDrone extends RobotPlayer {
                             setTargetLoc(enemyToEngage.location);
 
                             // add dangerous directions to HQ
-                            if (enemyBaseLocation != null) {
-                                Direction dirToEnemyBase = rc.getLocation().directionTo(enemyBaseLocation);
-                                dangerousDirections.add(dirToEnemyBase);
-                                dangerousDirections.add(dirToEnemyBase.rotateLeft());
-                                dangerousDirections.add(dirToEnemyBase.rotateRight());
-                            }
+                            if (debug) System.out.println("going closer to enemy");
+
                         }
                     }
                     else {
@@ -840,6 +849,10 @@ public class DeliveryDrone extends RobotPlayer {
                         setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(attackLoc).opposite().rotateLeft().rotateLeft()));
                     } else {
                         //targetLoc = attackLoc; // move towards attack loc first if not near it yet.
+                        setTargetLoc(attackLoc);
+                    }
+                    // early game stay close
+                    if (attackLoc.equals(HQLocation) && rc.getRoundNum() <= 300) {
                         setTargetLoc(attackLoc);
                     }
 
@@ -978,6 +991,8 @@ public class DeliveryDrone extends RobotPlayer {
                                     }
                                     // otherwise if we havent dropped it
                                     // use closest visible highland near enough to HQ within DROP_ZONE_RANGE or smth
+                                    // TODO: DISABLED DROPPING LANDSCAPERS TO MAKE ISLAND
+                                    /*
                                     if (!droppedUnit && nearestDropZoneLoc != null) {
                                         int i = 0;
                                         if (debug) System.out.println("Has not dropped unit on to wall, trying to drop near " + nearestDropZoneLoc);
@@ -1004,6 +1019,7 @@ public class DeliveryDrone extends RobotPlayer {
                                             setTargetLoc(nearestDropZoneLoc);
                                         }
                                     }
+                                    */
                                 }
                                 else if (friendlyUnitHeld.type == RobotType.MINER) {
                                     int i = 0;
@@ -1108,46 +1124,26 @@ public class DeliveryDrone extends RobotPlayer {
     static Direction getBugPathMoveDrone(MapLocation target, HashTable<Direction> dangerousDirections) throws GameActionException {
 
         Direction dir = rc.getLocation().directionTo(target);
-        MapLocation greedyLoc = rc.adjacentLocation(dir);
-        int greedyDist = greedyLoc.distanceSquaredTo(target);
-        if (debug) System.out.println("Target: " + target + " | greedyLoc " + greedyLoc +
-                " | closestSoFar " + closestToTargetLocSoFar + " | this dist " + greedyDist);
-        if (!dangerousDirections.contains(dir) && greedyDist < closestToTargetLocSoFar && rc.canSenseLocation(greedyLoc)) {
-            if (rc.canMove(dir)) {
-                closestToTargetLocSoFar = greedyDist;
-                return dir;
-            }
-        }
-        Direction firstDirThatWorks = Direction.CENTER;
+        // go with most greedy move
+
+        Direction greedyDir = Direction.CENTER;
+        int closestDist = 999999999;
         for (int i = 7; --i >= 0; ) {
-            dir = dir.rotateLeft();
+
             MapLocation adjLoc = rc.adjacentLocation(dir);
+            int dist = adjLoc.distanceSquaredTo(target);
             if (!dangerousDirections.contains(dir) && rc.canSenseLocation(adjLoc)) {
                 if (rc.canMove(dir)) {
-                    firstDirThatWorks = dir;
-                    //lastDirMove = dir;
-                    //lastLoc = adjLoc;
-
-                    // store past 2 positions
-                    /*
-                    if (lastLocs.size < 2) {
-                        lastLocs.add(adjLoc);
-                    }
-                    else {
-                        lastLocs.dequeue();
-                        lastLocs.add(adjLoc);
-                    }*/
-                    int dist = adjLoc.distanceSquaredTo(target);
-                    if (dist < closestToTargetLocSoFar) {
-                        closestToTargetLocSoFar = greedyDist;
-                        return dir;
+                    if (dist < closestDist) {
+                        greedyDir = dir;
+                        closestDist = dist;
                     }
                 }
             }
-
+            dir = dir.rotateLeft();
         }
-        //lastLocs.dequeue();
-        return firstDirThatWorks;
+
+        return greedyDir;
     }
     static void processBlocks(Transaction[] blocks) throws GameActionException {
         for (int i = blocks.length; --i >= 0; ) {

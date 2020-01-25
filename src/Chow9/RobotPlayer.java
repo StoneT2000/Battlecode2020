@@ -67,7 +67,7 @@ public strictfp class RobotPlayer {
 
     static int thisLandScapersDesiredHeightOffset = 0;
 
-    static int MAX_TERRAFORM_DIST = 94;
+    static int MAX_TERRAFORM_DIST = 134; // was 94
 
     static int DESIRED_ELEVATION_FOR_TERRAFORM = 3;
 

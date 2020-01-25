@@ -72,6 +72,9 @@ public class Landscaper extends RobotPlayer {
                         moveAway = true;
                     }
                     break;
+                case HQ:
+                    nearestEnemy = info;
+                    nearestEnemyDist = -1;
 
             }
         }
@@ -1012,18 +1015,18 @@ public class Landscaper extends RobotPlayer {
             int[] msg = transactions[i].getMessage();
             decodeMsg(msg);
             if (isOurMessage((msg))) {
-                if ((msg[1] ^ WALL_IN) == 0) {
+                if ((msg[1] ^ WALL_IN) == 0 && role != ATTACK) {
                     // go run to HQ
                     role = DEFEND_HQ;
                     //targetLoc = HQLocation;
                     setTargetLoc(HQLocation);
                 }
-                else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0) {
+                else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0 && role != ATTACK) {
                     if (role != DEFEND_HQ) {
                         role = TERRAFORM;
                     }
                 }
-                else if ((msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
+                else if ((msg[1] ^ TERRAFORM_AND_WALL_IN) == 0 && role != ATTACK) {
                     // go away and terraform if not near HQ
                     if (rc.getLocation().distanceSquaredTo(HQLocation) > 16) {
                         role = TERRAFORM;
@@ -1032,10 +1035,10 @@ public class Landscaper extends RobotPlayer {
                         setTargetLoc(HQLocation);
                     }
                 }
-                else if ((msg[1] ^ GETTING_RUSHED_HELP) == 0) {
+                else if ((msg[1] ^ GETTING_RUSHED_HELP) == 0 && role != ATTACK) {
                     role = DEFEND_HQ;
                 }
-                else if ((msg[1] ^ NO_LONGER_RUSHED) == 0) {
+                else if ((msg[1] ^ NO_LONGER_RUSHED) == 0 && role != ATTACK) {
                     if (debug) System.out.println("heard we aren't rushed, terraform please");
                     role = TERRAFORM;
                 }
