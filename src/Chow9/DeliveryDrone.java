@@ -309,6 +309,8 @@ public class DeliveryDrone extends RobotPlayer {
             }
         }
         if (debug) System.out.println("There are " + nearbyNeutralRobots.length + " neutrals (cows?) nearby ");
+        // turn off cow pickups...
+        /*
         for (int i = nearbyNeutralRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyNeutralRobots[i];
             switch(info.type) {
@@ -321,7 +323,7 @@ public class DeliveryDrone extends RobotPlayer {
                     }
             }
         }
-
+        */
         // if many friend drones, go to HQ?
         if (friendlyDrones > 3) {
             //attackLoc = HQLocation;

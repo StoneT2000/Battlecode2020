@@ -185,6 +185,12 @@ public class Miner extends RobotPlayer {
                     break;
             }
         }
+        if (!designatedBuilder && role != ATTACK) {
+            if (unitToBuild == RobotType.FULFILLMENT_CENTER || unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.VAPORATOR) {
+                role = MINER;
+                unitToBuild = null;
+            }
+        }
         if (role == ATTACK) {
             // build net guns in face of drones
             if (debug) System.out.println("ATTACKING | Soup: " + rc.getTeamSoup());
@@ -575,14 +581,14 @@ public class Miner extends RobotPlayer {
             decodeMsg(msg);
             if (isOurMessage((msg))) {
                 // if it is announce SOUP location message
-                if ((msg[1] ^ BUILD_A_CENTER) == 0) {
+                if ((msg[1] ^ BUILD_A_CENTER) == 0 && role != ATTACK) {
                     int soupThen = msg[2];
                     if (rc.getTeamSoup() >= RobotType.FULFILLMENT_CENTER.cost && soupThen - rc.getTeamSoup() < RobotType.FULFILLMENT_CENTER.cost / 2) {
                         role = BUILDING;
                         unitToBuild = RobotType.FULFILLMENT_CENTER;
                     }
                 }
-                else if ((msg[1] ^ BUILD_A_SCHOOL) == 0) {
+                else if ((msg[1] ^ BUILD_A_SCHOOL) == 0 && role != ATTACK) {
                     int soupThen = msg[2];
                     if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && soupThen - rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost / 2 && distToHQ <= 48) {
                         role = BUILDING;
@@ -611,7 +617,7 @@ public class Miner extends RobotPlayer {
                         terraformTime = true;
                     }
                 }
-                else if ((msg[1] ^ I_AM_DESIGNATED_BUILDER) == 0) {
+                else if ((msg[1] ^ I_AM_DESIGNATED_BUILDER) == 0 && role != ATTACK) {
                     MapLocation locOfOtherMiner = parseLoc(msg[3]);
                     if (rc.getLocation().distanceSquaredTo(locOfOtherMiner) < 92) {
                         // if two miners are close, resolve with ID

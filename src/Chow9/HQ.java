@@ -1,6 +1,6 @@
 package Chow9;
 
-import Chow6.utils.HashTable;
+import Chow9.utils.*;
 import battlecode.common.*;
 
 public class HQ extends RobotPlayer {
@@ -304,11 +304,14 @@ public class HQ extends RobotPlayer {
         decideOnUnitToBuild();
         // if we are to build a unit, proceed
         if (buildBecauseNeedMiners || (rc.getRoundNum() % 30 == 0 && miners == 0 && rc.getRoundNum() >= 300)) {
-            unitToBuild = RobotType.MINER;
+            if (rc.getRoundNum() > 300 || fulfillmentCenters > 0) {
+                unitToBuild = RobotType.MINER;
+            }
         }
         if  (rc.getRoundNum() < 15) {
             unitToBuild = RobotType.MINER;
         }
+        // if we have minerCost + FC Cost, build miner and hope it builds FC. dont build more miners...
         if (unitToBuild != null) {
             // proceed with building unit using default heurstics
             if (debug) System.out.println("closest soup: " + closestSoupLoc);
