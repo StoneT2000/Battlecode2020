@@ -101,6 +101,10 @@ public class Landscaper extends RobotPlayer {
         MapLocation closestFloodedHQSpaceLoc = null;
         int closestFloodedHQSpaceLocDist = 999999;
         int soupNearby = 0;
+        double weight = 0;
+        if (rc.getRoundNum() <= 300) {
+            weight = 1.2;
+        }
         if (debug) System.out.println("BFS start: " + Clock.getBytecodeNum());
         // search for terraform locs if we aren't on wall and our role
         if (role != DEFEND_HQ || !FirstLandscaperPosAroundHQTable.contains(rc.getLocation())) {
@@ -120,14 +124,17 @@ public class Landscaper extends RobotPlayer {
                                         RobotInfo info = rc.senseRobotAtLocation(checkLoc);
                                         if ((!isBuilding(info) || info.team == enemyTeam) || info.getID() == rc.getID()) {
                                             // use a score with weak weight to prefer terraforming near HQ first
-                                            int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * 1.2);
+                                            // do this only for early game, because late game we need to terraform whereever
+
+
+                                            int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * weight);
                                             if (distToLoc < closestTerraformDist) {
                                                 closestTerraformDist = distToLoc;
                                                 locToTerraform = checkLoc;
                                             }
                                         }
                                     } else {
-                                        int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * 1.2);
+                                        int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * weight);
                                         if (distToLoc < closestTerraformDist) {
                                             closestTerraformDist = distToLoc;
                                             locToTerraform = checkLoc;
@@ -138,7 +145,7 @@ public class Landscaper extends RobotPlayer {
                             // if it is flooding and in the HQ's breahting space, FILL IT UP
                             if (distToHQ <= HQ_LAND_RANGE && rc.senseFlooding(checkLoc)) {
                                 locToTerraform = checkLoc;
-                                int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * 1.2);
+                                int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * weight);
                                 if (distToLoc < closestFloodedHQSpaceLocDist) {
                                     closestFloodedHQSpaceLocDist = distToLoc;
                                     closestFloodedHQSpaceLoc = checkLoc;
@@ -383,7 +390,7 @@ public class Landscaper extends RobotPlayer {
                                 elevationThere = rc.senseElevation(digLoc);
                             }
                             // dig from dig locs or places that are really deep or from places that are extremely high or from places that are much higher than terraform height
-                            if (isDigLocation(digLoc) || (canSenseLoc && (elevationThere < -10000 || elevationThere > 10000 || elevationThere > DESIRED_ELEVATION_FOR_TERRAFORM + 50))) {
+                            if (isDigLocation(digLoc) || (canSenseLoc && (elevationThere < -10000 || elevationThere > 10000 || elevationThere > DESIRED_ELEVATION_FOR_TERRAFORM + 5))) {
                                 if (rc.canDigDirt(dirToDig)) {
                                     rc.digDirt(dirToDig);
                                     dug = true;
@@ -476,6 +483,7 @@ public class Landscaper extends RobotPlayer {
 
             // find one of the spread out wall positions, and try to go there first
             MapLocation closerOppositeBuildLoc = null;
+            /*
             if (!onSupportBlockDoNotMove) {
                 MapLocation[] locsToCheck = {HQLocation.translate(-1, 0),  HQLocation.translate(1, 0)};
 
@@ -517,6 +525,7 @@ public class Landscaper extends RobotPlayer {
                 }
 
             }
+            */
             if (debug) System.out.println("Closest available opposite build loc: " + closerOppositeBuildLoc);
 
             int minDist = 99999999;
