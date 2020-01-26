@@ -4,6 +4,8 @@ public class HashTable<T> {
     LinkedList<T>[] table;
     int capacity;
     int size = 0;
+    int tabIndex = 0;
+    Node<T> curr = null;
     public HashTable(int capacity) {
         table = new LinkedList[capacity];
         this.capacity = capacity;
@@ -24,5 +26,32 @@ public class HashTable<T> {
         int index = (Math.abs(obj.hashCode())) % this.capacity;
         this.size--;
         return table[index].remove(obj);
+    }
+    public void resetIterator() {
+        tabIndex = 0;
+        curr = null;
+    }
+    public Node<T> next() {
+        if (size != 0) {
+            if (curr == null) {
+                for (int i = table.length; --tabIndex >= 0; ) {
+                    if (table[tabIndex].size != 0) {
+                        curr = table[tabIndex].head;
+                        return curr;
+                    }
+                }
+                // no element left!
+                return null;
+            }
+            else {
+                // go to the next one
+                curr = curr.next;
+                return curr;
+            }
+        }
+        else {
+            return null;
+        }
+
     }
 }

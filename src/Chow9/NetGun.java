@@ -8,6 +8,8 @@ public class NetGun extends RobotPlayer {
 
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
 
+        Transaction[] lastRoundBlocks = rc.getBlock(rc.getRoundNum() - 1);
+        checkForBuildInfo(lastRoundBlocks);
         RobotInfo closestDroneBot = null;
         int closestEnemyDroneDist = 99999999;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {

@@ -60,6 +60,7 @@ public class DeliveryDrone extends RobotPlayer {
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(-1, Team.NEUTRAL);
         HashTable<Direction> dangerousDirections = new HashTable<>(4); // directioons that when moved in, will result in netgun death
+        HashTable<MapLocation> enemyNetguns = new HashTable<>(10);
         RobotInfo closestEnemyLandscaper = null;
         RobotInfo closestEnemyMiner = null;
         int closestEnemyLandscaperDist = 99999999;
@@ -154,6 +155,9 @@ public class DeliveryDrone extends RobotPlayer {
 
             }
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
+            if (info.type == RobotType.NET_GUN) {
+                enemyNetguns.add(info.location);
+            }
             if (dist <= 25 && (info.type == RobotType.NET_GUN) && (rc.getRoundNum() > 200 || info.getCooldownTurns() <= 2)) {
                 // dangerous netgun, move somewhere not in range!
 
