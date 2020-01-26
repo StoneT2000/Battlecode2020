@@ -3,7 +3,7 @@ package Chow9;
 import battlecode.common.*;
 
 public class NetGun extends RobotPlayer {
-    static boolean wallIn = true;
+    static boolean wallIn = false;
     public static void run() throws GameActionException {
 
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);

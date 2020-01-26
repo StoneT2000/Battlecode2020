@@ -472,7 +472,7 @@ public class Miner extends RobotPlayer {
                                 // make sure we don;t build too close to other friendly net guns
                                 RobotInfo closestNetGun = getClosestRobot(nearbyNetguns, buildLoc);
                                 if (closestNetGun != null) {
-                                    if (buildLoc.distanceSquaredTo(closestNetGun.location) <= 25) {
+                                    if (buildLoc.distanceSquaredTo(closestNetGun.location) <= 16) {
                                         proceed = false;
                                     }
                                     else {
