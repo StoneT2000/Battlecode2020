@@ -249,11 +249,15 @@ public class DeliveryDrone extends RobotPlayer {
         int distToNearestMinerForAttack = 9999999;
         int distToNearestLandscaperForAttack = 9999999;
         RobotInfo nearestAdjacentToHQLandscaper = null;
+        boolean designatedDrone = true;
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
             switch(info.type) {
                 case DELIVERY_DRONE:
                     friendlyDrones++;
+                    if (info.getID() < rc.getID()) {
+                        designatedDrone = false;
+                    }
                     break;
                 case LANDSCAPER:
 
@@ -750,7 +754,7 @@ public class DeliveryDrone extends RobotPlayer {
         }
         else if (role == ATTACK && !skipAttack) {
 
-            if (circledHQTimes >= 2 && !gettingRushed && friendlyDrones > 2) {
+            if (circledHQTimes >= 0 && !gettingRushed && friendlyDrones > 1 && !designatedDrone) {
                 attackLoc = closestMaybeHQ; // always attempt to attack enemy HQ after we go once around our OWN HQ
             }
             else if (gettingRushed) {

@@ -117,7 +117,7 @@ public class Miner extends RobotPlayer {
             switch (info.type) {
                 case DELIVERY_DRONE:
                     // if drone too close, run
-                    if (rc.getLocation().distanceSquaredTo(info.location) <= 13) {
+                    if (!info.isCurrentlyHoldingUnit() && rc.getLocation().distanceSquaredTo(info.location) <= 13) {
                         EnemyDroneCount++;
                         Direction dirToDrone = rc.getLocation().directionTo(info.location);
                         dangerousDirections.add(dirToDrone);
@@ -449,7 +449,7 @@ public class Miner extends RobotPlayer {
                     // if school or FC, just build asap, otherwise build on grid, not dig locations, and can't be next to flood, if next to flood, height must be 12
                     if (rc.onTheMap(buildLoc)) {
                         if ((unitToBuild == RobotType.REFINERY || unitToBuild == RobotType.DESIGN_SCHOOL ||
-                                ((buildLoc.x + buildLoc.y) % 2 != HQParity
+                                ((buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2)
                                         && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 12)
                                 )
                         ) && !isDigLocation(buildLoc)) {

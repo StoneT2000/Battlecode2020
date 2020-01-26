@@ -63,7 +63,7 @@ public class Landscaper extends RobotPlayer {
                     }
                     break;
                 case DELIVERY_DRONE:
-                    if (rc.getLocation().distanceSquaredTo(info.location) <= 13) {
+                    if (!info.isCurrentlyHoldingUnit() && rc.getLocation().distanceSquaredTo(info.location) <= 13) {
                         Direction dirToDrone = rc.getLocation().directionTo(info.location);
                         dangerousDirections.add(dirToDrone);
                         dangerousDirections.add(dirToDrone.rotateRight());
