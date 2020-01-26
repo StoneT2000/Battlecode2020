@@ -40,6 +40,8 @@ public class DeliveryDrone extends RobotPlayer {
 
     static boolean wallIn = false; // whether or not HQ told us to start walling in BASE using landscapers
 
+    static MapLocation lastSoupLocAnnounced = null;
+
     static int wallSpaces = 0;
     static boolean toldToLockAndDefendByHQ = false;
     static boolean wallHasEmptySpot = true;
@@ -348,6 +350,7 @@ public class DeliveryDrone extends RobotPlayer {
         MapLocation nearestDropZoneLoc = null;
         int distToNearestDropZoneLoc = 99999999;
 
+        int soupNearby = 0;
         for (int i = 0; i < Constants.BFSDeltas24.length; i++) {
             int[] deltas = Constants.BFSDeltas24[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
@@ -376,6 +379,7 @@ public class DeliveryDrone extends RobotPlayer {
                         if (debug) System.out.println(checkLoc + " is empty high land");
                     }
                 }
+                soupNearby += rc.senseSoup(checkLoc);
             }
         }
 

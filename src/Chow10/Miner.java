@@ -129,13 +129,7 @@ public class Miner extends RobotPlayer {
                     break;
             }
         }
-        if (moveAway && role != ATTACK) {
-            // go to target with consideration of dangers
-            // go to nearest netgun/HQ?
-            Direction greedyDir = getBugPathMove(HQLocation, dangerousDirections); //TODO: should return a valid direction usually???
-            if (debug) System.out.println("Running away! To " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
-            tryMove(greedyDir);
-        }
+
 
 
 
@@ -171,7 +165,7 @@ public class Miner extends RobotPlayer {
                     break;
                 case NET_GUN:
                     NetGunCount++;
-                    if (rc.getLocation().distanceSquaredTo(info.location) <= 5) {
+                    if (rc.getLocation().distanceSquaredTo(info.location) <= 2) {
                         closeNetguns++;
                     }
                     nearbyNetguns.add(info);
@@ -305,7 +299,19 @@ public class Miner extends RobotPlayer {
         // alwways prepare to build refinery
         int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
 
-        // haven't built design school yet? BUILDDDDD
+        if (EnemyDroneCount > 0 && closeNetguns == 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost) {
+            role = BUILDING;
+            unitToBuild = RobotType.NET_GUN;
+        }
+
+        // running away if not attacking or not building, run away if not building net gun
+        if (moveAway && role != ATTACK && (role != BUILDING || unitToBuild != RobotType.NET_GUN)) {
+            // go to target with consideration of dangers
+            // go to nearest netgun/HQ?
+            Direction greedyDir = getBugPathMove(HQLocation, dangerousDirections); //TODO: should return a valid direction usually???
+            if (debug) System.out.println("Running away! To " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);
+            tryMove(greedyDir);
+        }
 
         // Build a refinery if there is enough nearby soup, no refineries nearby, and we just mined
         // 800 - something, subtract distance. Subtract less for the higher amount soup mined
@@ -325,10 +331,7 @@ public class Miner extends RobotPlayer {
 
         // build netguns out of necessity to combat drones
         // FIXME: MAKE SURE WE BUILD IN RIGHT PLACES AND NOT JUST CHECK NETGUNCOUNT == 0
-        if (EnemyDroneCount > 0 && closeNetguns == 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost) {
-            role = BUILDING;
-            unitToBuild = RobotType.NET_GUN;
-        }
+
 
         if (role == MINER) {
             // TODO: cost of announcement should be upped in later rounds with many units.
@@ -448,9 +451,10 @@ public class Miner extends RobotPlayer {
 
                     // if school or FC, just build asap, otherwise build on grid, not dig locations, and can't be next to flood, if next to flood, height must be 12
                     if (rc.onTheMap(buildLoc)) {
+                        if (debug) System.out.println("Checkign build dir " + buildDir);
                         if ((unitToBuild == RobotType.REFINERY || unitToBuild == RobotType.DESIGN_SCHOOL ||
                                 ((buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2)
-                                        && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 12)
+                                        && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 5)
                                 )
                         ) && !isDigLocation(buildLoc)) {
                             boolean proceed = true;

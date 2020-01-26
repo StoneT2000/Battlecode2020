@@ -75,7 +75,7 @@ public class FulfillmentCenter extends RobotPlayer {
             confirmBuild = true;
             if (debug) System.out.println("Building balance");
         }
-        if (rc.getTeamSoup() > 1000) {
+        if (rc.getTeamSoup() > 1000 && rc.getRoundNum() % 2 == 1) {
             confirmBuild = true;
             if (debug) System.out.println("Building cuz excess soup");
         }

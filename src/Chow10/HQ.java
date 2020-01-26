@@ -125,7 +125,7 @@ public class HQ extends RobotPlayer {
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
             if (info.type == RobotType.LANDSCAPER) {
                 myLandscapers++;
-                if (dist <= 16) {
+                if (dist <= 8 && dist != 4) {
                     wallBots++;
                 }
             }

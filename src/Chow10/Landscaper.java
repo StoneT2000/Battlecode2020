@@ -20,6 +20,9 @@ public class Landscaper extends RobotPlayer {
     static HashTable<MapLocation> DigDeltasAroundHQTable =  new HashTable<>(5);
     static HashTable<MapLocation> FirstLandscaperPosAroundHQTable =  new HashTable<>(9);
     static HashTable<MapLocation> BuildPositionsTaken = new HashTable<>(10);
+
+    static boolean watchIfBotOnWall = false; // if true, landscaper auto becomes defend hq mode if on our wall
+
     public static void run() throws GameActionException {
         int waterLevel = calculateWaterLevels();
 
@@ -84,6 +87,14 @@ public class Landscaper extends RobotPlayer {
             role = ATTACK;
         }
 
+        if (watchIfBotOnWall) {
+            int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
+            // if on wall position, this is fast way to check
+            if (distToHQ <= 8 && distToHQ != 4) {
+                role = DEFEND_HQ;
+            }
+        }
+
         // don't run away if we are on wall
         if (moveAway && (!onSupportBlockDoNotMove && !FirstLandscaperPosAroundHQTable.contains(rc.getLocation()))) {
             // go to target with consideration of dangers
@@ -131,14 +142,14 @@ public class Landscaper extends RobotPlayer {
                                             // do this only for early game, because late game we need to terraform whereever
 
 
-                                            int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * weight);
+                                            int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + distToHQ * weight);
                                             if (distToLoc < closestTerraformDist) {
                                                 closestTerraformDist = distToLoc;
                                                 locToTerraform = checkLoc;
                                             }
                                         }
                                     } else {
-                                        int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * weight);
+                                        int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + distToHQ * weight);
                                         if (distToLoc < closestTerraformDist) {
                                             closestTerraformDist = distToLoc;
                                             locToTerraform = checkLoc;
@@ -149,13 +160,14 @@ public class Landscaper extends RobotPlayer {
                             // if it is flooding and in the HQ's breahting space, FILL IT UP
                             if (distToHQ <= HQ_LAND_RANGE && rc.senseFlooding(checkLoc)) {
                                 locToTerraform = checkLoc;
-                                int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + checkLoc.distanceSquaredTo(HQLocation) * weight);
+                                int distToLoc = (int) (rc.getLocation().distanceSquaredTo(checkLoc) + distToHQ * weight);
                                 if (distToLoc < closestFloodedHQSpaceLocDist) {
                                     closestFloodedHQSpaceLocDist = distToLoc;
                                     closestFloodedHQSpaceLoc = checkLoc;
                                 }
                             }
-                            if (isDigLocation(checkLoc)) {
+                            // instead of isDigLocation
+                            if (checkLoc.x % 3 == HQLocation.x % 3  && checkLoc.y % 3 == HQLocation.y % 3 && distToHQ > 9) {
                                 int distToDigLoc = checkLoc.distanceSquaredTo(rc.getLocation());
                                 // check dig loc isn't all water
                                 if (rc.senseFlooding(checkLoc)) {
@@ -172,7 +184,7 @@ public class Landscaper extends RobotPlayer {
                                 }
 
                             }
-
+                            break;
                     }
                     soupNearby += rc.senseSoup(checkLoc);
                 }
@@ -538,7 +550,6 @@ public class Landscaper extends RobotPlayer {
             int maxDiffWalls = 0;
             // take position with most adjacent high walls > 3 or low walls < 3
             // Find closest location adjacent to HQ to build on
-            MapLocation mostCloggedBuildLoc = null;
             MapLocation closestBuildLoc = null;
             MapLocation closestDefendRushLoc = null;
             // don't search if we are on wall or support bloc
@@ -624,10 +635,6 @@ public class Landscaper extends RobotPlayer {
                                 }
                             }
                         }
-                        if (diffWalls > maxDiffWalls && diffWalls <= 5) {
-                            mostCloggedBuildLoc = checkLoc;
-                            maxDiffWalls = diffWalls;
-                        }
                     }*/
                 }
             }
@@ -692,10 +699,6 @@ public class Landscaper extends RobotPlayer {
             else if (closerOppositeBuildLoc != null) {
                 setTargetLoc(closerOppositeBuildLoc);
             }
-            // then prioritize most clogged building location
-            else if (mostCloggedBuildLoc != null && !rc.getLocation().equals(closestBuildLoc)) {
-                setTargetLoc(mostCloggedBuildLoc);
-            }
             else {
                 setTargetLoc(closestBuildLoc);
             }
@@ -708,7 +711,7 @@ public class Landscaper extends RobotPlayer {
                 distToBuildLoc = rc.getLocation().distanceSquaredTo(targetLoc);
             }
             double waterChangeRate = calculateWaterLevelChangeRate();
-            if (debug) System.out.println("Going to build loc " + targetLoc + " | Closest rush defence loc " + closestDefendRushLoc  + "| most clogged <= 5 wall loc at " + maxDiffWalls +" - " + mostCloggedBuildLoc +  " | closest support loc " + closestSupportLoc + " | water change rate: " + waterChangeRate + " | levels: " + calculateWaterLevels());
+            if (debug) System.out.println("Going to build loc " + targetLoc + " | Closest rush defence loc " + closestDefendRushLoc +  " | closest support loc " + closestSupportLoc + " | water change rate: " + waterChangeRate + " | levels: " + calculateWaterLevels());
             // if landscaper is on top of build loc
             if (distToBuildLoc == 0) {
                 // build wall only when we have max dirt, so to stock up and prevent rushes faster mayb e
@@ -1019,9 +1022,10 @@ public class Landscaper extends RobotPlayer {
             if (isOurMessage((msg))) {
                 if ((msg[1] ^ WALL_IN) == 0 && role != ATTACK) {
                     // go run to HQ
-                    role = DEFEND_HQ;
+                    // role = DEFEND_HQ;
                     //targetLoc = HQLocation;
-                    setTargetLoc(HQLocation);
+                    //setTargetLoc(HQLocation);
+                    watchIfBotOnWall = true;
                 }
                 else if ((msg[1] ^ TERRAFORM_ALL_TIME) == 0 && role != ATTACK) {
                     if (role != DEFEND_HQ) {
@@ -1030,7 +1034,7 @@ public class Landscaper extends RobotPlayer {
                 }
                 else if ((msg[1] ^ TERRAFORM_AND_WALL_IN) == 0 && role != ATTACK) {
                     // go away and terraform if not near HQ
-                    if (rc.getLocation().distanceSquaredTo(HQLocation) > 16) {
+                    if (rc.getLocation().distanceSquaredTo(HQLocation) > 8 ) {
                         role = TERRAFORM;
                     } else {
                         role = DEFEND_HQ;

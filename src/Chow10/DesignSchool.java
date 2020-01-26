@@ -54,7 +54,7 @@ public class DesignSchool extends RobotPlayer {
             willBuild = true;
             if (debug) System.out.println("Building landscaper matching vaporators");
         }*/
-        if (rc.getTeamSoup() > 1000) {
+        if (rc.getTeamSoup() > 1000 && rc.getRoundNum() % 2 == 0) {
             willBuild = true;
         }
         if (dontBuild) {
@@ -62,9 +62,9 @@ public class DesignSchool extends RobotPlayer {
             dontBuild = false;
         }
 
-        if (terraformingTime && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost && rc.getLocation().distanceSquaredTo(HQLocation) <= 48) {
+        if (terraformingTime && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + 250 && rc.getLocation().distanceSquaredTo(HQLocation) <= 48) {
             if (vaporatorsBuilt > 8) {
-                if (vaporatorsBuilt * 2 + 5 > landscapersBuilt) {
+                if (vaporatorsBuilt * 1.1 + 5 > landscapersBuilt) {
                     willBuild = true;
                 }
             }
