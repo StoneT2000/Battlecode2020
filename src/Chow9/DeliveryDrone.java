@@ -154,7 +154,7 @@ public class DeliveryDrone extends RobotPlayer {
 
             }
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
-            if (dist <= 25 && (info.type == RobotType.NET_GUN) && info.getCooldownTurns() <= 2) {
+            if (dist <= 25 && (info.type == RobotType.NET_GUN) && (rc.getRoundNum() > 200 || info.getCooldownTurns() <= 2)) {
                 // dangerous netgun, move somewhere not in range!
 
                 Direction badDir = rc.getLocation().directionTo(info.location);

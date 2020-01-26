@@ -145,6 +145,11 @@ public class HQ extends RobotPlayer {
             else if (info.type == RobotType.VAPORATOR) {
                 vaporators++;
             }
+            else if (info.type == RobotType.NET_GUN) {
+                if (dist > HQ_LAND_RANGE && dist <= 8) {
+                    wallBotsMax--;
+                }
+            }
             else if (info.type == RobotType.DESIGN_SCHOOL) {
                 designSchools++;
                 if (dist > HQ_LAND_RANGE && dist <= 8) {
