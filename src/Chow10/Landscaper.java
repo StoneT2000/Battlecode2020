@@ -84,7 +84,8 @@ public class Landscaper extends RobotPlayer {
             role = ATTACK;
         }
 
-        if (moveAway) {
+        // don't run away if we are on wall
+        if (moveAway && (!onSupportBlockDoNotMove && !FirstLandscaperPosAroundHQTable.contains(rc.getLocation()))) {
             // go to target with consideration of dangers
             Direction greedyDir = getBugPathMove(HQLocation, dangerousDirections); //TODO: should return a valid direction usually???
             if (debug) System.out.println("Running away! To " + rc.adjacentLocation((greedyDir)) + " to get to " + targetLoc);

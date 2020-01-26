@@ -1,6 +1,6 @@
 package Chow10;
 
-import Chow10.utils.Node;
+import Chow10.utils.*;
 import battlecode.common.*;
 
 public class DesignSchool extends RobotPlayer {
@@ -11,6 +11,7 @@ public class DesignSchool extends RobotPlayer {
     static boolean dontBuild = false;
     static boolean wallIn = false;
     static boolean terraformingTime = false;
+    static HashTable<MapLocation> MainWall = new HashTable<>(8);
     public static void run() throws GameActionException {
 
         // look for enemy location and see if its there
@@ -109,11 +110,20 @@ public class DesignSchool extends RobotPlayer {
         while(i++ < 8) {
             MapLocation adjLoc = rc.adjacentLocation(dirCheck);
 
-            // within elevation and ( not occupied or if occupied by unit not building)
+            // within elevation and ( not occupied or if occupied by unit not building, or if by unit, is not on HQ walls)
             if (rc.onTheMap(adjLoc)) {
                 int asideElevation = rc.senseElevation(adjLoc);
-                if (asideElevation <= elevation + 3 && asideElevation >= elevation - 3 && (!rc.isLocationOccupied(adjLoc) || !isBuilding(rc.senseRobotAtLocation(adjLoc)))) {
-                    blocked = false;
+                if (asideElevation <= elevation + 3 && asideElevation >= elevation - 3) {
+                    if (!rc.isLocationOccupied(adjLoc)) {
+                        blocked = false;
+                    }
+                    else {
+                        RobotInfo info = rc.senseRobotAtLocation(adjLoc);
+                        // not blocked if unit there is not on mainwall
+                        if (!isBuilding(info) && !MainWall.contains(adjLoc)) {
+                            blocked = false;
+                        }
+                    }
                     break;
                 }
             }
@@ -161,5 +171,20 @@ public class DesignSchool extends RobotPlayer {
     public static void setup() throws GameActionException {
         storeHQLocation();
         announceSelfLocation(1);
+        for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
+            int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
+            MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
+            if (rc.onTheMap(loc)) {
+                MainWall.add(loc);
+            }
+        }
+        for (int i = Constants.LandscaperPosAroundHQ.length; --i>= 0; ) {
+            int[] deltas = Constants.LandscaperPosAroundHQ[i];
+            MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
+            if (rc.onTheMap(loc)) {
+                MainWall.add(loc);
+            }
+
+        }
     }
 }
