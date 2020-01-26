@@ -252,6 +252,7 @@ public class DeliveryDrone extends RobotPlayer {
         int distToNearestLandscaperForAttack = 9999999;
         RobotInfo nearestAdjacentToHQLandscaper = null;
         boolean designatedDrone = true;
+        int minerCount = 0;
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
             switch(info.type) {
@@ -297,6 +298,7 @@ public class DeliveryDrone extends RobotPlayer {
                             nearestLowMiner = info;
                         }
                     }
+                    minerCount++;
                     // find nearest miner adjacent to HQ to remove, do so if they aren't carrying soup
                     if (debug) System.out.println("Found miner at " + info.location + " | soup: " + info.getSoupCarrying());
                     if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && info.getSoupCarrying() == 0) {
@@ -380,6 +382,14 @@ public class DeliveryDrone extends RobotPlayer {
                     }
                 }
                 soupNearby += rc.senseSoup(checkLoc);
+            }
+        }
+
+        if (lastSoupLocAnnounced == null || rc.getLocation().distanceSquaredTo(lastSoupLocAnnounced) >= 16) {
+            // if more soup per miner here, announce it
+            if (soupNearby / (minerCount + 0.1) >= 200) {
+                announceSoupLocation(rc.getLocation(), 1, soupNearby, minerCount);
+                lastSoupLocAnnounced = rc.getLocation();
             }
         }
 
