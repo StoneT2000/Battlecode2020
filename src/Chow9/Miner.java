@@ -1,6 +1,7 @@
 package Chow9;
 
 import Chow9.utils.HashTable;
+import Chow9.utils.LinkedList;
 import Chow9.utils.Node;
 import battlecode.common.*;
 
@@ -116,7 +117,7 @@ public class Miner extends RobotPlayer {
             switch (info.type) {
                 case DELIVERY_DRONE:
                     // if drone too close, run
-                    if (rc.getLocation().distanceSquaredTo(info.location) <= 8) {
+                    if (rc.getLocation().distanceSquaredTo(info.location) <= 13) {
                         EnemyDroneCount++;
                         Direction dirToDrone = rc.getLocation().directionTo(info.location);
                         dangerousDirections.add(dirToDrone);
@@ -139,6 +140,9 @@ public class Miner extends RobotPlayer {
 
 
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+
+        LinkedList<RobotInfo> nearbyNetguns = new LinkedList<>();
+
         int RefineryCount = 0;
         int NetGunCount = 0;
         int MinerCount = 0;
@@ -146,6 +150,7 @@ public class Miner extends RobotPlayer {
         int closeNetguns = 0;
         int VaporatorCount = 0;
         int FulfillmentCenterCount = 0;
+        int nearbyFriendlyLandscapers = 0;
         MapLocation nearestRefinery = HQLocation;
         boolean designatedBuilder = true;
         int minDist = rc.getLocation().distanceSquaredTo(HQLocation);
@@ -169,6 +174,7 @@ public class Miner extends RobotPlayer {
                     if (rc.getLocation().distanceSquaredTo(info.location) <= 5) {
                         closeNetguns++;
                     }
+                    nearbyNetguns.add(info);
                     break;
                 case DESIGN_SCHOOL:
                     DesignSchoolCount++;
@@ -184,6 +190,9 @@ public class Miner extends RobotPlayer {
                     break;
                 case VAPORATOR:
                     VaporatorCount++;
+                    break;
+                case LANDSCAPER:
+                    nearbyFriendlyLandscapers++;
                     break;
             }
         }
@@ -314,6 +323,12 @@ public class Miner extends RobotPlayer {
             }
         }
 
+        // build netguns out of necessity to combat drones
+        // FIXME: MAKE SURE WE BUILD IN RIGHT PLACES AND NOT JUST CHECK NETGUNCOUNT == 0
+        if (EnemyDroneCount > 0 && closeNetguns == 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost) {
+            role = BUILDING;
+            unitToBuild = RobotType.NET_GUN;
+        }
 
         if (role == MINER) {
             // TODO: cost of announcement should be upped in later rounds with many units.
@@ -376,9 +391,8 @@ public class Miner extends RobotPlayer {
                 unitToBuild = RobotType.NET_GUN;
             }
 
-            // build netguns out of necessity to combat drones
-            // FIXME: MAKE SURE WE BUILD IN RIGHT PLACES AND NOT JUST CHECK NETGUNCOUNT == 0
-            if (EnemyDroneCount > 0 && closeNetguns == 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost) {
+            // build net guns on our base
+            if (closeNetguns == 0 && distToHQ <= MAX_TERRAFORM_DIST && distToHQ >= 36 && terraformTime == true && (VaporatorCount >= 2 || nearbyFriendlyLandscapers > 3)) {
                 role = BUILDING;
                 unitToBuild = RobotType.NET_GUN;
             }
@@ -434,11 +448,11 @@ public class Miner extends RobotPlayer {
 
                     // if school or FC, just build asap, otherwise build on grid, not dig locations, and can't be next to flood, if next to flood, height must be 12
                     if (rc.onTheMap(buildLoc)) {
-                        if (unitToBuild == RobotType.REFINERY || unitToBuild == RobotType.DESIGN_SCHOOL ||
-                                (buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2
+                        if ((unitToBuild == RobotType.REFINERY || unitToBuild == RobotType.DESIGN_SCHOOL ||
+                                ((buildLoc.x + buildLoc.y) % 2 != HQParity
                                         && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 12)
                                 )
-                                        && !isDigLocation(buildLoc)) {
+                        ) && !isDigLocation(buildLoc)) {
                             boolean proceed = true;
                             if (terraformTime) {
                                 // only build on higher land
@@ -452,10 +466,27 @@ public class Miner extends RobotPlayer {
                                     proceed = false;
                                 }
                             }
+
+
+                            if (unitToBuild == RobotType.NET_GUN) {
+                                // make sure we don;t build too close to other friendly net guns
+                                RobotInfo closestNetGun = getClosestRobot(nearbyNetguns, buildLoc);
+                                if (closestNetGun != null) {
+                                    if (buildLoc.distanceSquaredTo(closestNetGun.location) <= 25) {
+                                        proceed = false;
+                                    }
+                                    else {
+                                        if (debug) System.out.println("Building net gun at " + buildLoc + " is ok, not near other netguns");
+                                    }
+                                }
+                            }
+
+
                             if (proceed && tryBuild(unitToBuild, buildDir)) {
                                 builtUnit = true;
                                 break;
                             }
+
                         }
                     }
                     buildDir = buildDir.rotateRight();
@@ -545,6 +576,26 @@ public class Miner extends RobotPlayer {
         else {
             stuckRounds = 0;
         }*/
+    }
+
+
+    // find closest robots from list of robots to a location.
+    static RobotInfo getClosestRobot(LinkedList<RobotInfo> robots, MapLocation sourceLoc) {
+        if (robots.size == 0) {
+            return null;
+        }
+        int closestDist = 99999999;
+        RobotInfo closestRobot = null;
+        Node<RobotInfo> node = robots.head;
+        while (node != null) {
+            int dist = sourceLoc.distanceSquaredTo(node.val.location);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestRobot = node.val;
+            }
+            node = node.next;
+        }
+        return closestRobot;
     }
 
 
