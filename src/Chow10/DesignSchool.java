@@ -54,7 +54,7 @@ public class DesignSchool extends RobotPlayer {
             willBuild = true;
             if (debug) System.out.println("Building landscaper matching vaporators");
         }*/
-        if (rc.getTeamSoup() > 1000 && rc.getRoundNum() % 2 == 0) {
+        if (rc.getTeamSoup() > 1000 && rc.getRoundNum() % 4 == 0) {
             willBuild = true;
         }
         if (dontBuild) {

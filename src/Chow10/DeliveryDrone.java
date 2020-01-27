@@ -16,6 +16,9 @@ public class DeliveryDrone extends RobotPlayer {
     static final int MOVE_OUR_UNIT_FAR = 7;
 
 
+    static boolean pickUpMinersForAttack = true;
+    static boolean buildIsland = false;
+
     static int roundsSpentCrunching = 0;
     static final int RUSH_DEFEND = 8;
     static MapLocation locOfRushUnit = null;
@@ -150,7 +153,7 @@ public class DeliveryDrone extends RobotPlayer {
         RobotInfo nearestLowMiner = null;
         RobotInfo nearestLandscaper = null; // nearest not on wall / available
         RobotInfo nearestLandscaperForAttack = null;
-        //RobotInfo nearestMinerForAttack = null;
+        RobotInfo nearestMinerForAttack = null;
         //int distToNearestMinerForAttack = 9999999;
         int distToNearestLandscaperForAttack = 9999999;
         RobotInfo nearestAdjacentToHQLandscaper = null;
@@ -254,7 +257,10 @@ public class DeliveryDrone extends RobotPlayer {
                                     //nearestLandscaper
                                     if (enemyBaseLocation != null && dist < distToNearestLandscaperForAttack && distToHQ >= 16 && info.location.distanceSquaredTo(enemyBaseLocation) > DROP_ZONE_RANGE_OF_HQ) {
                                         nearestLandscaperForAttack = info;
-                                        distToNearestLandscaperForAttack = dist;
+                                        if (info.getDirtCarrying() >= 20) {
+                                            nearestLandscaperForAttack = info;
+                                            distToNearestLandscaperForAttack = dist;
+                                        }
                                     }
                                 }
                                 if (nearestAdjacentToHQLandscaper == null && distToHQ <= HQ_LAND_RANGE) {
@@ -273,16 +279,16 @@ public class DeliveryDrone extends RobotPlayer {
                                     //distToNearestMinerAdjacentToHQ = dist;
                                     nearestAdjacentToHQMiner = info;
                                 }
-                    /* disable attack miners
-                    if (attackWithAllUnits) {
-                        // pick up miners for attack if they arent in the drop zone for attakc
-                        if (debug) System.out.println("Miner is contender for attack");
-                        if (enemyBaseLocation != null && dist2 < distToNearestMinerForAttack && info.location.distanceSquaredTo(enemyBaseLocation) > DROP_ZONE_RANGE_OF_HQ) {
-                            if (debug) System.out.println("Found nearest attack miner");
-                            distToNearestMinerForAttack = dist2;
-                            nearestMinerForAttack = info;
-                        }
-                    }*/
+                                // if rounds spent crunching is past max crunching rounds (and basically we haven't won yet)
+                                // pick up miners, and only the even ID ones
+                                if (pickUpMinersForAttack && attackWithAllUnits && nearestMinerForAttack == null && info.getID() % 2 == 0) {
+                                    // pick up miners for attack if they arent in the drop zone for attakc
+                                    if (debug) System.out.println("Miner is contender for attack");
+                                    if (enemyBaseLocation != null && info.location.distanceSquaredTo(enemyBaseLocation) > DROP_ZONE_RANGE_OF_HQ) {
+                                        if (debug) System.out.println("Found nearest attack miner");
+                                        nearestMinerForAttack = info;
+                                    }
+                                }
                                 break;
                         }
                     }
@@ -889,7 +895,6 @@ public class DeliveryDrone extends RobotPlayer {
                 // pick up if unit not within 16 of enemy
                 boolean tryingToPickupUnit = false;
                 if (attackWithAllUnits && enemyBaseLocation != null) {
-                    /* lets not attack with miners for now
                     if (nearestMinerForAttack != null) {
                         if (rc.canPickUpUnit(nearestMinerForAttack.getID())) {
                             rc.pickUpUnit(nearestMinerForAttack.getID());
@@ -899,8 +904,8 @@ public class DeliveryDrone extends RobotPlayer {
                             setTargetLoc(nearestMinerForAttack.location);
                             tryingToPickupUnit = true;
                         }
-                    }*/
-                    if (nearestLandscaperForAttack != null && nearestLandscaperForAttack.location.distanceSquaredTo(enemyBaseLocation) > 16) {
+                    }
+                    else if (nearestLandscaperForAttack != null && nearestLandscaperForAttack.location.distanceSquaredTo(enemyBaseLocation) > 16) {
                         if (rc.canPickUpUnit(nearestLandscaperForAttack.getID())) {
                             rc.pickUpUnit(nearestLandscaperForAttack.getID());
                             friendlyUnitHeld = nearestLandscaperForAttack;
@@ -933,7 +938,8 @@ public class DeliveryDrone extends RobotPlayer {
                             strayDist = 92;
                         }
                     }
-                    if (((enemyBaseLocation == null && distToAttackLoc >= 36) || (enemyBaseLocation != null && distToAttackLoc >= strayDist))) {
+                    // make sure we are still in prepare to crunch and crunch mode, so in this time period, we always move to edge of base attack range
+                    if (roundsSpentCrunching <= MAX_CRUNCH_ROUNDS && ((enemyBaseLocation == null && distToAttackLoc >= 36) || (enemyBaseLocation != null && distToAttackLoc >= strayDist))) {
                         //move to just edge of base attack range.
                         setTargetLoc(attackLoc);
                         if (debug) rc.setIndicatorDot(rc.getLocation(), 10, 20,200);
@@ -957,14 +963,25 @@ public class DeliveryDrone extends RobotPlayer {
                             }
                         }
 
-                    } else {
+                    }
+                    // otherwise if we are in the edge of attack range or if rounds spent crunching is past the maximum
+                    else {
                         // don't move there if it isn't time yet, just move around like vultures
                         rotateCircularly(attackLoc);
-                        // if we waited long enough,
+
+                        // if we waited long enough, and told to swarm by HQ
                         if (swarmIn) {
                             if (debug) rc.setIndicatorDot(rc.getLocation(), 100, 20,200);
                             setTargetLoc(attackLoc);
+                            roundsSpentCrunching++;
+                            if (roundsSpentCrunching > MAX_CRUNCH_ROUNDS) {
+                                setIslandCenterAndOtherConstants();
+                                pickUpMinersForAttack = true; // begin island making + miners to demolish drones!!
+                                buildIsland = true; // begin island making
+                            }
+
                             // begin attacking nearest enemy unit
+
                             if (!rc.isCurrentlyHoldingUnit() && (closestEnemyMiner != null || closestEnemyLandscaper != null)) {
 
                                 RobotInfo enemyToEngage = closestEnemyLandscaper;
@@ -974,6 +991,10 @@ public class DeliveryDrone extends RobotPlayer {
                                 if (rc.canPickUpUnit(enemyToEngage.getID())) {
                                     rc.pickUpUnit(enemyToEngage.getID());
                                     role = DUMP_BAD_GUY;
+                                    if (enemyToEngage.location.isAdjacentTo(enemyBaseLocation)) {
+                                        // announce we attacked main enemy wall as we are on attack HQ mode and swarming and we picked it up
+                                        announceMessage(ATTACKED_ENEMY_WALL);
+                                    }
                                     //targetLoc = waterLoc;
                                     setTargetLoc(waterLoc);
 
@@ -982,6 +1003,16 @@ public class DeliveryDrone extends RobotPlayer {
                                     //targetLoc = enemyToEngage.location;
                                     setTargetLoc(enemyToEngage.location);
                                 }
+
+                            }
+                            if (!rc.isCurrentlyHoldingUnit()) {
+                                if (pickUpMinersForAttack && buildIsland) {
+                                    // move away from island center
+                                    setTargetLoc(HQLocation);
+                                    attackLoc = HQLocation;
+
+                                    System.out.println("Heading to HQ to give space for island");
+                                }
                             }
                             if (attackWithAllUnits && rc.isCurrentlyHoldingUnit() && friendlyUnitHeld != null && enemyBaseLocation != null) {
                                 // drop onto wall land near enemy HQ
@@ -989,7 +1020,6 @@ public class DeliveryDrone extends RobotPlayer {
                                 // 2. drop adjacent to location of high land (happening because the wall is all filled up)
                                 // 3. head towards nearest drop zone location
 
-                                roundsSpentCrunching++;
                                 if (friendlyUnitHeld.type == RobotType.LANDSCAPER) {
                                     boolean droppedUnit = false;
                                     for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
@@ -1002,6 +1032,7 @@ public class DeliveryDrone extends RobotPlayer {
                                                     rc.dropUnit(dirToWallLoc);
                                                     droppedUnit = true;
                                                     friendlyUnitHeld = null;
+                                                    announceMessage(ATTACKED_ENEMY_WALL);
                                                     break;
                                                 }
 
@@ -1010,64 +1041,53 @@ public class DeliveryDrone extends RobotPlayer {
                                     }
                                     // if can't drop on enemy wall in like 100 turns after we were told to swarm in, all drop near this specific loc
                                     // which is about 6 tiles from enemy base in direction to my base (easy coordination)
-                                    /*
-                                    if (!droppedUnit && roundsSpentCrunching > 50) {
+
+                                    if (!droppedUnit && roundsSpentCrunching > MAX_CRUNCH_ROUNDS) {
                                         // island locations...
-                                        MapLocation islandCenter = new MapLocation(enemyBaseLocation.x, enemyBaseLocation.y);
-                                        Direction enemyDirToHQ = enemyBaseLocation.directionTo(HQLocation);
-                                        islandCenter = islandCenter.add(enemyDirToHQ);
-                                        islandCenter = islandCenter.add(enemyDirToHQ);
-                                        islandCenter = islandCenter.add(enemyDirToHQ);
-                                        islandCenter = islandCenter.add(enemyDirToHQ);
-                                        islandCenter = islandCenter.add(enemyDirToHQ);
-                                        islandCenter = islandCenter.add(enemyDirToHQ); // 6 tiles away
-                                        if (rc.getLocation().distanceSquaredTo(islandCenter))
 
-                                    }
-                                    
-                                     */
+                                        if (rc.getLocation().distanceSquaredTo(islandCenter) > 2) {
+                                            setTargetLoc(islandCenter);
+                                            System.out.println("Heading to "+ islandCenter + " to make island");
+                                        }
+                                        else {
+                                            if (rc.canSenseLocation(islandCenter)) {
+                                                if (rc.senseFlooding(islandCenter)) {
+                                                    Direction dirToCenter = rc.getLocation().directionTo(islandCenter);
+                                                    if (rc.canDropUnit(dirToCenter)) {
+                                                        rc.dropUnit(dirToCenter);
+                                                    }
+                                                    else if (dirToCenter.equals(Direction.CENTER)) {
+                                                        rc.disintegrate();
+                                                    }
 
-
-
-                                    // otherwise if we havent dropped it
-                                    // use closest visible highland near enough to HQ within DROP_ZONE_RANGE or smth
-                                    // TODO: DISABLED DROPPING LANDSCAPERS TO MAKE ISLAND
-                                    /*
-                                    if (!droppedUnit && nearestDropZoneLoc != null) {
-                                        int i = 0;
-                                        if (debug) System.out.println("Has not dropped unit on to wall, trying to drop near " + nearestDropZoneLoc);
-                                        Direction dropDir = Direction.NORTH;
-                                        while (i++ < 8) {
-                                            MapLocation dropLoc = rc.adjacentLocation(dropDir);
-                                            // drop on place not flooding and is close enough to enemy base and has open land adjacent
-                                            if (dropLoc.isAdjacentTo(nearestDropZoneLoc) && dropLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ) {
-
-                                                if (!rc.senseFlooding(dropLoc)) {
-                                                    if (rc.canDropUnit(dropDir)) {
-                                                        rc.dropUnit(dropDir);
-                                                        droppedUnit = true;
-                                                        friendlyUnitHeld = null;
-                                                        break;
+                                                }
+                                                else {
+                                                    // not flooded, plop anywhere adjacent to island center then
+                                                    for (int i = directions.length; --i>=1;) {
+                                                        Direction dropDir = directions[i];
+                                                        MapLocation dropLoc = islandCenter.add(dropDir);
+                                                        if (rc.senseFlooding(dropLoc)) {
+                                                            if (rc.canDropUnit(dropDir)) {
+                                                                rc.dropUnit(dropDir);
+                                                                break;
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
+                                        }
 
-                                            dropDir = dropDir.rotateLeft();
-                                        }
-                                        // if still haven't dropped, head towards nearest drop zone location
-                                        if (!droppedUnit) {
-                                            setTargetLoc(nearestDropZoneLoc);
-                                        }
                                     }
-                                    */
+
                                 }
                                 else if (friendlyUnitHeld.type == RobotType.MINER) {
+                                    // drop on non flooded place with no buildings nearby and has buildable land
                                     int i = 0;
                                     Direction dropDir = Direction.NORTH;
                                     while (i++ < 8) {
                                         MapLocation dropLoc = rc.adjacentLocation(dropDir);
                                         // drop on place not flooding and is close enough to enemy base and has open land adjacent
-                                        if (rc.canSenseLocation(dropLoc) && dropLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ && locHasLandAdjacent(dropLoc)) {
+                                        if (rc.canSenseLocation(dropLoc) && dropLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ && locHasAdjacentBuildableLand(dropLoc)) {
 
                                             if (!rc.senseFlooding(dropLoc)) {
                                                 if (rc.canDropUnit(dropDir)) {
@@ -1082,9 +1102,9 @@ public class DeliveryDrone extends RobotPlayer {
                                     }
                                     // check center, if center works, then disintegrate
                                     MapLocation dropCenterLoc = rc.getLocation();
-                                    if (debug) System.out.println("Has not dropped miner anywhere adjacent, trying to drop by disintegration | Adjacent land? " + locHasLandAdjacent(dropCenterLoc) );
                                     // drop on place not flooding and is close enough to enemy base and has open land adjacent
-                                    if (dropCenterLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ && locHasLandAdjacent(dropCenterLoc)) {
+                                    if (dropCenterLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ && locHasAdjacentBuildableLand(dropCenterLoc)) {
+
                                         if (debug) System.out.println("I'm in range!");
                                         if (!rc.senseFlooding(dropCenterLoc)) {
                                             if (debug) System.out.println("I'm on flood!");
@@ -1093,6 +1113,7 @@ public class DeliveryDrone extends RobotPlayer {
                                     }
                                 }
                             }
+
                         }
                     }
                 }
@@ -1324,6 +1345,10 @@ public class DeliveryDrone extends RobotPlayer {
                         break;
                     case NET_GUN_LOCATION:
                         enemyNetguns.add(parseLoc(msg[2]));
+                        break;
+                    case ATTACKED_ENEMY_WALL:
+                        roundsSpentCrunching = 0; // reset this value as we are giving our drone more time to keep crunching up until a maximum
+                        break;
 
                 }
             }

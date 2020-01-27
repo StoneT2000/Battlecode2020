@@ -346,6 +346,9 @@ public class Landscaper extends RobotPlayer {
                     role = DEFEND_HQ;
                 }
                 else {
+                    if (enemyBaseLocation != null && attackLoc.equals(enemyBaseLocation) && rc.getRoundNum() % 4 == 0) {
+                        announceMessage(ATTACKED_ENEMY_WALL); // every 4 rounds, announce we are attacking!
+                    }
                     // adjacent to attack loc now
                     Direction dirToAttack = rc.getLocation().directionTo(attackLoc);
                     if (rc.getDirtCarrying() > 0) {

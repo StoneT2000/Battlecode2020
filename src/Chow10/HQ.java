@@ -29,6 +29,7 @@ public class HQ extends RobotPlayer {
     static int wallBotsMax = 20; // max landscapers that can be on wall and second wall
     static int wallSpaces = 20;
 
+    static int attackedMainWallsRound = -1;
     static boolean announcedWalledin;
 
     static int buildQueueAmount = 0;
@@ -341,6 +342,9 @@ public class HQ extends RobotPlayer {
                     else if (msg[1] == RobotType.DESIGN_SCHOOL.ordinal()) {
                         designSchoolsBuilt++;
                     }
+                    else if ((msg[1] ^ ATTACKED_ENEMY_WALL) == 0) {
+                        attackedMainWallsRound = rc.getRoundNum();
+                    }
                 }
             }
         }
@@ -375,19 +379,23 @@ public class HQ extends RobotPlayer {
             announceTERRAFORM_ALL_TIME(); // get everyone back
         }*/
 
-        if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1800 && surroundedByFloodRound == -1) {
+        if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1750 && surroundedByFloodRound == -1) {
             announceDroneAttack();
         }
-        if (rc.getRoundNum() >= 2000 && rc.getRoundNum() % 250 == 0 && surroundedByFloodRound == -1) {
+        if (rc.getRoundNum() >= 1950 && rc.getRoundNum() % 250 == 200 && surroundedByFloodRound == -1) {
             announceMessage(SWARM_IN);
         }
-        if (rc.getRoundNum() >= 1800 && rc.getRoundNum() % 10 == 0 && surroundedByFloodRound == -1) {
+        if (rc.getRoundNum() >= 1750 && rc.getRoundNum() % 10 == 0 && surroundedByFloodRound == -1) {
             announceMessage(SWARM_WITH_UNITS);
         }
+        System.out.println("Flooded: " + surroundedByFloodRound + " | last main wall attack: " + attackedMainWallsRound);
         if (surroundedByFlood() && (surroundedByFloodRound == -1 || rc.getRoundNum() % 10 == 0) && rc.getRoundNum() >= 1700) {
-            surroundedByFloodRound = rc.getRoundNum();
-            announceMessage(GET_DEFEND_DRONES); // get drones back for drone wall
-            announceMessage(LOCK_AND_DEFEND);
+            // announce if we havent been able to attack main walls in past 50 rounds
+            if (attackedMainWallsRound + 50 < rc.getRoundNum()) {
+                surroundedByFloodRound = rc.getRoundNum();
+                announceMessage(GET_DEFEND_DRONES); // get drones back for drone wall only
+                announceMessage(LOCK_AND_DEFEND);
+            }
         }
 
 
@@ -441,15 +449,7 @@ public class HQ extends RobotPlayer {
             rc.submitTransaction(message, 1);
         }
     }
-    static void announceMessage(int msg) throws GameActionException {
-        // STOP_LOCK_AND_DEFEND
-        int[] message = new int[] {generateUNIQUEKEY(), msg, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
-        encodeMsg(message);
-        if (debug) System.out.println("ANNOUNCING " + msg);
-        if (rc.canSubmitTransaction(message, 1)) {
-            rc.submitTransaction(message, 1);
-        }
-    }
+
     static void announceTERRAFORM_AND_WALL_IN() throws GameActionException {
         int[] message = new int[] {generateUNIQUEKEY(), TERRAFORM_AND_WALL_IN, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
         encodeMsg(message);

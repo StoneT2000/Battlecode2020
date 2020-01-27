@@ -21,9 +21,14 @@ public strictfp class RobotPlayer {
     static LinkedList<MapLocation> enemyHQLocations =  new LinkedList<>(); // list of possibly enemy HQ locations
     static MapLocation enemyBaseLocation = null; // the enemy HQ location
 
+    static MapLocation islandCenter = null; // island center to put miners on to attack drone walls
+    static MapLocation islandCenterSide = null; // island center to put miners on to attack drone walls
+
+    static final int MAX_CRUNCH_ROUNDS = 10;
+
     static int turnCount;
     static final boolean debug = false;
-    static final int UNIQUEKEY = -123497631;
+    static final int UNIQUEKEY = -1113339992;
     static Team enemyTeam; // enemy team enum
 
     static final int BASE_WALL_DIST = 1;
@@ -71,7 +76,7 @@ public strictfp class RobotPlayer {
 
     static final int GET_DEFEND_DRONES = 33;
 
-    static final int DROPPED_A_LANDSCAPER_ON_ENEMY_WALL = 34;
+    static final int ATTACKED_ENEMY_WALL = 34;
 
     static int thisLandScapersDesiredHeightOffset = 0;
 
@@ -318,6 +323,15 @@ public strictfp class RobotPlayer {
         return UNIQUEKEY;
     }
 
+    static void announceMessage(int msg) throws GameActionException {
+        // STOP_LOCK_AND_DEFEND
+        int[] message = new int[] {generateUNIQUEKEY(), msg, rc.getTeamSoup(), randomInt(), randomInt(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING " + msg);
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+        }
+    }
     // announces location of robot and type into block chain hopefully
     static boolean announceSelfLocation(int cost) throws GameActionException {
 
@@ -709,6 +723,34 @@ public strictfp class RobotPlayer {
         }
         robotLocs.resetIterator();
         return closestRobotLoc;
+    }
+
+    static boolean locHasAdjacentBuildableLand(MapLocation loc) throws GameActionException {
+        int i = 0;
+        Direction dir = Direction.NORTH;
+        int baseElevation = rc.senseElevation(loc);
+        while (i++ < 8) {
+            MapLocation adjLoc = loc.add(dir);
+            if (rc.canSenseLocation(adjLoc)) {
+                int elevation = rc.senseElevation(adjLoc);
+                if (!rc.senseFlooding(adjLoc) && !rc.isLocationOccupied(adjLoc) && (elevation + 3 >= baseElevation && baseElevation >= elevation - 3)) {
+                    return true;
+                }
+            }
+            dir = dir.rotateRight();
+        }
+        return false;
+    }
+    static void setIslandCenterAndOtherConstants() {
+        if (enemyBaseLocation != null) {
+            islandCenter = new MapLocation(enemyBaseLocation.x, enemyBaseLocation.y);
+            Direction enemyDirToHQ = enemyBaseLocation.directionTo(HQLocation);
+            islandCenter = islandCenter.add(enemyDirToHQ);
+            islandCenter = islandCenter.add(enemyDirToHQ);
+            islandCenter = islandCenter.add(enemyDirToHQ);
+            islandCenter = islandCenter.add(enemyDirToHQ);
+            islandCenter = islandCenter.add(enemyDirToHQ); // 5 tiles away
+        }
     }
 
 }
