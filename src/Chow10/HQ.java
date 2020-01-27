@@ -23,6 +23,7 @@ public class HQ extends RobotPlayer {
     static int MIN_DRONE_FOR_ATTACK = 14 + 24; // 24 for defence, 14 for attack
     static boolean criedForDroneHelp = false;
     static int designSchoolsBuilt = 0;
+    static int fulfillmentCentersBuilt = 0;
     static boolean saidNoMoreLandscapersNeeded = false;
     static int vaporatorsBuilt = 0;
     static int wallBotsMax = 20; // max landscapers that can be on wall and second wall
@@ -303,7 +304,8 @@ public class HQ extends RobotPlayer {
                         existsSoup = true;
                         int soupThere = msg[3];
                         int minersThere = msg[4];
-                        if (soupThere / (minersThere + 1) >= 300) {
+                        if (soupThere / (minersThere + 1) >= 500) {
+                            if (debug) System.out.println("Try to build because exists soup loc with not enough miners");
                             buildBecauseNeedMiners = true;
                         }
 
@@ -323,7 +325,8 @@ public class HQ extends RobotPlayer {
                 unitToBuild = RobotType.MINER;
             }
         }
-        if (rc.getTeamSoup() >= 500 + 250 + 70 && rc.getRoundNum() % 10 == 0) {
+        if (rc.getTeamSoup() >= 500 + 250 + 70 && rc.getRoundNum() % 10 == 0 && rc.getRoundNum() <= 500) {
+            if (debug) System.out.println("Try to build because early and 750 + 70 soup");
             unitToBuild = RobotType.MINER;
         }
         if  (rc.getRoundNum() < 15) {
@@ -500,7 +503,7 @@ public class HQ extends RobotPlayer {
             unitToBuild = RobotType.MINER;
             return;
         }
-        if (vaporatorsBuilt * 2 + 4 >= minersBuilt && designSchoolsBuilt > 0 && existsSoup) {
+        if (vaporatorsBuilt * 1 + 4 >= minersBuilt && designSchoolsBuilt > 0 && existsSoup && fulfillmentCentersBuilt > 0) {
             unitToBuild = RobotType.MINER;
             return;
         }
