@@ -1106,7 +1106,10 @@ public class DeliveryDrone extends RobotPlayer {
                     rc.move(dir);
                 }
                 else {
-                    lastDir = null;
+                    //were ready but didn't move...
+                    if (rc.isReady()) {
+                        lastDir = null;
+                    }
                 }
             }
         }

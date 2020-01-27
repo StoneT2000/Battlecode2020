@@ -22,7 +22,7 @@ public strictfp class RobotPlayer {
     static MapLocation enemyBaseLocation = null; // the enemy HQ location
 
     static int turnCount;
-    static final boolean debug = true;
+    static final boolean debug = false;
     static final int UNIQUEKEY = -1393346721;
     static Team enemyTeam; // enemy team enum
 
@@ -187,31 +187,27 @@ public strictfp class RobotPlayer {
                 int greedyDist = greedyLoc.distanceSquaredTo(target);
 
                 // if it is closer than the closest we have ever been, we can sense it as well and its not flooding
-                if (greedyDist < closestGreedyDist && rc.canSenseLocation(greedyLoc)) {
-                    if (!rc.senseFlooding(greedyLoc)) {
-                        if (debug) System.out.println(dir + " is greedier " + greedyDist);
-                        // if we can move there
-                        if (rc.canMove(dir)) {
-                            if (debug) System.out.println(dir + " can move ");
-                            // update and move
-                            closestGreedyDist = greedyDist;
-                            greedyDir = dir;
-                            foundNonDangerousDir = true;
-                        }
+                if (greedyDist < closestGreedyDist && rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc)) {
+                    if (debug) System.out.println(dir +" is greedier " + greedyDist);
+                    // if we can move there
+                    if (rc.canMove(dir)) {
+                        if (debug) System.out.println(dir +" can move ");
+                        // update and move
+                        closestGreedyDist = greedyDist;
+                        greedyDir = dir;
+                        foundNonDangerousDir = true;
                     }
                 }
                 if (!wallDirSet) {
-                    if (rc.canSenseLocation(greedyLoc)) {
-                        if (!rc.senseFlooding(greedyLoc) && rc.canMove(dir)) {
-                            wallDir = dir;
-                            wallDirSet = true;
-                            foundNonDangerousDir = true;
-                            if (!lastWallUpdated) {
-                                // not updated ever?
-                                lastWallChecked = null;
-                            }
-                            if (debug) System.out.println(dir + ": new wall near direction now set ");
+                    if (rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc) && rc.canMove(dir)) {
+                        wallDir = dir;
+                        wallDirSet = true;
+                        foundNonDangerousDir = true;
+                        if (!lastWallUpdated) {
+                            // not updated ever?
+                            lastWallChecked = null;
                         }
+                        if (debug) System.out.println(dir + ": new wall near direction now set ");
                     }
                     else {
                         lastWallChecked = greedyLoc; // last wall checked that is blocked
