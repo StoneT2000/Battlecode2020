@@ -23,7 +23,7 @@ public strictfp class RobotPlayer {
 
     static int turnCount;
     static final boolean debug = false;
-    static final int UNIQUEKEY = -993326721;
+    static final int UNIQUEKEY = -123497631;
     static Team enemyTeam; // enemy team enum
 
     static final int BASE_WALL_DIST = 1;
@@ -616,6 +616,20 @@ public strictfp class RobotPlayer {
         return false;
     }
 
+    static boolean hasEmptyTileAround(MapLocation loc) throws GameActionException {
+        for (Direction dir: directions) {
+            MapLocation checkLoc = loc.add(dir);
+            if (rc.canSenseLocation(checkLoc)) {
+                if (!rc.senseFlooding(checkLoc)) {
+                    return true;
+                }
+            }
+            else if (rc.onTheMap(loc)){
+                return false;
+            }
+        }
+        return false;
+    }
     static double r2Dist(int[] x1, int[] x2) {
         double dx = x2[0] - x1[0];
         double dy = x2[1] - x1[1];

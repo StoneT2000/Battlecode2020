@@ -73,6 +73,11 @@ public class DesignSchool extends RobotPlayer {
                     willBuild = true;
                 }
             }
+            if (rc.getRoundNum() >= 800 && vaporatorsBuilt >= 4) {
+                if (vaporatorsBuilt * 1.1 + 5 > landscapersBuilt) {
+                    willBuild = true;
+                }
+            }
 
         }
 

@@ -4,7 +4,6 @@ import Chow10.utils.HashTable;
 import Chow10.utils.LinkedList;
 import Chow10.utils.Node;
 import battlecode.common.*;
-
 public class Miner extends RobotPlayer {
     static final int SCOUT = 0; // default to search for patches of soup and what not
     static final int MINER = 1; // default to go and mine nearest souplocation it knows
@@ -261,6 +260,7 @@ public class Miner extends RobotPlayer {
         if (SoupLocation != null) {
             minDistToNearestSoup = rc.getLocation().distanceSquaredTo(SoupLocation);
         }
+        boolean soupLocIsFree = false;
         for (int i = 0; i < Constants.BFSDeltas35.length; i++) {
             int[] deltas = Constants.BFSDeltas35[i];
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
@@ -276,6 +276,7 @@ public class Miner extends RobotPlayer {
                             if (!rc.senseFlooding(checkLoc) || hasEmptyTileAround(checkLoc)){
                                 if (dist < minDistToNearestSoup){
                                     SoupLocation = checkLoc;
+                                    soupLocIsFree = true;
                                     minDistToNearestSoup = dist; // set this so we wont reset SoupLocation as we add soupNearbyCount
                                     if (debug) System.out.println("Found soup location at " + checkLoc);
                                 }
@@ -338,7 +339,7 @@ public class Miner extends RobotPlayer {
         if (role == MINER) {
             // TODO: cost of announcement should be upped in later rounds with many units.
             // announce soup location if we just made a new soup location
-            if (SoupLocation != null && newLocation) {
+            if (SoupLocation != null && newLocation && hasEmptyTileAround(SoupLocation)) {
                 // YELLOW means we found soup location, and we make announcement!
                 if (debug) rc.setIndicatorDot(SoupLocation, 255, 200, 20);
                 announceSoupLocation(SoupLocation, 1, soupNearbyCount, MinerCount + 1);
@@ -747,17 +748,7 @@ public class Miner extends RobotPlayer {
         }
         soupLocScore = highScore;
     }
-    static boolean hasEmptyTileAround(MapLocation loc) throws GameActionException {
-        for (Direction dir: directions) {
-            MapLocation checkLoc = loc.add(dir);
-            if (rc.canSenseLocation(checkLoc)) {
-                if (!rc.senseFlooding(checkLoc)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+
 
     public static void setup() throws GameActionException {
         storeHQLocationAndGetConstants();

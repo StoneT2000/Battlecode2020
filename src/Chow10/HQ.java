@@ -331,6 +331,10 @@ public class HQ extends RobotPlayer {
 
                             buildBecauseNeedMiners = true;
                             if (debug) System.out.println("Try to build miner because exists soup loc with not enough miners");
+                            // put a hard limit on max miners
+                            if (minersBuilt > 4 * vaporatorsBuilt) {
+                                buildBecauseNeedMiners = false;
+                            }
                         }
 
                     }

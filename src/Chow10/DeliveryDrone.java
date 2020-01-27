@@ -180,6 +180,7 @@ public class DeliveryDrone extends RobotPlayer {
         MapLocation nearestEmptyHighLand = null;
         int distToHighLand = 999999999;
 
+        MapLocation soupLoc = null;
         //MapLocation nearestDropZoneLoc = null;
         //int distToNearestDropZoneLoc = 99999999;
 
@@ -382,14 +383,17 @@ public class DeliveryDrone extends RobotPlayer {
                     }
                 }
 
-
-                soupNearby += rc.senseSoup(checkLoc);
+                int soupHere = rc.senseSoup(checkLoc);
+                soupNearby += soupHere;
+                if (soupLoc == null && soupHere > 0) {
+                    soupLoc = checkLoc;
+                }
             }
         }
         if (debug) System.out.println("BFS End: " + Clock.getBytecodeNum());
         if (lastSoupLocAnnounced == null || rc.getLocation().distanceSquaredTo(lastSoupLocAnnounced) >= 16) {
             // if more soup per miner here, announce it
-            if (soupNearby / (minerCount + 0.1) >= 200) {
+            if (soupNearby / (minerCount + 0.1) >= 200 && hasEmptyTileAround(soupLoc)) {
                 announceSoupLocation(rc.getLocation(), 1, soupNearby, minerCount);
                 lastSoupLocAnnounced = rc.getLocation();
             }
