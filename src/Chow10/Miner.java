@@ -40,7 +40,7 @@ public class Miner extends RobotPlayer {
     static int role = MINER; // default ROLE
     static int HQParity; // parity of HQLocation.x + HQLocation.y
 
-    static final int roundsOfDesignatedBuilder = 300;
+    static final int roundsOfDesignatedBuilder = 600;
 
     public static void run() throws GameActionException {
         // try to get out of water, checks if in water for you
@@ -175,7 +175,7 @@ public class Miner extends RobotPlayer {
                     break;
                 case MINER:
                     MinerCount++;
-                    if (info.getID() < rc.getID()) {
+                    if (rc.getLocation().distanceSquaredTo(HQLocation) > info.getLocation().distanceSquaredTo(HQLocation)) {
                         designatedBuilder = false;
                     }
                     break;
@@ -426,7 +426,7 @@ public class Miner extends RobotPlayer {
                 buildDir = rc.getLocation().directionTo(HQLocation);
             }
 
-            if (unitToBuild == RobotType.VAPORATOR && rc.getRoundNum() <= 500 && rc.getLocation().distanceSquaredTo(HQLocation) >= 16) {
+            if (unitToBuild == RobotType.VAPORATOR && rc.getRoundNum() <= 500 && rc.getLocation().distanceSquaredTo(HQLocation) >= 48) {
                 // make sure miner goes back to near HQ to build this
                 proceedWithBuild = false;
                 setTargetLoc(HQLocation);
