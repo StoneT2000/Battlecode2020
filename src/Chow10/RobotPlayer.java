@@ -69,6 +69,8 @@ public strictfp class RobotPlayer {
 
     static final int NET_GUN_LOCATION = 32;
 
+    static final int GET_DEFEND_DRONES = 33;
+
     static int thisLandScapersDesiredHeightOffset = 0;
 
     static int MAX_TERRAFORM_DIST = 134; // was 94

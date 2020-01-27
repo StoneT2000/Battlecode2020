@@ -218,7 +218,6 @@ public class DeliveryDrone extends RobotPlayer {
                             if (checkLoc.distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
                                 nearestEmptyHighLand = checkLoc;
                                 distToHighLand = dist;
-                                if (debug) System.out.println(checkLoc + " is empty high land");
                             }
                         }
                     }
@@ -268,8 +267,6 @@ public class DeliveryDrone extends RobotPlayer {
                                 }
                                 minerCount++;
                                 // find nearest miner adjacent to HQ to remove, do so if they aren't carrying soup
-                                if (debug)
-                                    System.out.println("Found miner at " + info.location + " | soup: " + info.getSoupCarrying());
                                 if (nearestAdjacentToHQMiner == null && info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && info.getSoupCarrying() == 0) {
                                     distToNearestMinerAdjacentToHQ = dist;
                                     nearestAdjacentToHQMiner = info;
@@ -371,14 +368,11 @@ public class DeliveryDrone extends RobotPlayer {
                             Direction badDirLeft = badDir.rotateLeft();
                             Direction badDirRight = badDir.rotateRight();
                             if (rc.adjacentLocation(badDirLeft).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
-                                if (debug) System.out.println("Gonna avoid " + badDirLeft);
                                 dangerousDirections.add(badDirLeft);
                             }
                             if (rc.adjacentLocation(badDirRight).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
                                 dangerousDirections.add(badDirRight);
-                                if (debug) System.out.println("Gonna avoid " + badDirRight);
                             }
-                            if (debug) System.out.println("Gonna avoid " + rc.getLocation().directionTo(info.location));
                         }
                     }
                 }
@@ -403,7 +397,6 @@ public class DeliveryDrone extends RobotPlayer {
         MapLocation closestMaybeHQ = null;
         // dont know where base is, then look around for it.
         if (enemyBaseLocation == null) {
-            if (debug) System.out.println("finding closest HQ TO LOOK FOR");
             Node<MapLocation> node = enemyHQLocations.head;
 
             Node<MapLocation> closestMaybeHQNode = enemyHQLocations.head;
@@ -512,7 +505,7 @@ public class DeliveryDrone extends RobotPlayer {
 
                     }
                     else {
-                        if (debug) System.out.println("Found unit to try and help");
+                        if (debug) System.out.println("Found unit to try and help, place on support loc");
                         // take nearest landscaper
                         if (distToNearestLandscaper <= 2) {
                             // adjacent, pick it up, drop in right place
@@ -767,7 +760,9 @@ public class DeliveryDrone extends RobotPlayer {
 
             if (circledHQTimes >= 0 && !gettingRushed) {
                 if ((rc.getRoundNum() > 240 && friendlyDrones >= 1) || (rc.getRoundNum() < 240 && !designatedDrone)) {
-                    attackLoc = closestMaybeHQ; // always attempt to attack enemy HQ after we go once around our OWN HQ
+                    if (!toldToLockAndDefendByHQ) {
+                        attackLoc = closestMaybeHQ; // always attempt to attack enemy HQ after we go once around our OWN HQ
+                    }
                 }
             }
             else if (gettingRushed) {
@@ -1172,11 +1167,9 @@ public class DeliveryDrone extends RobotPlayer {
         Direction dir = rc.getLocation().directionTo(target);
         // go with most greedy move
 
-        if (debug) System.out.println("Bug path start " + Clock.getBytecodeNum());
         for (int i = Constants.DroneBlindSpots.length; --i>= 0; ) {
             int[] deltas = Constants.DroneBlindSpots[i];
             MapLocation spot = rc.getLocation().translate(deltas[0], deltas[1]);
-            if (debug) System.out.println("Checking blind spot " + i + ": " + spot);
             if (enemyNetguns.contains(spot)) {
                 dangerousDirections.add(rc.getLocation().directionTo(spot)); // add this dir to dangers
                 dangerousDirections.add(rc.getLocation().directionTo(spot).rotateLeft());
@@ -1202,7 +1195,6 @@ public class DeliveryDrone extends RobotPlayer {
             }
             dir = dir.rotateLeft();
         }
-        if (debug) System.out.println("Bug path end " + Clock.getBytecodeNum());
         return greedyDir;
     }
     static void processBlocks(Transaction[] blocks) throws GameActionException {
@@ -1276,6 +1268,8 @@ public class DeliveryDrone extends RobotPlayer {
                     case LOCK_AND_DEFEND:
                         lockAndDefend = true;
                         toldToLockAndDefendByHQ = true;
+                        attackLoc = HQLocation;
+                        attackHQ = false;
                         break;
                     case STOP_LOCK_AND_DEFEND:
                         lockAndDefend = false;

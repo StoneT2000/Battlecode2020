@@ -375,18 +375,48 @@ public class HQ extends RobotPlayer {
             announceTERRAFORM_ALL_TIME(); // get everyone back
         }*/
 
-        if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1800) {
+        if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1800 && surroundedByFloodRound == -1) {
             announceDroneAttack();
         }
-        if (rc.getRoundNum() >= 2000 && rc.getRoundNum() % 250 == 0) {
+        if (rc.getRoundNum() >= 2000 && rc.getRoundNum() % 250 == 0 && surroundedByFloodRound == -1) {
             announceMessage(SWARM_IN);
         }
-        if (rc.getRoundNum() >= 1800 && rc.getRoundNum() % 10 == 0) {
+        if (rc.getRoundNum() >= 1800 && rc.getRoundNum() % 10 == 0 && surroundedByFloodRound == -1) {
             announceMessage(SWARM_WITH_UNITS);
+        }
+        if (surroundedByFlood() && (surroundedByFloodRound == -1 || rc.getRoundNum() % 10 == 0) && rc.getRoundNum() >= 1700) {
+            surroundedByFloodRound = rc.getRoundNum();
+            announceMessage(GET_DEFEND_DRONES); // get drones back for drone wall
+            announceMessage(LOCK_AND_DEFEND);
         }
 
 
 
+    }
+
+    static boolean surroundedByFlood() throws GameActionException{
+
+        for (int i = 0; i < 6; i++) {
+            MapLocation x1 = new MapLocation(HQLocation.x + i - 3, HQLocation.y + 3);
+            MapLocation x2 = new MapLocation(HQLocation.x + i - 3, HQLocation.y - 3);
+            MapLocation x3 = new MapLocation(HQLocation.x + 3, HQLocation.y - 3 + i);
+            MapLocation x4 = new MapLocation(HQLocation.x - 3, HQLocation.y - 3 + i);
+            if (rc.canSenseLocation(x1) && rc.senseFlooding(x1) == false) {
+                return false;
+            }
+            if (rc.canSenseLocation(x2) && rc.senseFlooding(x2) == false) {
+                return false;
+            }
+            if (rc.canSenseLocation(x3) && rc.senseFlooding(x3) == false) {
+                return false;
+            }
+            if (rc.canSenseLocation(x4) && rc.senseFlooding(x4) == false) {
+                return false;
+            }
+        }
+
+
+        return true;
     }
     static void checkTransactionsForBuildCounts(Transaction[] transactions) throws GameActionException {
         for (int i = transactions.length; --i >= 0;) {
@@ -400,6 +430,9 @@ public class HQ extends RobotPlayer {
             }
         }
     }
+
+
+
     static void announceATTACK_ENEMY_UNIT(RobotInfo enemy) throws GameActionException {
         int[] message = new int[] {generateUNIQUEKEY(), ATTACK_ENEMY_UNIT_FOR_RUSH, hashLoc(enemy.location), enemy.getID(), enemy.type.ordinal(), randomInt(), randomInt()};
         encodeMsg(message);
