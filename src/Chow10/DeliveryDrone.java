@@ -15,6 +15,8 @@ public class DeliveryDrone extends RobotPlayer {
     static boolean terraformTime = false;
     static final int MOVE_OUR_UNIT_FAR = 7;
 
+
+    static int roundsSpentCrunching = 0;
     static final int RUSH_DEFEND = 8;
     static MapLocation locOfRushUnit = null;
     static int IDOfRushUnit = -1;
@@ -987,6 +989,7 @@ public class DeliveryDrone extends RobotPlayer {
                                 // 2. drop adjacent to location of high land (happening because the wall is all filled up)
                                 // 3. head towards nearest drop zone location
 
+                                roundsSpentCrunching++;
                                 if (friendlyUnitHeld.type == RobotType.LANDSCAPER) {
                                     boolean droppedUnit = false;
                                     for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {
@@ -1005,6 +1008,27 @@ public class DeliveryDrone extends RobotPlayer {
                                             }
                                         }
                                     }
+                                    // if can't drop on enemy wall in like 100 turns after we were told to swarm in, all drop near this specific loc
+                                    // which is about 6 tiles from enemy base in direction to my base (easy coordination)
+                                    /*
+                                    if (!droppedUnit && roundsSpentCrunching > 50) {
+                                        // island locations...
+                                        MapLocation islandCenter = new MapLocation(enemyBaseLocation.x, enemyBaseLocation.y);
+                                        Direction enemyDirToHQ = enemyBaseLocation.directionTo(HQLocation);
+                                        islandCenter = islandCenter.add(enemyDirToHQ);
+                                        islandCenter = islandCenter.add(enemyDirToHQ);
+                                        islandCenter = islandCenter.add(enemyDirToHQ);
+                                        islandCenter = islandCenter.add(enemyDirToHQ);
+                                        islandCenter = islandCenter.add(enemyDirToHQ);
+                                        islandCenter = islandCenter.add(enemyDirToHQ); // 6 tiles away
+                                        if (rc.getLocation().distanceSquaredTo(islandCenter))
+
+                                    }
+                                    
+                                     */
+
+
+
                                     // otherwise if we havent dropped it
                                     // use closest visible highland near enough to HQ within DROP_ZONE_RANGE or smth
                                     // TODO: DISABLED DROPPING LANDSCAPERS TO MAKE ISLAND

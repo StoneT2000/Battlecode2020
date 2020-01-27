@@ -9,4 +9,5 @@ public class    Constants {
     static final int[][] FirstLandscaperPosAroundHQ = {{1, -1}, {-1, 0},{0, 1}, {-1, 1}, {1, 1}, {1, 0}, {0, -1}, {-1, -1}};
     static final int[][] LandscaperPosAroundHQ = {{1, 2}, {2, 2}, {2, 1}, {2, -1}, {2, -2}, {1, -2}, {-1, -2}, {-2, -2}, {-2, -1}, {-2, 1}, {-2, 2}, {-1, 2}};
     static final int[][] DroneBlindSpots = {{4,3}, {3,4}, {-3, 4}, {-4, 3}, {-4, -3}, {-3, -4}, {3, -4}, {4, -3}};
+    static final int[][] IslandDeltas = {{}}
 }

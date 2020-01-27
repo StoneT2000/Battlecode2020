@@ -71,6 +71,8 @@ public strictfp class RobotPlayer {
 
     static final int GET_DEFEND_DRONES = 33;
 
+    static final int DROPPED_A_LANDSCAPER_ON_ENEMY_WALL = 34;
+
     static int thisLandScapersDesiredHeightOffset = 0;
 
     static int MAX_TERRAFORM_DIST = 134; // was 94
