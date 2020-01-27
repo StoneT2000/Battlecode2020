@@ -111,7 +111,7 @@ public class Miner extends RobotPlayer {
         /* BIG FRIENDLY BOTS SEARCH LOOP thing */
         int EnemyDroneCount = 0;
         boolean moveAway = false;
-        HashTable<Direction> dangerousDirections = new HashTable<>(4); // directions that when moved in, will result in being picked
+        HashTable<Direction> dangerousDirections = new HashTable<>(6); // directions that when moved in, will result in being picked
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
