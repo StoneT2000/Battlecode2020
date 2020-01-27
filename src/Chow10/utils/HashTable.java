@@ -13,13 +13,15 @@ public class HashTable<T> {
             table[i] = new LinkedList<T>();
         }
     }
-    public void add(T obj) {
+    public boolean add(T obj) {
         int index = (Math.abs(obj.hashCode())) % this.capacity;
         // doesn't contain, add it
         if (!table[index].contains(obj)) {
             table[index].add(obj);
             size++;
+            return true;
         }
+        return false;
     }
     public boolean contains(T obj) {
         int index = (Math.abs(obj.hashCode())) % this.capacity;

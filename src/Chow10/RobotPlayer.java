@@ -22,7 +22,7 @@ public strictfp class RobotPlayer {
     static MapLocation enemyBaseLocation = null; // the enemy HQ location
 
     static int turnCount;
-    static final boolean debug = false;
+    static final boolean debug = true;
     static final int UNIQUEKEY = -1393346721;
     static Team enemyTeam; // enemy team enum
 
@@ -67,8 +67,7 @@ public strictfp class RobotPlayer {
 
     static final int FAST_WALL_BUILD = 31; // tell landscapers on wall that they are ordered to disintegrate when they get 25 dirt
 
-
-
+    static final int NET_GUN_LOCATION = 32;
 
     static int thisLandScapersDesiredHeightOffset = 0;
 
@@ -280,9 +279,18 @@ public strictfp class RobotPlayer {
         if (HQLocation != null) {
             int flippedY = rc.getMapHeight() - HQLocation.y - 1;
             int flippedX = rc.getMapWidth() - HQLocation.x - 1;
-            enemyHQLocations.add(new MapLocation(HQLocation.x, flippedY));
-            enemyHQLocations.add(new MapLocation(flippedX, HQLocation.y));
-            enemyHQLocations.add(new MapLocation(flippedX, flippedY));
+            if (rc.getID() % 2 == 0) {
+                enemyHQLocations.add(new MapLocation(HQLocation.x, flippedY));
+                enemyHQLocations.add(new MapLocation(flippedX, flippedY));
+                enemyHQLocations.add(new MapLocation(flippedX, HQLocation.y));
+            }
+            else {
+                enemyHQLocations.add(new MapLocation(flippedX, HQLocation.y));
+                enemyHQLocations.add(new MapLocation(flippedX, flippedY));
+                enemyHQLocations.add(new MapLocation(HQLocation.x, flippedY));
+
+
+            }
         }
     }
 
@@ -345,6 +353,15 @@ public strictfp class RobotPlayer {
         }
     }
 
+    static void announceNET_GUN_LOCATION(MapLocation loc) throws GameActionException {
+        int[] message = new int[] {generateUNIQUEKEY(), NET_GUN_LOCATION, hashLoc(loc), randomInt(), randomInt(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (debug) System.out.println("ANNOUNCING NET GUN LOCATION " + loc + " hash " + hashLoc(loc));
+
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+        }
+    }
     // announce location of enemy base
     static boolean announceEnemyBase(MapLocation loc) throws GameActionException {
         int[] message = new int[] {generateUNIQUEKEY(), ANNOUNCE_ENEMY_BASE_LOCATION, hashLoc(loc), randomInt(), randomInt(), randomInt(), randomInt()};
