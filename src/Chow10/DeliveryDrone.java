@@ -62,9 +62,6 @@ public class DeliveryDrone extends RobotPlayer {
         processBlocks(lastRoundsBlocks);
 
 
-        RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
-        RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
-        RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(-1, Team.NEUTRAL);
         HashTable<Direction> dangerousDirections = new HashTable<>(4); // directioons that when moved in, will result in netgun death
 
         RobotInfo closestEnemyLandscaper = null;
@@ -72,148 +69,25 @@ public class DeliveryDrone extends RobotPlayer {
         int closestEnemyLandscaperDist = 99999999;
         int closestEnemyMinerDist = 999999;
 
-        if (nearbyEnemyRobots.length > 0) {
-            lockAndDefend = true;
-        }
-        else if (!toldToLockAndDefendByHQ) {
-            lockAndDefend = false;
-        }
+
         RobotInfo enemyInHQSpace = null;
         int closestEnemyInHQSpace = 888888889;
 
         RobotInfo rushUnitToAttack = null;
 
-        for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
-            RobotInfo info = nearbyEnemyRobots[i];
-            switch (role) {
-                case RUSH_DEFEND:
-                    if (info.getID() == IDOfRushUnit) {
-                        // we found the rushing unit
-                        // if rushing unit is a miner, switch roles and proceed as if we were in ATTACK mode
-                        rushUnitToAttack = info;
-                        if (info.type == RobotType.MINER) {
-                            role = ATTACK;
-
-                            // code copied from miner switch case when attacking
-                            int dist2 = rc.getLocation().distanceSquaredTo(info.getLocation());
-                            if (dist2 < closestEnemyMinerDist) {
-                                closestEnemyMinerDist = dist2;
-                                closestEnemyMiner = info;
-                                if (debug) System.out.println("Found closer enemy miner at " + info.location);
-                            }
-                            if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
-                                if (dist2 < closestEnemyInHQSpace) {
-                                    closestEnemyInHQSpace = dist2;
-                                    enemyInHQSpace = info;
-                                }
-                            }
-                        }
-                        // else if delivery drone, stay in role because in this role we follow that delivery drone until we see a miner
-                        else if (info.type == RobotType.DELIVERY_DRONE) {
-                            // if rushing drone isn't carrying anything, stop, go back to attack mode
-                            if (!info.isCurrentlyHoldingUnit()) {
-                                role = ATTACK;
-                            }
-                        }
-                    }
-                    // don't break here, we want rush defenders to look for closest units as well.
-                case ATTACK:
-                    switch(info.type) {
-                        case LANDSCAPER:
-                            int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
-                            if (dist < closestEnemyLandscaperDist) {
-                                closestEnemyLandscaperDist = dist;
-                                closestEnemyLandscaper = info;
-                                if (debug) System.out.println("Found closer enemy landscaper at " + info.location);
-                            }
-                            if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
-                                if (dist < closestEnemyInHQSpace) {
-                                    closestEnemyInHQSpace = dist;
-                                    enemyInHQSpace = info;
-                                }
-                            }
-                            break;
-                        case MINER:
-                            int dist2 = rc.getLocation().distanceSquaredTo(info.getLocation());
-                            if (dist2 < closestEnemyMinerDist) {
-                                closestEnemyMinerDist = dist2;
-                                closestEnemyMiner = info;
-                                if (debug) System.out.println("Found closer enemy miner at " + info.location);
-                            }
-                            if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
-                                if (dist2 < closestEnemyInHQSpace) {
-                                    closestEnemyInHQSpace = dist2;
-                                    enemyInHQSpace = info;
-                                }
-                            }
-                            break;
-                        case HQ:
-                            if (enemyBaseLocation == null) {
-                                announceEnemyBase(info.location);
-                                enemyBaseLocation = info.location;
-                            }
-                            break;
-                    }
-                    break;
-
-            }
-            int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
-            if (info.type == RobotType.NET_GUN) {
-                enemyNetguns.add(info.location);
-            }
-            if (dist <= 25 && (info.type == RobotType.NET_GUN) && (rc.getRoundNum() > 200 || info.getCooldownTurns() <= 2)) {
-                // dangerous netgun, move somewhere not in range!
-
-                Direction badDir = rc.getLocation().directionTo(info.location);
-                dangerousDirections.add(badDir);
-                Direction badDirLeft = badDir.rotateLeft();
-                Direction badDirRight = badDir.rotateRight();
-                if (rc.adjacentLocation(badDirLeft).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
-                    if (debug) System.out.println("Gonna avoid " + badDirLeft);
-                    dangerousDirections.add(badDirLeft);
-                }
-                if (rc.adjacentLocation(badDirRight).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
-                    dangerousDirections.add(badDirRight);
-                    if (debug) System.out.println("Gonna avoid " + badDirRight);
-                }
-                if (debug) System.out.println("Gonna avoid " + rc.getLocation().directionTo(info.location));
-            }
-        }
         // look for nearest empty wall
         int closestEmptyWallLocDist = 9999999;
         MapLocation closestEmptyWallLoc = null;
         MapLocation closesetEmptyMAINWALL = null;
         boolean thisRoundFoundSpot = false;
-        for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
-            int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
-            MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
-            if (rc.canSenseLocation(loc)) {
-                // determine if it has our landscaper or not, if not occupied and not flooded bring our unit in there, if occupied take it out
-                int dist = rc.getLocation().distanceSquaredTo(loc);
-                if (!rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
-                    wallSpotLeft = true;
-                    thisRoundFoundSpot = true;
-                    if (dist < closestEmptyWallLocDist) {
-                        closestEmptyWallLoc = loc;
-                        closestEmptyWallLocDist = dist;
-                        closesetEmptyMAINWALL = loc;
-                    }
-                }
-                /*
-                else if(rc.isLocationOccupied(loc)) {
-                    RobotInfo info = rc.senseRobotAtLocation(loc);
-                    if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) {
-                        BuildPositionsTaken.add(loc);
-                    }
-                }*/
-            }
-        }
-        if (closestEmptyWallLoc == null) {
-            for (int i = Constants.LandscaperPosAroundHQ.length; --i>= 0; ) {
-                int[] deltas = Constants.LandscaperPosAroundHQ[i];
+
+        // look for empty walls to put units on if we are close to HQ
+        if (rc.getLocation().distanceSquaredTo(HQLocation) <= MAX_TERRAFORM_DIST) {
+            for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
+                int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];
                 MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
                 if (rc.canSenseLocation(loc)) {
-                    // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
+                    // determine if it has our landscaper or not, if not occupied and not flooded bring our unit in there, if occupied take it out
                     int dist = rc.getLocation().distanceSquaredTo(loc);
                     if (!rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
                         wallSpotLeft = true;
@@ -221,8 +95,33 @@ public class DeliveryDrone extends RobotPlayer {
                         if (dist < closestEmptyWallLocDist) {
                             closestEmptyWallLoc = loc;
                             closestEmptyWallLocDist = dist;
+                            closesetEmptyMAINWALL = loc;
                         }
                     }
+                /*
+                else if(rc.isLocationOccupied(loc)) {
+                    RobotInfo info = rc.senseRobotAtLocation(loc);
+                    if (info.type == RobotType.LANDSCAPER && info.team == rc.getTeam()) {
+                        BuildPositionsTaken.add(loc);
+                    }
+                }*/
+                }
+            }
+            if (closestEmptyWallLoc == null) {
+                for (int i = Constants.LandscaperPosAroundHQ.length; --i>= 0; ) {
+                    int[] deltas = Constants.LandscaperPosAroundHQ[i];
+                    MapLocation loc = HQLocation.translate(deltas[0], deltas[1]);
+                    if (rc.canSenseLocation(loc)) {
+                        // determine if it has our landscaper or not, if not occupied bring our unit in there, if occupied take it out
+                        int dist = rc.getLocation().distanceSquaredTo(loc);
+                        if (!rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
+                            wallSpotLeft = true;
+                            thisRoundFoundSpot = true;
+                            if (dist < closestEmptyWallLocDist) {
+                                closestEmptyWallLoc = loc;
+                                closestEmptyWallLocDist = dist;
+                            }
+                        }
                     /*
                     else if(rc.isLocationOccupied(loc)) {
                         RobotInfo info = rc.senseRobotAtLocation(loc);
@@ -230,6 +129,7 @@ public class DeliveryDrone extends RobotPlayer {
                             BuildPositionsTaken.add(loc);
                         }
                     }*/
+                    }
                 }
             }
         }
@@ -248,81 +148,12 @@ public class DeliveryDrone extends RobotPlayer {
         RobotInfo nearestLowMiner = null;
         RobotInfo nearestLandscaper = null; // nearest not on wall / available
         RobotInfo nearestLandscaperForAttack = null;
-        RobotInfo nearestMinerForAttack = null;
-        int distToNearestMinerForAttack = 9999999;
+        //RobotInfo nearestMinerForAttack = null;
+        //int distToNearestMinerForAttack = 9999999;
         int distToNearestLandscaperForAttack = 9999999;
         RobotInfo nearestAdjacentToHQLandscaper = null;
         boolean designatedDrone = true;
         int minerCount = 0;
-        for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
-            RobotInfo info = nearbyFriendlyRobots[i];
-            switch(info.type) {
-                case DELIVERY_DRONE:
-                    friendlyDrones++;
-                    if (info.getID() < rc.getID()) {
-                        designatedDrone = false;
-                    }
-                    break;
-                case LANDSCAPER:
-
-                    // if not on man wall, and we have a empty loc on main wall, consider it
-                    // if not on second wall either, consider ir. WE only consider if we think there is wall space left
-                    int dist = rc.getLocation().distanceSquaredTo(info.location);
-                    if (wallSpotLeft && !MainWall.contains(info.location)) {
-                        if (!SecondWall.contains(info.location)) {
-                            if (dist < distToNearestLandscaper) {
-                                distToNearestLandscaper = dist;
-                                nearestLandscaper = info;
-                            }
-                        }
-                    }
-                    // find nearest landscaper for attack
-                    if (attackWithAllUnits) {
-                        //nearestLandscaper
-                        if (enemyBaseLocation != null && dist < distToNearestLandscaperForAttack && info.location.distanceSquaredTo(HQLocation) >= 16 && info.location.distanceSquaredTo(enemyBaseLocation) > DROP_ZONE_RANGE_OF_HQ) {
-                            nearestLandscaperForAttack = info;
-                            distToNearestLandscaperForAttack = dist;
-                        }
-                    }
-                    if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
-                        if (dist < distToNearestAdjacentToHQLandscaper) {
-                            distToNearestAdjacentToHQLandscaper = dist;
-                            nearestAdjacentToHQLandscaper = info;
-                        }
-                    }
-                    break;
-                case MINER:
-                    int dist2 = rc.getLocation().distanceSquaredTo(info.location);
-                    if (rc.senseElevation(info.location) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
-                        if (dist2 < distToNearestMiner) {
-                            distToNearestMiner = dist2;
-                            nearestLowMiner = info;
-                        }
-                    }
-                    minerCount++;
-                    // find nearest miner adjacent to HQ to remove, do so if they aren't carrying soup
-                    if (debug) System.out.println("Found miner at " + info.location + " | soup: " + info.getSoupCarrying());
-                    if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && info.getSoupCarrying() == 0) {
-
-                        if (dist2 < distToNearestMinerAdjacentToHQ) {
-                            distToNearestMinerAdjacentToHQ = dist2;
-                            nearestAdjacentToHQMiner = info;
-                        }
-                    }
-                    /* disable attack miners
-                    if (attackWithAllUnits) {
-                        // pick up miners for attack if they arent in the drop zone for attakc
-                        if (debug) System.out.println("Miner is contender for attack");
-                        if (enemyBaseLocation != null && dist2 < distToNearestMinerForAttack && info.location.distanceSquaredTo(enemyBaseLocation) > DROP_ZONE_RANGE_OF_HQ) {
-                            if (debug) System.out.println("Found nearest attack miner");
-                            distToNearestMinerForAttack = dist2;
-                            nearestMinerForAttack = info;
-                        }
-                    }*/
-                    break;
-            }
-        }
-        if (debug) System.out.println("There are " + nearbyNeutralRobots.length + " neutrals (cows?) nearby ");
         // turn off cow pickups...
         /*
         for (int i = nearbyNeutralRobots.length; --i >= 0; ) {
@@ -356,43 +187,203 @@ public class DeliveryDrone extends RobotPlayer {
             MapLocation checkLoc = rc.getLocation().translate(deltas[0], deltas[1]);
             if (rc.canSenseLocation(checkLoc)) {
                 int dist = rc.getLocation().distanceSquaredTo(checkLoc);
-                boolean occupied = true;
-                if (!rc.isLocationOccupied(checkLoc)) {
-                    occupied = false;
-                }
+                RobotInfo info = rc.senseRobotAtLocation(checkLoc);
                 // if flooding and minDist is not that good
                 if (rc.senseFlooding(checkLoc) && minDistToFlood >= 16) {
 
-                    if (dist < minDistToFlood && dist != 0 && !occupied) {
+                    if (dist < minDistToFlood && dist != 0 && info == null) {
                         minDistToFlood = dist;
                         waterLoc = checkLoc;
                     }
                 }
-                /* for finding dropszones when attacking
+                /* for finding dropzones when attacking
                 else {
                     if (enemyBaseLocation != null && dist < distToNearestDropZoneLoc && checkLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ) {
                         nearestDropZoneLoc = checkLoc;
                         distToNearestDropZoneLoc = dist;
                     }
                 }*/
-                if (!occupied) {
+                if (info == null) {
                     enemyNetguns.remove(checkLoc);
 
-                    // not occupied and good elevation, consider it. must be high enough and not too high
-                    int elevation = rc.senseElevation(checkLoc);
-                    if (elevation >= DESIRED_ELEVATION_FOR_TERRAFORM && elevation <= DESIRED_ELEVATION_FOR_TERRAFORM + 6) {
-                        // closest highland that isn't in HQ breathing space
-                        if (dist < distToHighLand && checkLoc.distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
-                            nearestEmptyHighLand = checkLoc;
-                            distToHighLand = dist;
-                            if (debug) System.out.println(checkLoc + " is empty high land");
+                    if (nearestEmptyHighLand == null) {
+                        // not occupied and good elevation, consider it. must be high enough and not too high
+                        int elevation = rc.senseElevation(checkLoc);
+                        if (elevation >= DESIRED_ELEVATION_FOR_TERRAFORM && elevation <= DESIRED_ELEVATION_FOR_TERRAFORM + 6) {
+                            // closest highland that isn't in HQ breathing space
+                            if (dist < distToHighLand && checkLoc.distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
+                                nearestEmptyHighLand = checkLoc;
+                                distToHighLand = dist;
+                                if (debug) System.out.println(checkLoc + " is empty high land");
+                            }
                         }
                     }
                 }
                 else {
-                    RobotInfo robotThere = rc.senseRobotAtLocation(checkLoc);
-                    if (robotThere.type != RobotType.NET_GUN || robotThere.team == rc.getTeam()) {
+
+                    if (info.type != RobotType.NET_GUN || info.team == rc.getTeam()) {
                         enemyNetguns.remove(checkLoc);
+                    }
+                    // everything below is merged from sense nearby robots stuff
+                    if (info.team == rc.getTeam()) {
+                        switch (info.type) {
+                            case DELIVERY_DRONE:
+                                friendlyDrones++;
+                                if (info.getID() < rc.getID()) {
+                                    designatedDrone = false;
+                                }
+                                break;
+                            case LANDSCAPER:
+
+                                // if not on man wall, and we have a empty loc on main wall, consider it
+                                // if not on second wall either, consider ir. WE only consider if we think there is wall space left
+                                if (wallSpotLeft && nearestLandscaper == null && !MainWall.contains(info.location) ) {
+                                    if (!SecondWall.contains(info.location)) {
+                                        if (dist < distToNearestLandscaper) {
+                                            distToNearestLandscaper = dist;
+                                            nearestLandscaper = info;
+                                        }
+                                    }
+                                }
+                                int distToHQ = info.location.distanceSquaredTo(HQLocation);
+                                // find nearest landscaper for attack
+                                if (attackWithAllUnits && nearestLandscaperForAttack == null) {
+                                    //nearestLandscaper
+                                    if (enemyBaseLocation != null && dist < distToNearestLandscaperForAttack && distToHQ >= 16 && info.location.distanceSquaredTo(enemyBaseLocation) > DROP_ZONE_RANGE_OF_HQ) {
+                                        nearestLandscaperForAttack = info;
+                                        distToNearestLandscaperForAttack = dist;
+                                    }
+                                }
+                                if (nearestAdjacentToHQLandscaper == null && distToHQ <= HQ_LAND_RANGE) {
+                                    if (dist < distToNearestAdjacentToHQLandscaper) {
+                                        distToNearestAdjacentToHQLandscaper = dist;
+                                        nearestAdjacentToHQLandscaper = info;
+                                    }
+                                }
+                                break;
+                            case MINER:
+                                if (nearestLowMiner == null && rc.senseElevation(info.location) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+                                    if (dist < distToNearestMiner) {
+                                        distToNearestMiner = dist;
+                                        nearestLowMiner = info;
+                                    }
+                                }
+                                minerCount++;
+                                // find nearest miner adjacent to HQ to remove, do so if they aren't carrying soup
+                                if (debug)
+                                    System.out.println("Found miner at " + info.location + " | soup: " + info.getSoupCarrying());
+                                if (nearestAdjacentToHQMiner == null && info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && info.getSoupCarrying() == 0) {
+
+                                    if (dist < distToNearestMinerAdjacentToHQ) {
+                                        distToNearestMinerAdjacentToHQ = dist;
+                                        nearestAdjacentToHQMiner = info;
+                                    }
+                                }
+                    /* disable attack miners
+                    if (attackWithAllUnits) {
+                        // pick up miners for attack if they arent in the drop zone for attakc
+                        if (debug) System.out.println("Miner is contender for attack");
+                        if (enemyBaseLocation != null && dist2 < distToNearestMinerForAttack && info.location.distanceSquaredTo(enemyBaseLocation) > DROP_ZONE_RANGE_OF_HQ) {
+                            if (debug) System.out.println("Found nearest attack miner");
+                            distToNearestMinerForAttack = dist2;
+                            nearestMinerForAttack = info;
+                        }
+                    }*/
+                                break;
+                        }
+                    }
+                    else {
+                        // is an enemy unit
+                        switch (role) {
+                            case RUSH_DEFEND:
+                                if (info.getID() == IDOfRushUnit) {
+                                    // we found the rushing unit
+                                    // if rushing unit is a miner, switch roles and proceed as if we were in ATTACK mode
+                                    rushUnitToAttack = info;
+                                    if (info.type == RobotType.MINER) {
+                                        role = ATTACK;
+
+                                        // code copied from miner switch case when attacking
+                                        int dist2 = rc.getLocation().distanceSquaredTo(info.getLocation());
+                                        if (dist2 < closestEnemyMinerDist) {
+                                            closestEnemyMinerDist = dist2;
+                                            closestEnemyMiner = info;
+                                            if (debug) System.out.println("Found closer enemy miner at " + info.location);
+                                        }
+                                        if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
+                                            if (dist2 < closestEnemyInHQSpace) {
+                                                closestEnemyInHQSpace = dist2;
+                                                enemyInHQSpace = info;
+                                            }
+                                        }
+                                    }
+                                    // else if delivery drone, stay in role because in this role we follow that delivery drone until we see a miner
+                                    else if (info.type == RobotType.DELIVERY_DRONE) {
+                                        // if rushing drone isn't carrying anything, stop, go back to attack mode
+                                        if (!info.isCurrentlyHoldingUnit()) {
+                                            role = ATTACK;
+                                        }
+                                    }
+                                }
+                                // don't break here, we want rush defenders to look for closest units as well.
+                            case ATTACK:
+                                switch(info.type) {
+                                    case LANDSCAPER:
+                                        if (closestEnemyLandscaper == null && dist < closestEnemyLandscaperDist) {
+                                            closestEnemyLandscaperDist = dist;
+                                            closestEnemyLandscaper = info;
+                                            if (debug) System.out.println("Found closer enemy landscaper at " + info.location);
+                                        }
+                                        if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
+                                            if (dist < closestEnemyInHQSpace) {
+                                                closestEnemyInHQSpace = dist;
+                                                enemyInHQSpace = info;
+                                            }
+                                        }
+                                        break;
+                                    case MINER:
+                                        if (closestEnemyMiner == null && dist < closestEnemyMinerDist) {
+                                            closestEnemyMinerDist = dist;
+                                            closestEnemyMiner = info;
+                                            if (debug) System.out.println("Found closer enemy miner at " + info.location);
+                                        }
+                                        if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
+                                            if (dist < closestEnemyInHQSpace) {
+                                                closestEnemyInHQSpace = dist;
+                                                enemyInHQSpace = info;
+                                            }
+                                        }
+                                        break;
+                                    case HQ:
+                                        if (enemyBaseLocation == null) {
+                                            announceEnemyBase(info.location);
+                                            enemyBaseLocation = info.location;
+                                        }
+                                        break;
+                                }
+                                break;
+
+                        }
+                        if (info.type == RobotType.NET_GUN) {
+                            enemyNetguns.add(info.location);
+                        }
+                        if (dist <= 25 && (info.type == RobotType.NET_GUN) && (rc.getRoundNum() > 200 || info.getCooldownTurns() <= 2)) {
+                            // dangerous netgun, move somewhere not in range!
+
+                            Direction badDir = rc.getLocation().directionTo(info.location);
+                            dangerousDirections.add(badDir);
+                            Direction badDirLeft = badDir.rotateLeft();
+                            Direction badDirRight = badDir.rotateRight();
+                            if (rc.adjacentLocation(badDirLeft).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+                                if (debug) System.out.println("Gonna avoid " + badDirLeft);
+                                dangerousDirections.add(badDirLeft);
+                            }
+                            if (rc.adjacentLocation(badDirRight).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+                                dangerousDirections.add(badDirRight);
+                                if (debug) System.out.println("Gonna avoid " + badDirRight);
+                            }
+                            if (debug) System.out.println("Gonna avoid " + rc.getLocation().directionTo(info.location));
+                        }
                     }
                 }
 
@@ -812,7 +803,7 @@ public class DeliveryDrone extends RobotPlayer {
                 // engage cows if there are 0 enemies and friend drones
                 // don't engage if its near HQ
 
-                if (closestEnemyMiner != null || closestEnemyLandscaper != null || (nearestCow != null && nearbyEnemyRobots.length == 0)) {
+                if (closestEnemyMiner != null || closestEnemyLandscaper != null) {
                     RobotInfo enemyToEngage = closestEnemyMiner;
 
                     // pick a new enemy to engage if we didnt find one or if the one we found is too close to enemy base
@@ -1112,7 +1103,7 @@ public class DeliveryDrone extends RobotPlayer {
         {
             if (targetLoc != null && rc.isReady()) {
                 Direction dir = getBugPathMoveDrone(targetLoc, dangerousDirections);
-                if (!dir.equals(Direction.CENTER)) {
+                if (!dir.equals(Direction.CENTER) && rc.canMove(dir)) {
                     lastDir = dir;
                     rc.move(dir);
                 }
