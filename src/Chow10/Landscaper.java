@@ -135,7 +135,7 @@ public class Landscaper extends RobotPlayer {
 
                             int distToHQ = checkLoc.distanceSquaredTo(HQLocation);
                             // make sure its not too deep, not near HQ, but within some dist of HQ, and is not a dig location, and is lower than desired
-                            if (elevation < DESIRED_ELEVATION_FOR_TERRAFORM) {
+                            if (locToTerraform == null && elevation < DESIRED_ELEVATION_FOR_TERRAFORM) {
                                 if (!isDigLocation(checkLoc) && elevation > -100 && distToHQ < terraformDistAwayFromHQ && distToHQ > HQ_LAND_RANGE) {
                                     if (rc.isLocationOccupied(checkLoc)) {
                                         RobotInfo info = rc.senseRobotAtLocation(checkLoc);
@@ -169,7 +169,7 @@ public class Landscaper extends RobotPlayer {
                                 }
                             }
                             // instead of isDigLocation
-                            if (checkLoc.x % 3 == HQLocation.x % 3  && checkLoc.y % 3 == HQLocation.y % 3 && distToHQ > 9) {
+                            if (closestDigLocation == null && checkLoc.x % 3 == HQLocation.x % 3  && checkLoc.y % 3 == HQLocation.y % 3 && distToHQ > 9) {
                                 int distToDigLoc = checkLoc.distanceSquaredTo(rc.getLocation());
                                 // check dig loc isn't all water
                                 if (rc.senseFlooding(checkLoc)) {
