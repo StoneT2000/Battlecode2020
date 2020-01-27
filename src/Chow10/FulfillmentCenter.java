@@ -60,6 +60,12 @@ public class FulfillmentCenter extends RobotPlayer {
             confirmBuild = true;
             if (debug) System.out.println("Building first one");
         }
+
+        // ocassionally build more
+        /*
+        if (rc.getRoundNum() <= 500 && dronesNearby < 3 && rc.getRoundNum() % 20 == 0 && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 250) {
+
+        }*/
         // in end game keep building
         /*
         if (inEndGame && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 200) {
@@ -71,7 +77,7 @@ public class FulfillmentCenter extends RobotPlayer {
             confirmBuild = true;
             if (debug) System.out.println("Building to fight landscapers");
         }
-        if (vaporatorsBuilt * 1 > dronesBuilt && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + 350) {
+        if (vaporatorsBuilt * 1 > dronesBuilt && rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost) {
             confirmBuild = true;
             if (debug) System.out.println("Building balance");
         }

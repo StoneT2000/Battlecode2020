@@ -29,10 +29,11 @@ public class HQ extends RobotPlayer {
     static int wallBotsMax = 20; // max landscapers that can be on wall and second wall
     static int wallSpaces = 20;
 
+    static int buildQueueAmount = 0;
     static HashTable<Integer> idsOfRushUnitsCalledOut = new HashTable<>(10);
 
     public static void run() throws GameActionException {
-        if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup() + " | Miners Built: " + minersBuilt + " FulfillmentCenters Built: " + FulfillmentCentersBuilt);
+        if (debug) System.out.println("TEAM SOUP: " + rc.getTeamSoup() + " | Miners Built: " + minersBuilt + " FulfillmentCenters Built: " + FulfillmentCentersBuilt + " | buildQueueAmount: " +buildQueueAmount);
         wallBotsMax = wallSpaces;
         // shoot nearest robot
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
@@ -304,9 +305,10 @@ public class HQ extends RobotPlayer {
                         existsSoup = true;
                         int soupThere = msg[3];
                         int minersThere = msg[4];
-                        if (soupThere / (minersThere + 1) >= 500) {
-                            if (debug) System.out.println("Try to build because exists soup loc with not enough miners");
+                        if (soupThere / (minersThere + 1) >= 300) {
+
                             buildBecauseNeedMiners = true;
+                            if (debug) System.out.println("Try to build miner because exists soup loc with not enough miners");
                         }
 
                     }
@@ -329,11 +331,12 @@ public class HQ extends RobotPlayer {
             if (debug) System.out.println("Try to build because early and 750 + 70 soup");
             unitToBuild = RobotType.MINER;
         }
-        if  (rc.getRoundNum() < 15) {
+        if  (rc.getRoundNum() < 50 && minersBuilt < 4) {
             unitToBuild = RobotType.MINER;
         }
         // if we have minerCost + FC Cost, build miner and hope it builds FC. dont build more miners...
         if (unitToBuild != null) {
+            unitToBuild = RobotType.MINER;
             // proceed with building unit using default heurstics
             if (debug) System.out.println("closest soup: " + closestSoupLoc);
             build(closestSoupLoc);

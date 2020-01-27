@@ -436,7 +436,17 @@ public class Miner extends RobotPlayer {
                 proceedWithBuild = false;
                 setTargetLoc(HQLocation);
             }
+            if (unitToBuild == RobotType.DESIGN_SCHOOL && rc.getRoundNum() > 300 && rc.getLocation().distanceSquaredTo(HQLocation) > 36) {
+                // make sure miner goes back to HQ to build this
+                proceedWithBuild = false;
+                setTargetLoc(HQLocation);
+            }
             if (unitToBuild == RobotType.FULFILLMENT_CENTER && rc.getRoundNum() <= 300 && rc.getLocation().distanceSquaredTo(HQLocation) > 8) {
+                // make sure miner goes back to HQ to build this
+                proceedWithBuild = false;
+                setTargetLoc(HQLocation);
+            }
+            if (unitToBuild == RobotType.FULFILLMENT_CENTER && rc.getRoundNum() > 300 && rc.getLocation().distanceSquaredTo(HQLocation) > 36) {
                 // make sure miner goes back to HQ to build this
                 proceedWithBuild = false;
                 setTargetLoc(HQLocation);
@@ -452,7 +462,7 @@ public class Miner extends RobotPlayer {
                     // if school or FC, just build asap, otherwise build on grid, not dig locations, and can't be next to flood, if next to flood, height must be 12
                     if (rc.onTheMap(buildLoc)) {
                         if (debug) System.out.println("Checkign build dir " + buildDir);
-                        if ((unitToBuild == RobotType.REFINERY || unitToBuild == RobotType.DESIGN_SCHOOL ||
+                        if ((unitToBuild == RobotType.REFINERY || unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER ||
                                 ((buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2)
                                         && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 5)
                                 )
@@ -631,7 +641,7 @@ public class Miner extends RobotPlayer {
                 }
                 else if ((msg[1] ^ BUILD_A_SCHOOL) == 0 && role != ATTACK) {
                     int soupThen = msg[2];
-                    if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && soupThen - rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost / 2 && distToHQ <= 48) {
+                    if (rc.getTeamSoup() >= RobotType.DESIGN_SCHOOL.cost && soupThen - rc.getTeamSoup() < RobotType.DESIGN_SCHOOL.cost / 2) {
                         role = BUILDING;
                         unitToBuild = RobotType.DESIGN_SCHOOL;
                         if (debug) System.out.println("Told to build a school");
