@@ -53,7 +53,7 @@ public class DeliveryDrone extends RobotPlayer {
     static HashTable<MapLocation> MainWall = new HashTable<>(8);
     static HashTable<MapLocation> SecondWall = new HashTable<>(12);
     static HashTable<MapLocation> BuildPositionsTaken = new HashTable<>(10);
-    static HashTable<MapLocation> enemyNetguns = new HashTable<>(50);
+    static HashTable<MapLocation> enemyNetguns = new HashTable<>(20);
 
 
     static Direction lastDir = null;
@@ -304,15 +304,14 @@ public class DeliveryDrone extends RobotPlayer {
                                         role = ATTACK;
 
                                         // code copied from miner switch case when attacking
-                                        int dist2 = rc.getLocation().distanceSquaredTo(info.getLocation());
-                                        if (dist2 < closestEnemyMinerDist) {
-                                            closestEnemyMinerDist = dist2;
+                                        if (dist < closestEnemyMinerDist) {
+                                            closestEnemyMinerDist = dist;
                                             closestEnemyMiner = info;
                                             if (debug) System.out.println("Found closer enemy miner at " + info.location);
                                         }
                                         if (info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE) {
-                                            if (dist2 < closestEnemyInHQSpace) {
-                                                closestEnemyInHQSpace = dist2;
+                                            if (dist < closestEnemyInHQSpace) {
+                                                closestEnemyInHQSpace = dist;
                                                 enemyInHQSpace = info;
                                             }
                                         }
@@ -588,11 +587,8 @@ public class DeliveryDrone extends RobotPlayer {
             }
         }
 
-        if (role == MOVING_TO_UNIT_TO_MOVE) {
-
-        }
         // special case of ATTACK. We don't circle, we are given an enemy coordinate and we go there
-        else if (role == RUSH_DEFEND) {
+        if (role == RUSH_DEFEND) {
             setTargetLoc(locOfRushUnit);
             if (rc.canSenseLocation(locOfRushUnit) && rushUnitToAttack == null) {
                 // if we can see the posted location and see no rush unit and we are still in this role, something is clearly wrong
