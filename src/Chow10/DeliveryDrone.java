@@ -1098,7 +1098,6 @@ public class DeliveryDrone extends RobotPlayer {
                 }
             }
         }
-        System.out.println(enemyNetguns.size + " netguns known");
     }
     public static void setup() throws GameActionException {
         storeHQLocationAndGetConstants();
