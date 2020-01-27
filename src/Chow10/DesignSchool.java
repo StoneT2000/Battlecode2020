@@ -169,7 +169,7 @@ public class DesignSchool extends RobotPlayer {
 
     }
     public static void setup() throws GameActionException {
-        storeHQLocation();
+        storeHQLocationAndGetConstants();
         announceSelfLocation(1);
         for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i>= 0; ) {
             int[] deltas = Constants.FirstLandscaperPosAroundHQ[i];

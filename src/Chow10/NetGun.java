@@ -59,6 +59,6 @@ public class NetGun extends RobotPlayer {
         }
     }
     public static void setup() throws GameActionException {
-        storeHQLocation();
+        storeHQLocationAndGetConstants();
     }
 }

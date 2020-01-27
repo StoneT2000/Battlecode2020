@@ -1052,7 +1052,7 @@ public class Landscaper extends RobotPlayer {
         };
     }
     public static void setup() throws GameActionException {
-        storeHQLocation();
+        storeHQLocationAndGetConstants();
         storeEnemyHQLocations();
         for (int i = Constants.DigDeltasAroundHQ.length; --i>= 0; ) {
             int[] deltas = Constants.DigDeltasAroundHQ[i];

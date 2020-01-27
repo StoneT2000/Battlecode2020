@@ -51,7 +51,7 @@ public class Vaporator extends RobotPlayer {
         }
     }
     public static void setup() throws GameActionException {
-        storeHQLocation();
+        storeHQLocationAndGetConstants();
         if (rc.getTeamSoup() >= 1) {
             announceSelfLocation(1);
             announcedSelf = true;

@@ -504,8 +504,22 @@ public class HQ extends RobotPlayer {
     }
 
     public static void setup() throws GameActionException {
-        announceSelfLocation(1);
         HQLocation = rc.getLocation();
+        double optimalRadius = bestRToUse();
+        MAX_TERRAFORM_DIST = (int) (optimalRadius * optimalRadius);
+
+        //announceSelfLocation(1);
+        // announce we are HQ, location, and max terraform dist.
+        int[] message = new int[] {generateUNIQUEKEY(), rc.getType().ordinal(), hashLoc(rc.getLocation()), MAX_TERRAFORM_DIST, randomInt(), randomInt(), randomInt()};
+        encodeMsg(message);
+        if (rc.canSubmitTransaction(message, 1)) {
+            rc.submitTransaction(message, 1);
+        }
+        else {
+        }
+
+
+
         storeEnemyHQLocations();
         mapSize = rc.getMapWidth() * rc.getMapHeight();
         mapCenter =  new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2);

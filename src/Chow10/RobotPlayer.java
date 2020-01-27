@@ -260,7 +260,7 @@ public strictfp class RobotPlayer {
     }
 
     // store hq location
-    static void storeHQLocation() throws GameActionException {
+    static void storeHQLocationAndGetConstants() throws GameActionException {
         int roundCheck = 1;
         theLoop: {
             while (HQLocation == null && roundCheck < 10) {
@@ -275,6 +275,7 @@ public strictfp class RobotPlayer {
                         if (msg[1] == 0) {
                             HQLocation = parseLoc(msg[2]);
                             if (debug) System.out.println("Stored HQ Location: " +HQLocation + " | len " + msg.length + " | round: " + roundCheck);
+                            MAX_TERRAFORM_DIST = msg[3];
                             break theLoop;
                         }
                     }
@@ -518,6 +519,120 @@ public strictfp class RobotPlayer {
             dir = dir.rotateRight();
         }
         return false;
+    }
+    static double minArea = Math.PI * 134;
+
+    // r is not r2, is regular radius
+    // used to determine what MAX_TERRAFORM_DIST should be so our platform is always at around minArea large.
+    static boolean checkIfRadiusIsGood(double r) {
+        //11.5758369028 = sqrt(134)
+        double dx = -1;
+        double dy = -1;
+        dx = Math.min(Math.abs(HQLocation.x - 0), Math.abs(HQLocation.x - rc.getMapWidth()));
+        dy = Math.min(Math.abs(HQLocation.y - 0), Math.abs(HQLocation.y - rc.getMapHeight()));
+        if (dx >= r && dy >= r) {
+            // enclosed, not intersecting map borders...
+            if (r * r >= 134) {
+                return true; // this is a valid r
+            }
+        }
+        else if (dx >= r && dy < r) {
+            // y-wise, intersecting border
+            double angle = Math.acos(dy / r);
+            double sy = Math.sin(angle) * r;
+            double trueArea = Math.PI * r * r - angle * r * r + dy * sy;
+            if (trueArea >= minArea - 1) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else if (dx < r && dy >= r) {
+            // x-wise, intersecting border
+            double angle = Math.acos(dx / r);
+            double sx = Math.sin(angle) * r;
+            double trueArea = Math.PI * r * r - angle * r * r + dx * sx;
+            if (trueArea >= minArea - 1) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            //y-wise and x-wise, intersecting border
+            // determine first if corner point is in radius or not
+            int[][] cornerLocs = {{0, 0}, {0, rc.getMapHeight()}, {rc.getMapWidth(), 0}, {rc.getMapWidth(), rc.getMapHeight()}};
+            int[] myLoc = {rc.getLocation().x, rc.getLocation().y};
+            double r2 = r * r;
+            int[] cornerLocInRadius = null;
+            for (int i = cornerLocs.length; --i>= 0; ) {
+                int[] cornerLoc = cornerLocs[i];
+                if (r2Dist(cornerLoc, myLoc) <= r2) {
+                    cornerLocInRadius = cornerLoc;
+                    break;
+                }
+
+            }
+
+            if (cornerLocInRadius != null) {
+                // corner is in the radius, we need to treat it differently then.
+                double angley = Math.acos(dy / r);
+                double anglex = Math.acos(dx / r);
+                double sy = Math.sin(angley) * r;
+                double sx = Math.sin(angley) * r;
+                double areaOfTriangleY = dy * sy / 2;
+                double areaOfTriangleX = dx * sx / 2;
+                double enclosedRect = Math.abs((cornerLocInRadius[0] - myLoc[0]) * (cornerLocInRadius[1] - myLoc[1]));
+                double sectorArea = (Math.PI / 2 + anglex + angley) * r * r / 2;
+
+                double trueArea = Math.PI * r * r - sectorArea + enclosedRect + areaOfTriangleX + areaOfTriangleY;
+                if (trueArea >= minArea - 1) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+
+            }
+            // no corner in radius, solve as usual
+            else {
+                double angley = Math.acos(dy / r);
+                double sy = Math.sin(angley) * r;
+                double anglex = Math.acos(dx / r);
+                double sx = Math.sin(anglex) * r;
+                double trueArea = Math.PI * r * r - angley * r * r + dx * sx - anglex * r * r + dy * sy;
+                if (trueArea >= minArea - 1) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+
+        }
+        return false;
+    }
+
+    static double r2Dist(int[] x1, int[] x2) {
+        double dx = x2[0] - x1[0];
+        double dy = x2[1] - x1[1];
+        return dx * dx + dy * dy;
+    }
+
+    static double bestRToUse() {
+        double bestRadius = 11;
+        while (bestRadius < 20) {
+            // test 11 + i;
+            boolean good = checkIfRadiusIsGood(bestRadius);
+            if (debug) System.out.println("Radius: " + (bestRadius) + " is " + good);
+            if (good) {
+                break;
+            }
+            bestRadius += 0.5;
+        }
+        return bestRadius;
     }
 
 }

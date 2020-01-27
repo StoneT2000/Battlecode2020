@@ -762,7 +762,7 @@ public class Miner extends RobotPlayer {
     }
 
     public static void setup() throws GameActionException {
-        storeHQLocation();
+        storeHQLocationAndGetConstants();
 
         // if null cuz too early in the game, find by search
         if (HQLocation == null) {

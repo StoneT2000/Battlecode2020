@@ -136,7 +136,7 @@ public class FulfillmentCenter extends RobotPlayer {
         }
     }
     public static void setup() throws GameActionException {
-        storeHQLocation();
+        storeHQLocationAndGetConstants();
         announceSelfLocation(1);
         if (rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + RobotType.MINER.cost * 2) {
             boolean builtUnit = false;

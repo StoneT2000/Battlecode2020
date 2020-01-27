@@ -1108,7 +1108,7 @@ public class DeliveryDrone extends RobotPlayer {
         }
     }
     public static void setup() throws GameActionException {
-        storeHQLocation();
+        storeHQLocationAndGetConstants();
         storeEnemyHQLocations();
         attackLoc = HQLocation;
         // find FC that produced us, and set it as attackLoc.
