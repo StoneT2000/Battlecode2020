@@ -584,23 +584,7 @@ public class Miner extends RobotPlayer {
 
 
     // find closest robots from list of robots to a location.
-    static RobotInfo getClosestRobot(LinkedList<RobotInfo> robots, MapLocation sourceLoc) {
-        if (robots.size == 0) {
-            return null;
-        }
-        int closestDist = 99999999;
-        RobotInfo closestRobot = null;
-        Node<RobotInfo> node = robots.head;
-        while (node != null) {
-            int dist = sourceLoc.distanceSquaredTo(node.val.location);
-            if (dist < closestDist) {
-                closestDist = dist;
-                closestRobot = node.val;
-            }
-            node = node.next;
-        }
-        return closestRobot;
-    }
+
 
 
     // algorithm to allow miner to explore and attempt to generally move to new spaces

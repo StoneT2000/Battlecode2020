@@ -640,4 +640,61 @@ public strictfp class RobotPlayer {
         return bestRadius;
     }
 
+    static RobotInfo getClosestRobot(LinkedList<RobotInfo> robots, MapLocation sourceLoc) {
+        if (robots.size == 0) {
+            return null;
+        }
+        int closestDist = 99999999;
+        RobotInfo closestRobot = null;
+        Node<RobotInfo> node = robots.head;
+        while (node != null) {
+            int dist = sourceLoc.distanceSquaredTo(node.val.location);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestRobot = node.val;
+            }
+            node = node.next;
+        }
+        return closestRobot;
+    }
+
+    static RobotInfo getClosestRobot(HashTable<RobotInfo> robots, MapLocation sourceLoc) {
+        if (robots.size == 0) {
+            return null;
+        }
+        int closestDist = 99999999;
+        RobotInfo closestRobot = null;
+        Node<RobotInfo> node = robots.next();
+        while (node != null) {
+            if (debug) System.out.println("Robot at " + node.val.location);
+            int dist = sourceLoc.distanceSquaredTo(node.val.location);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestRobot = node.val;
+            }
+            node = robots.next();
+        }
+        robots.resetIterator();
+        return closestRobot;
+    }
+    static MapLocation getClosestLoc(HashTable<MapLocation> robotLocs, MapLocation sourceLoc) {
+        if (robotLocs.size == 0) {
+            return null;
+        }
+        int closestDist = 99999999;
+        MapLocation closestRobotLoc = null;
+        Node<MapLocation> node = robotLocs.next();
+        while (node != null) {
+            if (debug) System.out.println("Robot Loc at " + node.val);
+            int dist = sourceLoc.distanceSquaredTo(node.val);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestRobotLoc = node.val;
+            }
+            node = robotLocs.next();
+        }
+        robotLocs.resetIterator();
+        return closestRobotLoc;
+    }
+
 }

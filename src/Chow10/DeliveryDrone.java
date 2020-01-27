@@ -53,6 +53,8 @@ public class DeliveryDrone extends RobotPlayer {
     static HashTable<MapLocation> MainWall = new HashTable<>(8);
     static HashTable<MapLocation> SecondWall = new HashTable<>(12);
     static HashTable<MapLocation> BuildPositionsTaken = new HashTable<>(10);
+    static HashTable<MapLocation> enemyNetguns = new HashTable<>(50);
+
     public static void run() throws GameActionException {
         Transaction[] lastRoundsBlocks = rc.getBlock(rc.getRoundNum() - 1);
         processBlocks(lastRoundsBlocks);
@@ -62,7 +64,7 @@ public class DeliveryDrone extends RobotPlayer {
         RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(-1, Team.NEUTRAL);
         HashTable<Direction> dangerousDirections = new HashTable<>(4); // directioons that when moved in, will result in netgun death
-        HashTable<MapLocation> enemyNetguns = new HashTable<>(10);
+
         RobotInfo closestEnemyLandscaper = null;
         RobotInfo closestEnemyMiner = null;
         int closestEnemyLandscaperDist = 99999999;
@@ -369,6 +371,15 @@ public class DeliveryDrone extends RobotPlayer {
                     if (enemyBaseLocation != null && dist < distToNearestDropZoneLoc && checkLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ) {
                         nearestDropZoneLoc = checkLoc;
                         distToNearestDropZoneLoc = dist;
+                    }
+                }
+                if (!rc.isLocationOccupied(checkLoc)) {
+                    enemyNetguns.remove(checkLoc);
+                }
+                else {
+                    RobotInfo robotThere = rc.senseRobotAtLocation(checkLoc);
+                    if (robotThere.type != RobotType.NET_GUN || robotThere.team == rc.getTeam()) {
+                        enemyNetguns.remove(checkLoc);
                     }
                 }
                 int elevation = rc.senseElevation(checkLoc);
@@ -1158,6 +1169,14 @@ public class DeliveryDrone extends RobotPlayer {
         Direction dir = rc.getLocation().directionTo(target);
         // go with most greedy move
 
+        for (int i = Constants.DroneBlindSpots.length; --i>= 0; ) {
+            int[] deltas = Constants.DroneBlindSpots[i];
+            MapLocation spot = rc.getLocation().translate(deltas[0], deltas[1]);
+            if (enemyNetguns.contains(spot)) {
+                dangerousDirections.add(rc.getLocation().directionTo(spot)); // add this dir to dangers
+            }
+        }
+
         Direction greedyDir = Direction.CENTER;
         int closestDist = 999999999;
         for (int i = 7; --i >= 0; ) {
@@ -1165,6 +1184,14 @@ public class DeliveryDrone extends RobotPlayer {
             MapLocation adjLoc = rc.adjacentLocation(dir);
             int dist = adjLoc.distanceSquaredTo(target);
             if (!dangerousDirections.contains(dir) && rc.canSenseLocation(adjLoc)) {
+                // check if its too close to enemy net guns
+                int init = Clock.getBytecodesLeft();
+
+                //MapLocation closestEnemyNetgunLoc = getClosestLoc(enemyNetguns, adjLoc);
+                // check blindspots first
+
+                int after = Clock.getBytecodesLeft();
+                if (debug) System.out.println("Finding closest costed: " + (init - after));
                 if (rc.canMove(dir)) {
                     if (dist < closestDist) {
                         greedyDir = dir;

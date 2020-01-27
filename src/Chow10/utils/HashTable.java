@@ -3,7 +3,7 @@ package Chow10.utils;
 public class HashTable<T> {
     LinkedList<T>[] table;
     int capacity;
-    int size = 0;
+    public int size = 0;
     int tabIndex = 0;
     Node<T> curr = null;
     public HashTable(int capacity) {
