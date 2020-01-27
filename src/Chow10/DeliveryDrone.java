@@ -211,7 +211,7 @@ public class DeliveryDrone extends RobotPlayer {
                         int elevation = rc.senseElevation(checkLoc);
                         if (elevation >= DESIRED_ELEVATION_FOR_TERRAFORM && elevation <= DESIRED_ELEVATION_FOR_TERRAFORM + 6) {
                             // closest highland that isn't in HQ breathing space
-                            if (dist < distToHighLand && checkLoc.distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
+                            if (checkLoc.distanceSquaredTo(HQLocation) > HQ_LAND_RANGE) {
                                 nearestEmptyHighLand = checkLoc;
                                 distToHighLand = dist;
                                 if (debug) System.out.println(checkLoc + " is empty high land");
@@ -239,10 +239,8 @@ public class DeliveryDrone extends RobotPlayer {
                                 // if not on second wall either, consider ir. WE only consider if we think there is wall space left
                                 if (wallSpotLeft && nearestLandscaper == null && !MainWall.contains(info.location) ) {
                                     if (!SecondWall.contains(info.location)) {
-                                        if (dist < distToNearestLandscaper) {
-                                            distToNearestLandscaper = dist;
-                                            nearestLandscaper = info;
-                                        }
+                                        distToNearestLandscaper = dist;
+                                        nearestLandscaper = info;
                                     }
                                 }
                                 int distToHQ = info.location.distanceSquaredTo(HQLocation);
@@ -255,29 +253,22 @@ public class DeliveryDrone extends RobotPlayer {
                                     }
                                 }
                                 if (nearestAdjacentToHQLandscaper == null && distToHQ <= HQ_LAND_RANGE) {
-                                    if (dist < distToNearestAdjacentToHQLandscaper) {
-                                        distToNearestAdjacentToHQLandscaper = dist;
-                                        nearestAdjacentToHQLandscaper = info;
-                                    }
+                                    distToNearestAdjacentToHQLandscaper = dist;
+                                    nearestAdjacentToHQLandscaper = info;
                                 }
                                 break;
                             case MINER:
                                 if (nearestLowMiner == null && rc.senseElevation(info.location) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
-                                    if (dist < distToNearestMiner) {
-                                        distToNearestMiner = dist;
-                                        nearestLowMiner = info;
-                                    }
+                                    distToNearestMiner = dist;
+                                    nearestLowMiner = info;
                                 }
                                 minerCount++;
                                 // find nearest miner adjacent to HQ to remove, do so if they aren't carrying soup
                                 if (debug)
                                     System.out.println("Found miner at " + info.location + " | soup: " + info.getSoupCarrying());
                                 if (nearestAdjacentToHQMiner == null && info.location.distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && info.getSoupCarrying() == 0) {
-
-                                    if (dist < distToNearestMinerAdjacentToHQ) {
-                                        distToNearestMinerAdjacentToHQ = dist;
-                                        nearestAdjacentToHQMiner = info;
-                                    }
+                                    distToNearestMinerAdjacentToHQ = dist;
+                                    nearestAdjacentToHQMiner = info;
                                 }
                     /* disable attack miners
                     if (attackWithAllUnits) {
@@ -328,7 +319,7 @@ public class DeliveryDrone extends RobotPlayer {
                             case ATTACK:
                                 switch(info.type) {
                                     case LANDSCAPER:
-                                        if (closestEnemyLandscaper == null && dist < closestEnemyLandscaperDist) {
+                                        if (closestEnemyLandscaper == null) {
                                             closestEnemyLandscaperDist = dist;
                                             closestEnemyLandscaper = info;
                                             if (debug) System.out.println("Found closer enemy landscaper at " + info.location);
@@ -1182,12 +1173,6 @@ public class DeliveryDrone extends RobotPlayer {
             int dist = adjLoc.distanceSquaredTo(target);
             if (!dangerousDirections.contains(dir) && rc.canSenseLocation(adjLoc) && (lastDir == null || !greedyDir.equals(lastDir))) {
                 // check if its too close to enemy net guns
-                int init = Clock.getBytecodesLeft();
-
-                //MapLocation closestEnemyNetgunLoc = getClosestLoc(enemyNetguns, adjLoc);
-                // check blindspots first
-
-                int after = Clock.getBytecodesLeft();
 
                 if (rc.canMove(dir)) {
                     if (dist < closestDist) {
