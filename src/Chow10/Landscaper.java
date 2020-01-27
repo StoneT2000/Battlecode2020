@@ -362,24 +362,33 @@ public class Landscaper extends RobotPlayer {
                             }
                         }
                     } else {
-                        // dig down to make wall building harder
-                        Direction digDir = Direction.CENTER; //dirToHQ.opposite();
-                        // if we are attacking a normal building, take dirt from elsewhere
-                        if (nearestEnemy != null) {
-                            // loop to 1 so we don't include center
-                            for (int i = directions.length; --i >= 1; ) {
-                                Direction testDir = directions[i];
-                                MapLocation testLoc = rc.adjacentLocation(testDir);
-                                // dig out from location that is not occupied, and if it is, it is occupied by enemy bot
-                                if (rc.canDigDirt(testDir) && (!rc.isLocationOccupied(testLoc) || rc.senseRobotAtLocation(testLoc).team == enemyTeam)) {
-                                    rc.digDirt(directions[i]);
-                                    break;
-                                }
+
+                        if (attackLoc.equals(enemyBaseLocation)) {
+                            if (rc.canDigDirt(Direction.CENTER)) {
+                                rc.digDirt(Direction.CENTER);
                             }
                         }
-                        // otherwise proceed to dig down as we are digging enemy HQ
-                        else if (rc.canDigDirt(digDir)) {
-                            rc.digDirt(digDir);
+                        else {
+                            // dig down to make wall building harder
+                            Direction digDir = Direction.CENTER; //dirToHQ.opposite();
+                            // if we are attacking a normal building, take dirt from elsewhere
+                            if (nearestEnemy != null) {
+                                // loop to 1 so we don't include center
+                                for (int i = directions.length; --i >= 1; ) {
+                                    Direction testDir = directions[i];
+                                    MapLocation testLoc = rc.adjacentLocation(testDir);
+                                    // dig out from location that is not occupied, and if it is, it is occupied by enemy bot
+                                    if (rc.canDigDirt(testDir) && (!rc.isLocationOccupied(testLoc) || rc.senseRobotAtLocation(testLoc).team == enemyTeam)) {
+                                        rc.digDirt(directions[i]);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // otherwise proceed to dig down as we are digging enemy HQ
+                            else if (rc.canDigDirt(digDir)) {
+                                rc.digDirt(digDir);
+                            }
                         }
                     }
                 }

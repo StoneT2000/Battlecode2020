@@ -12,6 +12,7 @@ public class Miner extends RobotPlayer {
 
     static final int ATTACK = 4;
 
+    static int roundsOfCantBuild = 0;
     static Direction minedDirection;
     static int FulfillmentCentersBuilt = 0;
     static boolean firstFulfillmentCenterBuilt = false;
@@ -227,6 +228,45 @@ public class Miner extends RobotPlayer {
                         break;
                     }
                 }
+            }
+            // if no where to build, STOP! and disintegrate
+            boolean canBuildSomewhere = false;
+            int i = 0;
+            Direction buildDir = Direction.NORTH;
+
+            int myElevation = rc.senseElevation(rc.getLocation());
+            // if surrounded by my own units, disintegrate
+            while(i++ < 8) {
+
+                MapLocation adjLoc = rc.adjacentLocation(buildDir);
+                int elevation = rc.senseElevation(adjLoc);
+                // in good elevation
+                if (rc.canSenseLocation(adjLoc) && (elevation + 3 >= myElevation && myElevation >= elevation - 3)) {
+                    // occupied by enemy is ok
+                    if (rc.isLocationOccupied(adjLoc)) {
+                        RobotInfo robThere = rc.senseRobotAtLocation(adjLoc);
+                        if (robThere.team == enemyTeam) {
+                            // enemy team? can still build
+                            canBuildSomewhere = true;
+                            break;
+                        }
+                    }
+                    else {
+                        canBuildSomewhere = true;
+                        break;
+                    }
+                }
+                buildDir = buildDir.rotateRight();
+            }
+            if (!canBuildSomewhere) {
+                roundsOfCantBuild++;
+
+            }
+            else {
+                roundsOfCantBuild = 0;
+            }
+            if (roundsOfCantBuild >= 8) {
+                rc.disintegrate();
             }
             return;
         }

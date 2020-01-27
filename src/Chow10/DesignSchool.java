@@ -135,7 +135,8 @@ public class DesignSchool extends RobotPlayer {
 
             dirCheck = dirCheck.rotateLeft();
         }
-        if (blocked && rc.getRoundNum() >= 1000) {
+        // if blocked, high rounds, and within platform with some buffer distance, disintegrate as needed
+        if (blocked && rc.getRoundNum() >= 1000 && rc.getLocation().distanceSquaredTo(HQLocation) <= MAX_TERRAFORM_DIST + 20) {
             rc.disintegrate();
         }
         if (rc.getLocation().distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && wallIn) {
