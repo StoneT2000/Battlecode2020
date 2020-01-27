@@ -1010,7 +1010,6 @@ public class DeliveryDrone extends RobotPlayer {
                                     setTargetLoc(HQLocation);
                                     attackLoc = HQLocation;
 
-                                    System.out.println("Heading to HQ to give space for island");
                                 }
                             }
                             if (attackWithAllUnits && rc.isCurrentlyHoldingUnit() && friendlyUnitHeld != null && enemyBaseLocation != null) {
@@ -1046,7 +1045,6 @@ public class DeliveryDrone extends RobotPlayer {
 
                                         if (rc.getLocation().distanceSquaredTo(islandCenter) > 2) {
                                             setTargetLoc(islandCenter);
-                                            System.out.println("Heading to "+ islandCenter + " to make island");
                                         }
                                         else {
                                             if (rc.canSenseLocation(islandCenter)) {

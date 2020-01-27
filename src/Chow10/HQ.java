@@ -388,7 +388,6 @@ public class HQ extends RobotPlayer {
         if (rc.getRoundNum() >= 1750 && rc.getRoundNum() % 10 == 0 && surroundedByFloodRound == -1) {
             announceMessage(SWARM_WITH_UNITS);
         }
-        System.out.println("Flooded: " + surroundedByFloodRound + " | last main wall attack: " + attackedMainWallsRound);
         if (surroundedByFlood() && (surroundedByFloodRound == -1 || rc.getRoundNum() % 10 == 0) && rc.getRoundNum() >= 1700) {
             // announce if we havent been able to attack main walls in past 50 rounds
             if (attackedMainWallsRound + 50 < rc.getRoundNum()) {
