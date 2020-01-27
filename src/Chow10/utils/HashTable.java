@@ -15,8 +15,11 @@ public class HashTable<T> {
     }
     public void add(T obj) {
         int index = (Math.abs(obj.hashCode())) % this.capacity;
-        table[index].add(obj);
-        size++;
+        // doesn't contain, add it
+        if (!table[index].contains(obj)) {
+            table[index].add(obj);
+            size++;
+        }
     }
     public boolean contains(T obj) {
         int index = (Math.abs(obj.hashCode())) % this.capacity;
@@ -24,8 +27,12 @@ public class HashTable<T> {
     }
     public boolean remove(T obj) {
         int index = (Math.abs(obj.hashCode())) % this.capacity;
-        this.size--;
-        return table[index].remove(obj);
+        // contains it, remove it
+        if (table[index].contains(obj)) {
+            this.size--;
+            return table[index].remove(obj);
+        }
+        return false;
     }
     public void resetIterator() {
         tabIndex = 0;
