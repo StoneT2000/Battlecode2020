@@ -59,12 +59,14 @@ public class Miner extends RobotPlayer {
             Node<MapLocation> node = enemyHQLocations.head;
             for (int i = 0; i++ < enemyHQLocations.size; ) {
                 // check if there is enemey base
-                if (rc.canSenseLocation(node.val) && rc.isLocationOccupied(node.val)) {
-                    RobotInfo maybeEnemyHQ = rc.senseRobotAtLocation(node.val);
-                    if (maybeEnemyHQ.type == RobotType.HQ && maybeEnemyHQ.team == enemyTeam) {
-                        if (debug) System.out.println("MINER FOUND ENEMY HQ at " + node.val);
-                        enemyBaseLocation = maybeEnemyHQ.location;
-                        break;
+                if (rc.canSenseLocation(node.val)) {
+                    if (rc.isLocationOccupied(node.val)) {
+                        RobotInfo maybeEnemyHQ = rc.senseRobotAtLocation(node.val);
+                        if (maybeEnemyHQ.type == RobotType.HQ && maybeEnemyHQ.team == enemyTeam) {
+                            if (debug) System.out.println("MINER FOUND ENEMY HQ at " + node.val);
+                            enemyBaseLocation = maybeEnemyHQ.location;
+                            break;
+                        }
                     }
                 }
                 node = node.next;
@@ -470,7 +472,7 @@ public class Miner extends RobotPlayer {
                             boolean proceed = true;
                             if (terraformTime) {
                                 // only build on higher land
-                                if (rc.canSenseLocation(buildLoc) && rc.senseElevation(buildLoc) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+                                if (!rc.canSenseLocation(buildLoc) || rc.senseElevation(buildLoc) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
                                     proceed = false;
                                 }
                             }
@@ -748,8 +750,10 @@ public class Miner extends RobotPlayer {
     static boolean hasEmptyTileAround(MapLocation loc) throws GameActionException {
         for (Direction dir: directions) {
             MapLocation checkLoc = loc.add(dir);
-            if (rc.canSenseLocation(checkLoc) && !rc.senseFlooding(checkLoc)) {
-                return true;
+            if (rc.canSenseLocation(checkLoc)) {
+                if (!rc.senseFlooding(checkLoc)) {
+                    return true;
+                }
             }
         }
         return false;

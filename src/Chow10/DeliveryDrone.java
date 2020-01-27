@@ -1015,11 +1015,14 @@ public class DeliveryDrone extends RobotPlayer {
                                         MapLocation checkLoc = enemyBaseLocation.translate(deltas[0], deltas[1]);
                                         if (rc.onTheMap(checkLoc) && rc.getLocation().isAdjacentTo(checkLoc)) {
                                             Direction dirToWallLoc = rc.getLocation().directionTo(checkLoc);
-                                            if (rc.canSenseLocation(checkLoc) && !rc.senseFlooding(checkLoc) && rc.canDropUnit(dirToWallLoc)) {
-                                                rc.dropUnit(dirToWallLoc);
-                                                droppedUnit = true;
-                                                friendlyUnitHeld = null;
-                                                break;
+                                            if (rc.canSenseLocation(checkLoc)) {
+                                                if (!rc.senseFlooding(checkLoc) && rc.canDropUnit(dirToWallLoc)) {
+                                                    rc.dropUnit(dirToWallLoc);
+                                                    droppedUnit = true;
+                                                    friendlyUnitHeld = null;
+                                                    break;
+                                                }
+
                                             }
                                         }
                                     }
@@ -1120,11 +1123,13 @@ public class DeliveryDrone extends RobotPlayer {
         // find FC that produced us, and set it as attackLoc.
         for (Direction dir: directions) {
             MapLocation potentialCenterLoc = rc.adjacentLocation(dir);
-            if (rc.canSenseLocation(potentialCenterLoc) && rc.isLocationOccupied(potentialCenterLoc)) {
-                RobotInfo info = rc.senseRobotAtLocation(potentialCenterLoc);
-                if (info.type == RobotType.FULFILLMENT_CENTER && info.team == rc.getTeam()) {
-                    attackLoc = potentialCenterLoc;
-                    break;
+            if (rc.canSenseLocation(potentialCenterLoc)) {
+                if (rc.isLocationOccupied(potentialCenterLoc)) {
+                    RobotInfo info = rc.senseRobotAtLocation(potentialCenterLoc);
+                    if (info.type == RobotType.FULFILLMENT_CENTER && info.team == rc.getTeam()) {
+                        attackLoc = potentialCenterLoc;
+                        break;
+                    }
                 }
             }
         }

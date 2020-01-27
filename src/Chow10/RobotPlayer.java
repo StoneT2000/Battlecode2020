@@ -22,8 +22,8 @@ public strictfp class RobotPlayer {
     static MapLocation enemyBaseLocation = null; // the enemy HQ location
 
     static int turnCount;
-    static final boolean debug = true;
-    static final int UNIQUEKEY = -1293346721;
+    static final boolean debug = false;
+    static final int UNIQUEKEY = -1393346721;
     static Team enemyTeam; // enemy team enum
 
     static final int BASE_WALL_DIST = 1;
@@ -128,6 +128,8 @@ public strictfp class RobotPlayer {
                     case NET_GUN:            NetGun.run();            break;
                 }
 
+                if (Clock.getBytecodeNum() > 9500)
+                System.out.println("Bytes used: " + Clock.getBytecodeNum());
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
 
@@ -148,28 +150,7 @@ public strictfp class RobotPlayer {
             }
         }
     }
-    // using this because miners aparently mine better with this
-    static Direction badGetBugPathMove(MapLocation target) throws GameActionException {
-        Direction dir = rc.getLocation().directionTo(target);
-        MapLocation greedyLoc = rc.adjacentLocation(dir);
 
-        if (rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc)) {
-            if (rc.canMove(dir)) {
-                return dir;
-            }
-        }
-        for (int i = 7; --i >= 0; ) {
-            dir = dir.rotateLeft();
-            MapLocation adjLoc = rc.adjacentLocation(dir);
-            if (rc.canSenseLocation(adjLoc) && !rc.senseFlooding(adjLoc)) {
-                if (rc.canMove(dir)) {
-                    return dir;
-                }
-            }
-
-        }
-        return Direction.CENTER;
-    }
     static void rotateCircularly(MapLocation target) {
         if (rc.getID() % 2 == 0) {
             setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(target).opposite().rotateRight().rotateRight()));
@@ -209,27 +190,31 @@ public strictfp class RobotPlayer {
                 int greedyDist = greedyLoc.distanceSquaredTo(target);
 
                 // if it is closer than the closest we have ever been, we can sense it as well and its not flooding
-                if (greedyDist < closestGreedyDist && rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc)) {
-                    if (debug) System.out.println(dir +" is greedier " + greedyDist);
-                    // if we can move there
-                    if (rc.canMove(dir)) {
-                        if (debug) System.out.println(dir +" can move ");
-                        // update and move
-                        closestGreedyDist = greedyDist;
-                        greedyDir = dir;
-                        foundNonDangerousDir = true;
+                if (greedyDist < closestGreedyDist && rc.canSenseLocation(greedyLoc)) {
+                    if (!rc.senseFlooding(greedyLoc)) {
+                        if (debug) System.out.println(dir + " is greedier " + greedyDist);
+                        // if we can move there
+                        if (rc.canMove(dir)) {
+                            if (debug) System.out.println(dir + " can move ");
+                            // update and move
+                            closestGreedyDist = greedyDist;
+                            greedyDir = dir;
+                            foundNonDangerousDir = true;
+                        }
                     }
                 }
                 if (!wallDirSet) {
-                    if (rc.canSenseLocation(greedyLoc) && !rc.senseFlooding(greedyLoc) && rc.canMove(dir)) {
-                        wallDir = dir;
-                        wallDirSet = true;
-                        foundNonDangerousDir = true;
-                        if (!lastWallUpdated) {
-                            // not updated ever?
-                            lastWallChecked = null;
+                    if (rc.canSenseLocation(greedyLoc)) {
+                        if (!rc.senseFlooding(greedyLoc) && rc.canMove(dir)) {
+                            wallDir = dir;
+                            wallDirSet = true;
+                            foundNonDangerousDir = true;
+                            if (!lastWallUpdated) {
+                                // not updated ever?
+                                lastWallChecked = null;
+                            }
+                            if (debug) System.out.println(dir + ": new wall near direction now set ");
                         }
-                        if (debug) System.out.println(dir + ": new wall near direction now set ");
                     }
                     else {
                         lastWallChecked = greedyLoc; // last wall checked that is blocked
