@@ -403,6 +403,11 @@ public class Miner extends RobotPlayer {
                 unitToBuild = RobotType.NET_GUN;
             }
 
+            if (FulfillmentCenterCount == 0 && terraformTime == true && rc.getTeamSoup() > 2000 && rc.getRoundNum() > 1600 && distToHQ >= MAX_TERRAFORM_DIST - 20) {
+                role = BUILDING;
+                unitToBuild = RobotType.FULFILLMENT_CENTER;
+            }
+
             // EXPLORE if still no soup found and we aren't terraforming
             if (SoupLocation == null && terraformTime == false) {
                 if (debug) System.out.println("Exploring to " + exploreLocs[exploreLocIndex]);
@@ -434,7 +439,12 @@ public class Miner extends RobotPlayer {
                 proceedWithBuild = false;
                 setTargetLoc(HQLocation);
             }
-            if (unitToBuild == RobotType.VAPORATOR && rc.getRoundNum() > 250 && rc.getLocation().distanceSquaredTo(HQLocation) >= 36) {
+            if (unitToBuild == RobotType.VAPORATOR && rc.getRoundNum() > 250 && rc.getRoundNum() < 500 && rc.getLocation().distanceSquaredTo(HQLocation) >= 36) {
+                // make sure miner goes back to near HQ to build this
+                proceedWithBuild = false;
+                setTargetLoc(HQLocation);
+            }
+            if (unitToBuild == RobotType.VAPORATOR && rc.getRoundNum() >= 500 && rc.getLocation().distanceSquaredTo(HQLocation) >= MAX_TERRAFORM_DIST + 8) {
                 // make sure miner goes back to near HQ to build this
                 proceedWithBuild = false;
                 setTargetLoc(HQLocation);
@@ -458,6 +468,11 @@ public class Miner extends RobotPlayer {
                 // make sure miner goes back to HQ to build this
                 proceedWithBuild = false;
                 setTargetLoc(HQLocation);
+            }
+            // special case, building FCs on the edge of platform if high rounds and high soup (meaning we have little space
+            if (unitToBuild == RobotType.FULFILLMENT_CENTER && rc.getRoundNum() > 1600 && rc.getTeamSoup() > 2000) {
+                // make sure miner goes back to HQ to build this
+                proceedWithBuild = true;
             }
 
             if (proceedWithBuild) {
