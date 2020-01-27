@@ -29,6 +29,8 @@ public class HQ extends RobotPlayer {
     static int wallBotsMax = 20; // max landscapers that can be on wall and second wall
     static int wallSpaces = 20;
 
+    static boolean announcedWalledin;
+
     static int buildQueueAmount = 0;
     static HashTable<Integer> idsOfRushUnitsCalledOut = new HashTable<>(10);
 
@@ -205,12 +207,9 @@ public class HQ extends RobotPlayer {
         }
 
         // if platform is closer to completion, we want everyone on terraforming duties or we have our wall
+        // if later in match, announce terraform time if wall bots is not enough
         if ((wallBots >= wallBotsMax && rc.getRoundNum() % 10 == 0) || (rc.getRoundNum() >= 500 && rc.getRoundNum() % 10 == 0)) {
-            if (wallBots >= wallBotsMax) {
-                // keep terraforming and walling in.
-                announceTERRAFORM_AND_WALL_IN();
-            }
-            else {
+            if (wallBots < wallBotsMax) {
                 announceTERRAFORM_ALL_TIME();
             }
         }
@@ -220,6 +219,17 @@ public class HQ extends RobotPlayer {
             // every 15 rounds check if we have all our bots or not
             if (debug) System.out.println("I see " + myLandscapers + " landscapers and " + wallBots + " are on wall positions");
             if (wallBots <= wallBotsMax) {
+                // announce we are walling in
+                announcedWalledin = true;
+            }
+        }
+        // if we are walling in, announce every 10 rounds
+        if (announcedWalledin && rc.getRoundNum() % 10 == 0) {
+            if (wallBots >= wallBotsMax) {
+                // keep terraforming and walling in.
+                announceTERRAFORM_AND_WALL_IN();
+            }
+            else {
                 announceWALL_IN();
             }
         }

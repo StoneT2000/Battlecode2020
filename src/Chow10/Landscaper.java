@@ -1047,6 +1047,7 @@ public class Landscaper extends RobotPlayer {
                         role = DEFEND_HQ;
                         setTargetLoc(HQLocation);
                     }
+                    watchIfBotOnWall = true;
                 }
                 else if ((msg[1] ^ GETTING_RUSHED_HELP) == 0 && role != ATTACK) {
                     role = DEFEND_HQ;
