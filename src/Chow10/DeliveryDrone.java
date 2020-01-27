@@ -362,7 +362,7 @@ public class DeliveryDrone extends RobotPlayer {
                                 announceNET_GUN_LOCATION(info.location);
                             }
                         }
-                        if (dist <= 25 && (info.type == RobotType.NET_GUN) && (rc.getRoundNum() > 200 || info.getCooldownTurns() <= 2)) {
+                        if (dist <= 25 && (info.type == RobotType.NET_GUN)) {
                             // dangerous netgun, move somewhere not in range!
 
                             Direction badDir = rc.getLocation().directionTo(info.location);
@@ -1106,10 +1106,11 @@ public class DeliveryDrone extends RobotPlayer {
                     rc.move(dir);
                 }
                 else {
+                    /*
                     //were ready but didn't move...
                     if (rc.isReady()) {
                         lastDir = null;
-                    }
+                    }*/
                 }
             }
         }
@@ -1171,8 +1172,11 @@ public class DeliveryDrone extends RobotPlayer {
         for (int i = Constants.DroneBlindSpots.length; --i>= 0; ) {
             int[] deltas = Constants.DroneBlindSpots[i];
             MapLocation spot = rc.getLocation().translate(deltas[0], deltas[1]);
+            if (debug) System.out.println("Checking blind spot " + i + ": " + spot);
             if (enemyNetguns.contains(spot)) {
                 dangerousDirections.add(rc.getLocation().directionTo(spot)); // add this dir to dangers
+                dangerousDirections.add(rc.getLocation().directionTo(spot).rotateLeft());
+                dangerousDirections.add(rc.getLocation().directionTo(spot).rotateRight());
             }
         }
 
