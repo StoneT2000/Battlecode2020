@@ -114,6 +114,7 @@ public class HQ extends RobotPlayer {
 
 
 
+        int mainWallBots = 0;
         int wallBots = 0;
         int myDrones = 0;
         int designSchools = 0;
@@ -127,6 +128,9 @@ public class HQ extends RobotPlayer {
                 myLandscapers++;
                 if (dist <= 8 && dist != 4) {
                     wallBots++;
+                }
+                if (dist <= 2) {
+                    mainWallBots++;
                 }
             }
             if (info.type == RobotType.DELIVERY_DRONE) {
@@ -248,6 +252,12 @@ public class HQ extends RobotPlayer {
         if (gettingRushed && enemyNetGuns == 0) {
 
         }
+
+        // probably have a good eco going, let it be known that we are gonna do fast wall building now
+        if (vaporatorsBuilt >= 30 && rc.getRoundNum() % 50 == 0 && mainWallBots >= 8) {
+            //announceMessage(FAST_WALL_BUILD);
+        }
+
 
         // if we see an enemy landscaper or enemy miner
         if (enemyLandscapers > 0 || enemyMiners > 0) {

@@ -21,6 +21,8 @@ public class Landscaper extends RobotPlayer {
     static HashTable<MapLocation> FirstLandscaperPosAroundHQTable =  new HashTable<>(9);
     static HashTable<MapLocation> BuildPositionsTaken = new HashTable<>(10);
 
+    static boolean maySuicideForWall = false;
+
     static boolean watchIfBotOnWall = false; // if true, landscaper auto becomes defend hq mode if on our wall
 
     public static void run() throws GameActionException {
@@ -714,6 +716,11 @@ public class Landscaper extends RobotPlayer {
             if (debug) System.out.println("Going to build loc " + targetLoc + " | Closest rush defence loc " + closestDefendRushLoc +  " | closest support loc " + closestSupportLoc + " | water change rate: " + waterChangeRate + " | levels: " + calculateWaterLevels());
             // if landscaper is on top of build loc
             if (distToBuildLoc == 0) {
+
+                if (maySuicideForWall && rc.getDirtCarrying() == 25) {
+                    //rc.disintegrate();
+                }
+
                 // build wall only when we have max dirt, so to stock up and prevent rushes faster mayb e
                 if (rc.getDirtCarrying() > 24) {
                     // deposit on places lower than you and has friend landscaper and is on a valid location
@@ -1047,6 +1054,9 @@ public class Landscaper extends RobotPlayer {
                 else if ((msg[1] ^ NO_LONGER_RUSHED) == 0 && role != ATTACK) {
                     if (debug) System.out.println("heard we aren't rushed, terraform please");
                     role = TERRAFORM;
+                }
+                else if ((msg[1] ^ FAST_WALL_BUILD) == 0) {
+                    maySuicideForWall = true;
                 }
             }
         };

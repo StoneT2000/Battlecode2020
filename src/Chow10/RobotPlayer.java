@@ -22,7 +22,7 @@ public strictfp class RobotPlayer {
     static MapLocation enemyBaseLocation = null; // the enemy HQ location
 
     static int turnCount;
-    static final boolean debug = true;
+    static final boolean debug = false;
     static final int UNIQUEKEY = -1293346721;
     static Team enemyTeam; // enemy team enum
 
@@ -63,7 +63,12 @@ public strictfp class RobotPlayer {
 
     static final int SWARM_WITH_UNITS = 29;
 
-    static final int ATTACK_ENEMY_UNIT_FOR_RUSH = 30;
+    static final int ATTACK_ENEMY_UNIT_FOR_RUSH = 30; // tell drones where to go to defend rush
+
+    static final int FAST_WALL_BUILD = 31; // tell landscapers on wall that they are ordered to disintegrate when they get 25 dirt
+
+
+
 
     static int thisLandScapersDesiredHeightOffset = 0;
 
