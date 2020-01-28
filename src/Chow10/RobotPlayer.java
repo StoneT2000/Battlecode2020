@@ -24,7 +24,7 @@ public strictfp class RobotPlayer {
     static MapLocation islandCenter = null; // island center to put miners on to attack drone walls
     static MapLocation islandCenterSide = null; // island center to put miners on to attack drone walls
 
-    static final int MAX_CRUNCH_ROUNDS = 10;
+    static final int MAX_CRUNCH_ROUNDS = 15;
 
     static int turnCount;
     static final boolean debug = false;

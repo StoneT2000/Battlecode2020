@@ -40,6 +40,8 @@ public class HQ extends RobotPlayer {
         int enemyDrones = 0;
         int enemyNetGuns = 0;
         int closestEnemyDroneDist = 99999999;
+        int closestEnemyDroneWithUnitDist = 99999999;
+        RobotInfo closestDroneBotWithUnit = null;
         for (int i = nearbyEnemyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyEnemyRobots[i];
             // TODO: Check if info.getLocation() vs info.location is more efficient?
@@ -47,6 +49,10 @@ public class HQ extends RobotPlayer {
             if (info.type == RobotType.DELIVERY_DRONE && dist < closestEnemyDroneDist) {
                 closestEnemyDroneDist = dist;
                 closestDroneBot = info;
+            }
+            if (info.type == RobotType.DELIVERY_DRONE && dist < closestEnemyDroneWithUnitDist && info.isCurrentlyHoldingUnit()) {
+                closestDroneBotWithUnit = info;
+                closestEnemyDroneWithUnitDist = dist;
             }
             switch (info.type) {
                 case NET_GUN:
@@ -205,9 +211,15 @@ public class HQ extends RobotPlayer {
             }
         }
 
-        // TODO:, shoot closest one with our unit
+        // found closest bot with units
+        if (closestDroneBotWithUnit != null) {
+            if (rc.canShootUnit(closestDroneBotWithUnit.getID())) {
+                rc.shootUnit(closestDroneBotWithUnit.getID());
+                if (debug) rc.setIndicatorDot(closestDroneBotWithUnit.location, 255, 50,190);
+            }
+        }
         // if we found a closest bot
-        if (closestDroneBot != null) {
+        else if (closestDroneBot != null) {
             if (rc.canShootUnit(closestDroneBot.getID())) {
                 rc.shootUnit(closestDroneBot.getID());
                 if (debug) rc.setIndicatorDot(closestDroneBot.location, 255, 50,190);

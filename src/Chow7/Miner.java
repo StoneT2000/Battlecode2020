@@ -323,7 +323,7 @@ public class Miner extends RobotPlayer {
                     boolean proceed = true;
                     if (terraformTime) {
                         // only build on higher land
-                        if (rc.senseElevation(buildLoc) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+                        if (rc.canSenseLocation(buildLoc) && rc.senseElevation(buildLoc) < DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
                             proceed = false;
                         }
                     }

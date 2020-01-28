@@ -185,6 +185,7 @@ public class DeliveryDrone extends RobotPlayer {
         MapLocation nearestEmptyHighLand = null;
         //int distToHighLand = 999999999;
 
+        int enemyDrones = 0;
         MapLocation soupLoc = null;
         //MapLocation nearestDropZoneLoc = null;
         //int distToNearestDropZoneLoc = 99999999;
@@ -357,6 +358,9 @@ public class DeliveryDrone extends RobotPlayer {
                                             announceEnemyBase(info.location);
                                             enemyBaseLocation = info.location;
                                         }
+                                        break;
+                                    case DELIVERY_DRONE:
+                                        enemyDrones++;
                                         break;
                                 }
                                 break;
@@ -928,10 +932,10 @@ public class DeliveryDrone extends RobotPlayer {
                     // stick around farther if we know where enemy base is (ourside of HQ vision approx)
                     // stick around farther also if it isnt time to attack
                     // stick around distance depends on positioning
-                    int strayDist = 65;
+                    int strayDist = 128;
                     if (friendlyUnitHeld != null) {
                         if (friendlyUnitHeld.type == RobotType.LANDSCAPER) {
-                            strayDist = 128;
+                            strayDist = 65;
                         }
                         else if (friendlyUnitHeld.type == RobotType.MINER) {
                             strayDist = 92;
@@ -977,6 +981,10 @@ public class DeliveryDrone extends RobotPlayer {
                                 setIslandCenterAndOtherConstants();
                                 pickUpMinersForAttack = true; // begin island making + miners to demolish drones!!
                                 buildIsland = true; // begin island making
+                            }
+                            // no drones seen? dont build island
+                            if (enemyDrones <= 0) {
+                                buildIsland = false;
                             }
 
                             // begin attacking nearest enemy unit
@@ -1231,22 +1239,26 @@ public class DeliveryDrone extends RobotPlayer {
             if (isOurMessage((msg))) {
                 switch (msg[1]) {
                     case DRONES_ATTACK:
-                        if (receivedAttackHQMessageRound == -1) {
-                            int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
-                            if (msg[2] != -1) {
-                                enemyBaseLocation = parseLoc(msg[2]);
-                                // TODO: handle case when we dont know enemy base location
-                                attackLoc = enemyBaseLocation;
-                                attackHQ = true;
-                                receivedAttackHQMessageRound = rc.getRoundNum();
-                                // + 70 turns to wait for drones to reform a circle around ENEMY
-                                roundsToWaitBeforeAttack = (int) (2 * Math.max(Math.abs(attackLoc.x - HQLocation.x), Math.abs(HQLocation.y - attackLoc.y))) + 70;
+
+                        int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
+                        if (msg[2] != -1) {
+                            if (lockAndDefend) {
+                                if (distToHQ >= 16) {
+                                    enemyBaseLocation = parseLoc(msg[2]);
+                                    attackLoc = enemyBaseLocation;
+                                    attackHQ = true;
+                                }
                             }
                             else {
-                                // we don't know where enemy is, SCOUT!
-                                attackLoc = null;
-                                attackHQ  = true;
+                                enemyBaseLocation = parseLoc(msg[2]);
+                                attackLoc = enemyBaseLocation;
+                                attackHQ = true;
                             }
+                        }
+                        else {
+                            // we don't know where enemy is, SCOUT!
+                            attackLoc = null;
+                            attackHQ  = true;
                         }
                         break;
                     case SWARM_WITH_UNITS:
@@ -1260,9 +1272,6 @@ public class DeliveryDrone extends RobotPlayer {
                         // if we found enemy base and we are attacking HQ but don't know where HQ is
                         if (attackHQ && attackLoc == null) {
                             attackLoc = enemyBaseLocation;
-                            receivedAttackHQMessageRound = rc.getRoundNum();
-                            roundsToWaitBeforeAttack = (int) (2 * Math.max(Math.abs(attackLoc.x - HQLocation.x), Math.abs(HQLocation.y - attackLoc.y))) + 70;
-
                         }
                         break;
                     case ANNOUNCE_NOT_ENEMY_BASE:

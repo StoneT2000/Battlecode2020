@@ -10,6 +10,7 @@ public class HQ extends RobotPlayer {
     static int FulfillmentCentersBuilt = 0;
     static MapLocation SoupLocation;
     static MapLocation mapCenter;
+    static int defendDroneSpaces = 0;
     static int mapSize;
     static boolean criedForLandscapers = false;
     static boolean criedForDesignSchool = false;
@@ -33,6 +34,7 @@ public class HQ extends RobotPlayer {
     static boolean announcedWalledin;
 
     static int buildQueueAmount = 0;
+    static boolean haveEnoughDrones = false;
     static HashTable<Integer> idsOfRushUnitsCalledOut = new HashTable<>(10);
 
     public static void run() throws GameActionException {
@@ -132,6 +134,7 @@ public class HQ extends RobotPlayer {
         int myLandscapers = 0;
         int fulfillmentCenters = 0;
         int vaporators = 0;
+        int unitsInside = 0;
         for (int i = nearbyFriendlyRobots.length; --i >= 0; ) {
             RobotInfo info = nearbyFriendlyRobots[i];
             int dist = rc.getLocation().distanceSquaredTo(info.getLocation());
@@ -143,6 +146,9 @@ public class HQ extends RobotPlayer {
                 if (dist <= 2) {
                     mainWallBots++;
                 }
+            }
+            if (dist <= HQ_LAND_RANGE) {
+                unitsInside++;
             }
             if (info.type == RobotType.DELIVERY_DRONE) {
                 myDrones++;
@@ -294,11 +300,16 @@ public class HQ extends RobotPlayer {
             }
         }
 
+        // build drone if none nearby
+        if (rc.getTeamSoup() > RobotType.DELIVERY_DRONE.cost + 5 && rc.getRoundNum() % 5 == 0 && myDrones <= 0) {
+            announceBuildDronesNow(1);
+        }
+
+        // found closest bot with units
         if (closestDroneBotWithUnit != null) {
             if (rc.canShootUnit(closestDroneBotWithUnit.getID())) {
                 rc.shootUnit(closestDroneBotWithUnit.getID());
                 if (debug) rc.setIndicatorDot(closestDroneBotWithUnit.location, 255, 50,190);
-                //closestDroneBot.isCurrentlyHoldingUnit();
             }
         }
         // if we found a closest bot
@@ -306,7 +317,6 @@ public class HQ extends RobotPlayer {
             if (rc.canShootUnit(closestDroneBot.getID())) {
                 rc.shootUnit(closestDroneBot.getID());
                 if (debug) rc.setIndicatorDot(closestDroneBot.location, 255, 50,190);
-                //closestDroneBot.isCurrentlyHoldingUnit();
             }
         }
 
@@ -365,7 +375,7 @@ public class HQ extends RobotPlayer {
             unitToBuild = RobotType.MINER;
         }
         // if we have minerCost + FC Cost, build miner and hope it builds FC. dont build more miners...
-        if (unitToBuild != null) {
+        if (unitToBuild != null && unitsInside < 15) {
             unitToBuild = RobotType.MINER;
             // proceed with building unit using default heurstics
             if (debug) System.out.println("closest soup: " + closestSoupLoc);
@@ -379,21 +389,29 @@ public class HQ extends RobotPlayer {
             announceTERRAFORM_ALL_TIME(); // get everyone back
         }*/
 
-        if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1750 && surroundedByFloodRound == -1) {
+        if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1750 && (surroundedByFloodRound == -1 || haveEnoughDrones)) {
             announceDroneAttack();
         }
-        if (rc.getRoundNum() >= 1950 && rc.getRoundNum() % 250 == 200 && surroundedByFloodRound == -1) {
+        if (rc.getRoundNum() >= 1950 && rc.getRoundNum() % 250 == 200 && (surroundedByFloodRound == -1 || haveEnoughDrones)) {
             announceMessage(SWARM_IN);
         }
-        if (rc.getRoundNum() >= 1750 && rc.getRoundNum() % 10 == 0 && surroundedByFloodRound == -1) {
+        if (rc.getRoundNum() >= 1750 && rc.getRoundNum() % 10 == 0 && (surroundedByFloodRound == -1 || haveEnoughDrones)) {
             announceMessage(SWARM_WITH_UNITS);
         }
-        if (surroundedByFlood() && (surroundedByFloodRound == -1 || rc.getRoundNum() % 10 == 0) && rc.getRoundNum() >= 1700) {
+        if (!haveEnoughDrones && surroundedByFlood() && (surroundedByFloodRound == -1 || rc.getRoundNum() % 10 == 0) && rc.getRoundNum() >= 1700) {
             // announce if we havent been able to attack main walls in past 50 rounds
-            if (attackedMainWallsRound + 50 < rc.getRoundNum()) {
-                surroundedByFloodRound = rc.getRoundNum();
-                announceMessage(GET_DEFEND_DRONES); // get drones back for drone wall only
-                announceMessage(LOCK_AND_DEFEND);
+            if (attackedMainWallsRound + 275 < rc.getRoundNum()) {
+                int dronesDefending = countDronesDefending();
+                // basically we tried to swarm in some time in here but didnt get anything
+                if (dronesDefending < defendDroneSpaces) {
+                    surroundedByFloodRound = rc.getRoundNum();
+                    announceMessage(GET_DEFEND_DRONES); // get drones back for drone wall only
+                    announceMessage(LOCK_AND_DEFEND);
+                }
+                else {
+                    // if we have enough now, go back to swarming
+                    haveEnoughDrones = true;
+                }
             }
         }
 
@@ -401,6 +419,40 @@ public class HQ extends RobotPlayer {
 
     }
 
+    static int countDronesDefending() throws GameActionException {
+        int count = 0;
+        for (int i = 0; i < 6; i++) {
+            MapLocation x1 = new MapLocation(HQLocation.x + i - 3, HQLocation.y + 3);
+            MapLocation x2 = new MapLocation(HQLocation.x + i - 3, HQLocation.y - 3);
+            MapLocation x3 = new MapLocation(HQLocation.x + 3, HQLocation.y - 3 + i);
+            MapLocation x4 = new MapLocation(HQLocation.x - 3, HQLocation.y - 3 + i);
+            if (rc.canSenseLocation(x1)) {
+                RobotInfo info = rc.senseRobotAtLocation(x1);
+                if (info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
+                    count++;
+                }
+            }
+            if (rc.canSenseLocation(x2)) {
+                RobotInfo info = rc.senseRobotAtLocation(x2);
+                if (info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
+                    count++;
+                }
+            }
+            if (rc.canSenseLocation(x3)) {
+                RobotInfo info = rc.senseRobotAtLocation(x3);
+                if (info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
+                    count++;
+                }
+            }
+            if (rc.canSenseLocation(x4)) {
+                RobotInfo info = rc.senseRobotAtLocation(x4);
+                if (info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
     static boolean surroundedByFlood() throws GameActionException{
 
         for (int i = 0; i < 6; i++) {
@@ -619,6 +671,25 @@ public class HQ extends RobotPlayer {
             //FirstLandscaperPosAroundHQTable.add(loc);
             if (rc.onTheMap(loc)) {
                 wallSpaces++;
+            }
+        }
+
+        for (int i = 0; i < 6; i++) {
+            MapLocation x1 = new MapLocation(HQLocation.x + i - 3, HQLocation.y + 3);
+            MapLocation x2 = new MapLocation(HQLocation.x + i - 3, HQLocation.y - 3);
+            MapLocation x3 = new MapLocation(HQLocation.x + 3, HQLocation.y - 3 + i);
+            MapLocation x4 = new MapLocation(HQLocation.x - 3, HQLocation.y - 3 + i);
+            if (rc.onTheMap(x1)) {
+                defendDroneSpaces++;
+            }
+            if (rc.onTheMap(x2)) {
+                defendDroneSpaces++;
+            }
+            if (rc.onTheMap(x3)) {
+                defendDroneSpaces++;
+            }
+            if (rc.onTheMap(x4)) {
+                defendDroneSpaces++;
             }
         }
     }
