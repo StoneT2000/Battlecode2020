@@ -417,7 +417,7 @@ public class Miner extends RobotPlayer {
             // TODO: TUNE PARAM!
             if (rc.getRoundNum() <= roundsOfDesignatedBuilder) {
                 // only designated builder builds vaporators
-                if (designatedBuilder && rc.getTeamSoup() >= 500 + 150) {
+                if ((designatedBuilder || distToHQ <= HQ_LAND_RANGE) && rc.getTeamSoup() >= 500) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                     //announceI_AM_DESIGNATED_BUILDER();
@@ -425,8 +425,8 @@ public class Miner extends RobotPlayer {
 
             }
             // only designated builder builds vaporators
-            else if (rc.getTeamSoup() >= 500 + 150) {
-                if ((!terraformTime && designatedBuilder) || rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2) {
+            else if (rc.getTeamSoup() >= 500) {
+                if ((!terraformTime && designatedBuilder) || rc.senseElevation(rc.getLocation()) >= DESIRED_ELEVATION_FOR_TERRAFORM - 2 || distToHQ <= HQ_LAND_RANGE ) {
                     role = BUILDING;
                     unitToBuild = RobotType.VAPORATOR;
                     //announceI_AM_DESIGNATED_BUILDER();
@@ -527,7 +527,7 @@ public class Miner extends RobotPlayer {
                     if (rc.onTheMap(buildLoc)) {
                         if (debug) System.out.println("Checkign build dir " + buildDir);
                         if ((unitToBuild == RobotType.REFINERY || unitToBuild == RobotType.DESIGN_SCHOOL || unitToBuild == RobotType.FULFILLMENT_CENTER ||
-                                ((buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2)
+                                (((buildLoc.x % 2 != HQLocation.x % 2 && buildLoc.y % 2 != HQLocation.y % 2) || buildLoc.distanceSquaredTo(HQLocation) == 5)
                                         && (!locHasFloodAdjacent(buildLoc) || rc.senseElevation(buildLoc) >= 5)
                                 )
                         ) && !isDigLocation(buildLoc)) {

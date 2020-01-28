@@ -769,7 +769,7 @@ public class DeliveryDrone extends RobotPlayer {
         else if (role == ATTACK && !skipAttack) {
 
             if (circledHQTimes >= 0 && !gettingRushed) {
-                if ((rc.getRoundNum() > 240 && friendlyDrones >= 1) || (rc.getRoundNum() < 240 && !designatedDrone)) {
+                if ((rc.getRoundNum() > 240 && friendlyDrones >= 1 && !designatedDrone) || (rc.getRoundNum() < 240 && !designatedDrone)) {
                     if (!toldToLockAndDefendByHQ) {
                         attackLoc = closestMaybeHQ; // always attempt to attack enemy HQ after we go once around our OWN HQ
                     }
@@ -1341,9 +1341,7 @@ public class DeliveryDrone extends RobotPlayer {
                         }
                         break;
                     case BUILD_DRONE_NOW:
-                        if (!attackHQ) {
-                            attackLoc = HQLocation;
-                        }
+
                         break;
                     case LOCK_AND_DEFEND:
                         if (!rc.isCurrentlyHoldingUnit()) {
