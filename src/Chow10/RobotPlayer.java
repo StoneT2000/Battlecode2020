@@ -24,7 +24,7 @@ public strictfp class RobotPlayer {
     static MapLocation islandCenter = null; // island center to put miners on to attack drone walls
     static MapLocation islandCenterSide = null; // island center to put miners on to attack drone walls
 
-    static final int MAX_CRUNCH_ROUNDS = 15;
+    static int MAX_CRUNCH_ROUNDS = 15;
 
     static int turnCount;
     static final boolean debug = false;
@@ -80,6 +80,19 @@ public strictfp class RobotPlayer {
 
     static final int NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ = 35;
 
+    static final int BUILD_ISLAND = 36;
+
+    static final int FOUND_LANDSCAPERS_ON_ENEMY_HQ_AGAIN = 37;
+    static final int PLACED_NETGUN = 38;
+
+    static final int LANDSCAPER_DRONES_SWARM = 39;
+    static final int MINER_DRONES_SWARM = 40;
+    static final int ONLY_DRONES_SWARM = 41;
+
+    static final int STOP_LANDSCAPER_DRONES_SWARM = 42;
+    static final int STOP_MINER_DRONES_SWARM = 43;
+    static final int STOP_ONLY_DRONES_SWARM = 44;
+
     static int thisLandScapersDesiredHeightOffset = 0;
 
     static int MAX_TERRAFORM_DIST = 134; // was 94
@@ -88,7 +101,7 @@ public strictfp class RobotPlayer {
 
     static int HQ_LAND_RANGE = 5; // how big in r2 HQ's land (that is untouched untill walling) is
 
-    static int DROP_ZONE_RANGE_OF_HQ = 72; // how far away are we allowed to drop our units for attack from HQ.
+    static int DROP_ZONE_RANGE_OF_HQ = 36; // how far away are we allowed to drop our units for attack from HQ.
 
     public static void run(RobotController rc) throws GameActionException {
 

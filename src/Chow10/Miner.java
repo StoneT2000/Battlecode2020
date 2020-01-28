@@ -210,6 +210,8 @@ public class Miner extends RobotPlayer {
                     if (debug) System.out.println("Trying to build NETGUN in dir: " + buildDir);
                     if (rc.canBuildRobot(RobotType.NET_GUN, buildDir)) {
                         rc.buildRobot(RobotType.NET_GUN, buildDir);
+                        announceMessage(ATTACKED_ENEMY_WALL); // announce this to let us start crunching again
+                        announceMessage(PLACED_NETGUN);
                         break;
                     }
                     buildDir = buildDir.rotateRight();
@@ -226,6 +228,7 @@ public class Miner extends RobotPlayer {
                     // build school if adjacent to wall location
                     if (rc.getLocation().isAdjacentTo(buildLoc) && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, buildDir)) {
                         rc.buildRobot(RobotType.DESIGN_SCHOOL, buildDir);
+                        announceMessage(ATTACKED_ENEMY_WALL); // announce this to let us start crunching again
                         break;
                     }
                 }

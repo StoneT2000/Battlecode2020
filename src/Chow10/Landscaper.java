@@ -9,6 +9,7 @@ public class Landscaper extends RobotPlayer {
     static final int ATTACK = 0;
     static final int DEFEND_HQ = 1;
     static final int TERRAFORM = 2;
+    static final int ATTACK_BUILD = 3;
     static int role = TERRAFORM;
     static boolean onSupportBlockDoNotMove = false;
     static boolean shouldDig = true;
@@ -87,6 +88,12 @@ public class Landscaper extends RobotPlayer {
         // if its high rounds and we are near enemy HQ, attack mode
         if (rc.getRoundNum() >= 1500 && enemyBaseLocation != null && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 32) {
             role = ATTACK;
+            if (rc.getLocation().isAdjacentTo(enemyBaseLocation)) {
+                role = ATTACK;
+            }
+            else {
+                role = ATTACK_BUILD;
+            }
         }
 
         if (watchIfBotOnWall) {
@@ -113,6 +120,7 @@ public class Landscaper extends RobotPlayer {
 
         int closestTerraformDist = 9999999;
         MapLocation locToTerraform = null;
+        MapLocation attackLocToTerraform = null;
         int closestDigLocationDist = 999999;
         MapLocation closestDigLocation = null;
         MapLocation closestFloodedHQSpaceLoc = null;
@@ -132,7 +140,6 @@ public class Landscaper extends RobotPlayer {
                     switch (role) {
                         case TERRAFORM:
                             int elevation = rc.senseElevation(checkLoc);
-
                             int distToHQ = checkLoc.distanceSquaredTo(HQLocation);
                             // make sure its not too deep, not near HQ, but within some dist of HQ, and is not a dig location, and is lower than desired
                             if (locToTerraform == null && elevation < DESIRED_ELEVATION_FOR_TERRAFORM) {
@@ -184,7 +191,25 @@ public class Landscaper extends RobotPlayer {
                                     closestDigLocationDist = distToDigLoc;
                                     closestDigLocation = checkLoc;
                                 }
+                            }
+                            break;
+                        case ATTACK_BUILD:
+                            int elevation2 = rc.senseElevation(checkLoc);
+                            int distToHQ2 = checkLoc.distanceSquaredTo(HQLocation);
+                            if (attackLocToTerraform == null && elevation2 < waterLevel + 5) {
+                                if (!isDigLocation(checkLoc) && elevation2 > -100 && distToHQ2 > HQ_LAND_RANGE) {
 
+                                    if (!rc.isLocationOccupied(checkLoc)) {
+                                        attackLocToTerraform = checkLoc;
+                                    }
+                                }
+                            }
+                            if (closestDigLocation == null && checkLoc.x % 3 == HQLocation.x % 3  && checkLoc.y % 3 == HQLocation.y % 3 && distToHQ2 > 9) {
+                                int distToDigLoc = checkLoc.distanceSquaredTo(rc.getLocation());
+                                if (distToDigLoc < closestDigLocationDist) {
+                                    closestDigLocationDist = distToDigLoc;
+                                    closestDigLocation = checkLoc;
+                                }
                             }
                             break;
                     }
@@ -393,6 +418,59 @@ public class Landscaper extends RobotPlayer {
                     }
                 }
             }
+        }
+
+        // when attacking enemy base and building islands...
+        else if (role == ATTACK_BUILD) {
+
+                //attackLocToTerraform
+                if (attackLocToTerraform != null) {
+                    if (rc.getDirtCarrying() > 0) {
+                        Direction dirToLoc = rc.getLocation().directionTo(attackLocToTerraform);
+
+                        if (rc.getLocation().isAdjacentTo(attackLocToTerraform)) {
+                            if (rc.canDepositDirt(dirToLoc)) {
+                                rc.depositDirt(dirToLoc);
+                            }
+                        }
+                        else {
+                            setTargetLoc(attackLocToTerraform);
+                        }
+                    }
+                    else {
+                        Direction dirToDig = Direction.NORTH;
+                        boolean dug = false;
+                        for (int i = 0; i++ < 8; ) {
+                            MapLocation digLoc = rc.adjacentLocation(dirToDig);
+
+                            if (digLoc.distanceSquaredTo(HQLocation) > 8) {
+                                int elevationThere = 0;
+                                boolean canSenseLoc = rc.canSenseLocation(digLoc);
+                                if (canSenseLoc) {
+                                    elevationThere = rc.senseElevation(digLoc);
+                                }
+                                // dig from dig locs or places that are really deep or from places that are extremely high or from places that are much higher than terraform height
+                                if (isDigLocation(digLoc) || (canSenseLoc && (elevationThere < -10000 || elevationThere > 10000))) {
+                                    if (rc.canDigDirt(dirToDig)) {
+                                        rc.digDirt(dirToDig);
+                                        dug = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            dirToDig = dirToDig.rotateRight();
+                        }
+                        // if no dig done, then setTargetLoc
+                        if (!dug) {
+
+                            if (debug) System.out.println("No dig locs, trying " + closestDigLocation);
+                            setTargetLoc(closestDigLocation);
+                            if (closestDigLocation == null) {
+                                setTargetLoc(rc.adjacentLocation(randomDirection()));
+                            }
+                        }
+                    }
+                }
         }
         else if (role == TERRAFORM) {
             /*
