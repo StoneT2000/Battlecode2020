@@ -1403,7 +1403,7 @@ public class DeliveryDrone extends RobotPlayer {
                         break;
                     case NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ:
 
-                        if (!noMoreLandscapersToAttack) {
+                        if (!noMoreLandscapersToAttack && rc.getRoundNum() >= 1960) {
                             // basically reset params to what it was before we swarmed in
                             // this should only happen once anyway
                             swarmIn = false;

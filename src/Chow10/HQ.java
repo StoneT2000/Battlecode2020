@@ -357,7 +357,7 @@ public class HQ extends RobotPlayer {
                     else if ((msg[1] ^ ATTACKED_ENEMY_WALL) == 0) {
                         attackedMainWallsRound = rc.getRoundNum();
                     }
-                    else if ((msg[1] ^ NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ) == 0) {
+                    else if ((msg[1] ^ NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ) == 0 && rc.getRoundNum() >= 1960) {
                         noMoreLandscapersToAttack = true;
                         break;
                     }
@@ -401,7 +401,7 @@ public class HQ extends RobotPlayer {
         }
         // swarm if late game, every 250 rounds, not flooded or have enough defence drones, and there are still landscapers to attack
         if (rc.getRoundNum() >= 1950 && rc.getRoundNum() % 250 == 200 && (surroundedByFloodRound == -1 || haveEnoughDrones) && !noMoreLandscapersToAttack) {
-            announceMessage(SWARM_IN);
+            announceMessage(SWARM_IN);  
         }
         // if no more landscapers to attack, wait until VERY late to attack
         if (noMoreLandscapersToAttack && rc.getRoundNum() % 250 == 0 && rc.getRoundNum() >= 2500) {
