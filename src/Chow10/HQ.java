@@ -313,7 +313,7 @@ public class HQ extends RobotPlayer {
             }
         }
         // if we found a closest bot
-        else if (closestDroneBot != null) {
+        if (closestDroneBot != null) {
             if (rc.canShootUnit(closestDroneBot.getID())) {
                 rc.shootUnit(closestDroneBot.getID());
                 if (debug) rc.setIndicatorDot(closestDroneBot.location, 255, 50,190);
@@ -428,25 +428,25 @@ public class HQ extends RobotPlayer {
             MapLocation x4 = new MapLocation(HQLocation.x - 3, HQLocation.y - 3 + i);
             if (rc.canSenseLocation(x1)) {
                 RobotInfo info = rc.senseRobotAtLocation(x1);
-                if (info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
+                if (info != null && info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
                     count++;
                 }
             }
             if (rc.canSenseLocation(x2)) {
                 RobotInfo info = rc.senseRobotAtLocation(x2);
-                if (info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
+                if (info != null && info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
                     count++;
                 }
             }
             if (rc.canSenseLocation(x3)) {
                 RobotInfo info = rc.senseRobotAtLocation(x3);
-                if (info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
+                if (info != null && info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
                     count++;
                 }
             }
             if (rc.canSenseLocation(x4)) {
                 RobotInfo info = rc.senseRobotAtLocation(x4);
-                if (info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
+                if (info != null && info.type == RobotType.DELIVERY_DRONE && info.team == rc.getTeam()) {
                     count++;
                 }
             }

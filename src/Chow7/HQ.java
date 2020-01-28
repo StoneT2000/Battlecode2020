@@ -219,7 +219,7 @@ public class HQ extends RobotPlayer {
             }
         }
         // if we found a closest bot
-        else if (closestDroneBot != null) {
+        if (closestDroneBot != null) {
             if (rc.canShootUnit(closestDroneBot.getID())) {
                 rc.shootUnit(closestDroneBot.getID());
                 if (debug) rc.setIndicatorDot(closestDroneBot.location, 255, 50,190);
