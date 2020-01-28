@@ -93,6 +93,8 @@ public strictfp class RobotPlayer {
     static final int STOP_MINER_DRONES_SWARM = 43;
     static final int STOP_ONLY_DRONES_SWARM = 44;
 
+    static final int RECALL_ONLY_DRONES = 45;
+
     static int thisLandScapersDesiredHeightOffset = 0;
 
     static int MAX_TERRAFORM_DIST = 134; // was 94
@@ -758,6 +760,27 @@ public strictfp class RobotPlayer {
             dir = dir.rotateRight();
         }
         return false;
+    }
+    static boolean safeDropLocForMiner(MapLocation loc) throws GameActionException {
+        int i = 0;
+        Direction dir = Direction.NORTH;
+        int baseElevation = rc.senseElevation(loc);
+        boolean safe = false;
+        while (i++ < 8) {
+            MapLocation adjLoc = loc.add(dir);
+            if (rc.canSenseLocation(adjLoc)) {
+                int elevation = rc.senseElevation(adjLoc);
+                if (!rc.senseFlooding(adjLoc) && !rc.isLocationOccupied(adjLoc) && (elevation + 3 >= baseElevation && baseElevation >= elevation - 3)) {
+                    safe = true;
+                }
+                RobotInfo info = rc.senseRobotAtLocation(adjLoc);
+                if (info != null && info.type == RobotType.DELIVERY_DRONE && info.team == enemyTeam && !info.isCurrentlyHoldingUnit()) {
+                    return false;
+                }
+            }
+            dir = dir.rotateRight();
+        }
+        return safe;
     }
     static void setIslandCenterAndOtherConstants() {
         if (enemyBaseLocation != null) {

@@ -30,6 +30,10 @@ public class HQ extends RobotPlayer {
     static int wallBotsMax = 20; // max landscapers that can be on wall and second wall
     static int wallSpaces = 20;
 
+    static boolean haveAttackingNetgun = false;
+
+    static boolean buildIsland = false;
+
     static boolean noMoreLandscapersToAttack = false;
 
     static int attackedMainWallsRound = -1;
@@ -356,10 +360,21 @@ public class HQ extends RobotPlayer {
                     }
                     else if ((msg[1] ^ ATTACKED_ENEMY_WALL) == 0) {
                         attackedMainWallsRound = rc.getRoundNum();
+                        buildIsland = false;
                     }
                     else if ((msg[1] ^ NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ) == 0 && rc.getRoundNum() >= 1950) {
                         noMoreLandscapersToAttack = true;
-                        break;
+                    }
+                    else if ((msg[1] ^ FOUND_LANDSCAPERS_ON_ENEMY_HQ_AGAIN) == 0 && rc.getRoundNum() >= 1950) {
+                        noMoreLandscapersToAttack = false;
+                    }
+                    else if ((msg[1] ^ BUILD_ISLAND) == 0) {
+                        buildIsland = true;
+                    }
+                    // if net gun was placed, we are good to go and attack
+                    else if ((msg[1] ^ PLACED_NETGUN) == 0) {
+                        haveAttackingNetgun = true;
+                        buildIsland = false;
                     }
                 }
             }
@@ -380,6 +395,9 @@ public class HQ extends RobotPlayer {
         if  (rc.getRoundNum() < 50 && minersBuilt < 4) {
             unitToBuild = RobotType.MINER;
         }
+        if (vaporatorsBuilt * 1.15 >= minersBuilt && rc.getRoundNum() >= 800) {
+            unitToBuild = RobotType.MINER;
+        }
         // if we have minerCost + FC Cost, build miner and hope it builds FC. dont build more miners...
         if (unitToBuild != null && unitsInside < 15) {
             unitToBuild = RobotType.MINER;
@@ -395,19 +413,35 @@ public class HQ extends RobotPlayer {
             announceTERRAFORM_ALL_TIME(); // get everyone back
         }*/
 
-        // this is what actually triggers our units to swarm in?
-        if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1750 && (surroundedByFloodRound == -1 || haveEnoughDrones) && !noMoreLandscapersToAttack) {
+        // send units over to enemy iif we dont need defending cuz flood or lack of drones and there are landscapers to attack still, and we aren't building our island
+        if (rc.getRoundNum() % 10 == 0 && rc.getRoundNum() >= 1750 && (surroundedByFloodRound == -1 || haveEnoughDrones) && !noMoreLandscapersToAttack && (!buildIsland)) {
             announceDroneAttack();
         }
-        // swarm if late game, every 250 rounds, not flooded or have enough defence drones, and there are still landscapers to attack
-        if (rc.getRoundNum() >= 1950 && rc.getRoundNum() % 250 == 200 && (surroundedByFloodRound == -1 || haveEnoughDrones) && !noMoreLandscapersToAttack) {
-            announceMessage(SWARM_IN);  
+        // swarm if late game, every 250 rounds, not flooded or have enough defending drones,
+        // there are still landscapers to attack, and we aren't building an island
+        // send normal drones
+        if (rc.getRoundNum() >= 1950 && rc.getRoundNum() % 250 == 200 && (surroundedByFloodRound == -1 || haveEnoughDrones) && !noMoreLandscapersToAttack && (!buildIsland)) {
+            announceMessage(ONLY_DRONES_SWARM); // swarm just drones in
+            announceMessage(STOP_LANDSCAPER_DRONES_SWARM);
+            announceMessage(STOP_MINER_DRONES_SWARM);
         }
-        // if no more landscapers to attack, wait until VERY late to attack
-        if (noMoreLandscapersToAttack && rc.getRoundNum() % 250 == 0 && rc.getRoundNum() >= 2500) {
-            announceDroneAttack();
-            announceMessage(SWARM_IN);
-            announceMessage(SWARM_WITH_UNITS);
+
+        // no more landscapers means we only need landscapers and miners
+        if (noMoreLandscapersToAttack) {
+            announceMessage(STOP_ONLY_DRONES_SWARM);
+        }
+        // if building island, stop normal drones, let other units do their thing
+        if (buildIsland && rc.getRoundNum() % 5 == 0 && rc.getRoundNum() >= 1950) {
+            announceMessage(STOP_LANDSCAPER_DRONES_SWARM);
+            announceMessage(STOP_MINER_DRONES_SWARM);
+            announceMessage(RECALL_ONLY_DRONES);
+
+        }
+        if (haveAttackingNetgun && rc.getRoundNum() % 10 == 0 && rc.getRoundNum() >= 1750) {
+            // have gun, ask all to attack
+            announceMessage(ONLY_DRONES_SWARM);
+            announceMessage(LANDSCAPER_DRONES_SWARM);
+            announceMessage(MINER_DRONES_SWARM);
         }
         if (rc.getRoundNum() >= 1750 && rc.getRoundNum() % 10 == 0 && (surroundedByFloodRound == -1 || haveEnoughDrones) && !noMoreLandscapersToAttack) {
             announceMessage(SWARM_WITH_UNITS);
@@ -634,6 +668,7 @@ public class HQ extends RobotPlayer {
             unitToBuild = RobotType.MINER;
             return;
         }
+
         /*
         if (rc.getRoundNum() % 30 == 0 && rc.getTeamSoup() >= 350) {
             unitToBuild = RobotType.MINER;
