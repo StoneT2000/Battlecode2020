@@ -111,6 +111,7 @@ public class Miner extends RobotPlayer {
 
         /* BIG FRIENDLY BOTS SEARCH LOOP thing */
         int EnemyDroneCount = 0;
+        int closeEnemyDroneCount = 0;
         boolean moveAway = false;
         HashTable<Direction> dangerousDirections = new HashTable<>(6); // directions that when moved in, will result in being picked
         RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
@@ -214,7 +215,7 @@ public class Miner extends RobotPlayer {
                     buildDir = buildDir.rotateRight();
                 }
             }
-            else if (DesignSchoolCount <= 0 && enemyBaseLocation != null) {
+            if (DesignSchoolCount <= 0 && enemyBaseLocation != null) {
                 // otherwise no design schools nor drones? build one on hq wall.
 
                 for (int i = Constants.FirstLandscaperPosAroundHQ.length; --i >= 0; ) {

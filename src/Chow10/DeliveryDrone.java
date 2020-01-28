@@ -261,7 +261,7 @@ public class DeliveryDrone extends RobotPlayer {
                                 if (attackWithAllUnits && nearestLandscaperForAttack == null) {
                                     //nearestLandscaper
                                     if (enemyBaseLocation != null && dist < distToNearestLandscaperForAttack && distToHQ >= 16 && info.location.distanceSquaredTo(enemyBaseLocation) > DROP_ZONE_RANGE_OF_HQ) {
-                                        if (info.getDirtCarrying() >= 20) {
+                                        if (noMoreLandscapersToAttack || info.getDirtCarrying() >= 20) {
                                             nearestLandscaperForAttack = info;
                                             distToNearestLandscaperForAttack = dist;
                                         }
