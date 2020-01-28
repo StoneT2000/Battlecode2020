@@ -167,6 +167,9 @@ public strictfp class RobotPlayer {
             setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(target).opposite().rotateLeft().rotateLeft()));
         }
     }
+    static void rotateCircularlyOneDirection(MapLocation target) {
+        setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(target).opposite().rotateLeft().rotateLeft()));
+    }
     static Direction getBugPathMove(MapLocation target, HashTable<Direction> dangerousDirections) throws GameActionException {
         roundsSinceLastResetOfClosestTargetdist++;
         if (rc.getLocation().equals(target)) {

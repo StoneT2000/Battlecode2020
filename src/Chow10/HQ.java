@@ -30,6 +30,8 @@ public class HQ extends RobotPlayer {
     static int wallBotsMax = 20; // max landscapers that can be on wall and second wall
     static int wallSpaces = 20;
 
+    static boolean noMoreLandscapersToAttack = false;
+
     static int attackedMainWallsRound = -1;
     static boolean announcedWalledin;
 
@@ -355,6 +357,10 @@ public class HQ extends RobotPlayer {
                     else if ((msg[1] ^ ATTACKED_ENEMY_WALL) == 0) {
                         attackedMainWallsRound = rc.getRoundNum();
                     }
+                    else if ((msg[1] ^ NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ) == 0) {
+                        noMoreLandscapersToAttack = true;
+                        break;
+                    }
                 }
             }
         }
@@ -389,13 +395,21 @@ public class HQ extends RobotPlayer {
             announceTERRAFORM_ALL_TIME(); // get everyone back
         }*/
 
-        if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1750 && (surroundedByFloodRound == -1 || haveEnoughDrones)) {
+        // this is what actually triggers our units to swarm in?
+        if (rc.getRoundNum() % 20 == 0 && rc.getRoundNum() >= 1750 && (surroundedByFloodRound == -1 || haveEnoughDrones) && !noMoreLandscapersToAttack) {
             announceDroneAttack();
         }
-        if (rc.getRoundNum() >= 1950 && rc.getRoundNum() % 250 == 200 && (surroundedByFloodRound == -1 || haveEnoughDrones)) {
+        // swarm if late game, every 250 rounds, not flooded or have enough defence drones, and there are still landscapers to attack
+        if (rc.getRoundNum() >= 1950 && rc.getRoundNum() % 250 == 200 && (surroundedByFloodRound == -1 || haveEnoughDrones) && !noMoreLandscapersToAttack) {
             announceMessage(SWARM_IN);
         }
-        if (rc.getRoundNum() >= 1750 && rc.getRoundNum() % 10 == 0 && (surroundedByFloodRound == -1 || haveEnoughDrones)) {
+        // if no more landscapers to attack, wait until VERY late to attack
+        if (noMoreLandscapersToAttack && rc.getRoundNum() % 250 == 0 && rc.getRoundNum() >= 2500) {
+            announceDroneAttack();
+            announceMessage(SWARM_IN);
+            announceMessage(SWARM_WITH_UNITS);
+        }
+        if (rc.getRoundNum() >= 1750 && rc.getRoundNum() % 10 == 0 && (surroundedByFloodRound == -1 || haveEnoughDrones) && !noMoreLandscapersToAttack) {
             announceMessage(SWARM_WITH_UNITS);
         }
         if (!haveEnoughDrones && surroundedByFlood() && (surroundedByFloodRound == -1 || rc.getRoundNum() % 10 == 0) && rc.getRoundNum() >= 1700) {

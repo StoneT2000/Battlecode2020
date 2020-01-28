@@ -937,18 +937,32 @@ public class DeliveryDrone extends RobotPlayer {
                     // stick around farther if we know where enemy base is (ourside of HQ vision approx)
                     // stick around farther also if it isnt time to attack
                     // stick around distance depends on positioning
-                    int strayDist = 128;
+                    // no unit drones stay closes to pick out landscapers
+                    // drones with landscapers come next to drop landscapers on walls or make island
+                    // thne drone swith miners
+                    int strayDist = 48;
+                    if (noMoreLandscapersToAttack) {
+                        strayDist = 92;
+                    }
                     if (friendlyUnitHeld != null) {
                         if (friendlyUnitHeld.type == RobotType.LANDSCAPER) {
-                            strayDist = 65;
+
+                            // keep far stray distance if there are landscapers on their wall still
+                            if (!noMoreLandscapersToAttack) {
+                                strayDist = 65;
+                            }
+                            // if no more landscapers, but yes drones, stay farther...
+                            else {
+                                strayDist = 48;
+                            }
                         }
                         else if (friendlyUnitHeld.type == RobotType.MINER) {
-                            strayDist = 92;
+                            strayDist = 65;
                         }
                     }
                     // make sure we are still in prepare to crunch and crunch mode, so in this time period, we always move to edge of base attack range
                     if (roundsSpentCrunching <= MAX_CRUNCH_ROUNDS && ((enemyBaseLocation == null && distToAttackLoc >= 36) || (enemyBaseLocation != null && distToAttackLoc >= strayDist))) {
-                        //move to just edge of base attack range.
+                        // when still crunching,  and not at edge of attack range... move to edge (stray dist)
                         setTargetLoc(attackLoc);
                         if (debug) rc.setIndicatorDot(rc.getLocation(), 10, 20,200);
 
@@ -971,11 +985,24 @@ public class DeliveryDrone extends RobotPlayer {
                             }
                         }
 
+                        if (!rc.isCurrentlyHoldingUnit()) {
+                            if (noMoreLandscapersToAttack) {
+                                attackLoc = HQLocation;
+                                setTargetLoc(HQLocation);
+                            }
+                        }
+
+                    }
+                    // keep this stray distance if we aren't swarming
+                    // if swarming, we go to next block and move in appropriately
+                    // we STOP swarming in if no landscapers and no unit.
+                    else if(enemyBaseLocation != null && distToAttackLoc < strayDist && !swarmIn) {
+                        setTargetLoc(rc.adjacentLocation(rc.getLocation().directionTo(enemyBaseLocation).opposite()));
                     }
                     // otherwise if we are in the edge of attack range or if rounds spent crunching is past the maximum
                     else {
                         // don't move there if it isn't time yet, just move around like vultures
-                        rotateCircularly(attackLoc);
+                        rotateCircularlyOneDirection(attackLoc);
 
                         // if we waited long enough, and told to swarm by HQ
                         if (swarmIn) {
@@ -992,12 +1019,13 @@ public class DeliveryDrone extends RobotPlayer {
                                 buildIsland = false;
                             }
 
-                            if (rc.getLocation().isAdjacentTo(enemyBaseLocation) && rc.getRoundNum() % 4 == 0) {
+                            if (rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 5) {
                                 announceMessage(ATTACKED_ENEMY_WALL);
                                 if (closestEnemyLandscaper == null) {
                                     announceMessage(NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ);
                                 }
                             }
+
 
                             // begin attacking nearest enemy unit
 
@@ -1318,10 +1346,12 @@ public class DeliveryDrone extends RobotPlayer {
                         }
                         break;
                     case LOCK_AND_DEFEND:
-                        lockAndDefend = true;
-                        toldToLockAndDefendByHQ = true;
-                        attackLoc = HQLocation;
-                        attackHQ = false;
+                        if (!rc.isCurrentlyHoldingUnit()) {
+                            lockAndDefend = true;
+                            toldToLockAndDefendByHQ = true;
+                            attackLoc = HQLocation;
+                            attackHQ = false;
+                        }
                         break;
                     case STOP_LOCK_AND_DEFEND:
                         lockAndDefend = false;
@@ -1372,7 +1402,15 @@ public class DeliveryDrone extends RobotPlayer {
                         roundsSpentCrunching = 0; // reset this value as we are giving our drone more time to keep crunching up until a maximum
                         break;
                     case NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ:
-                        noMoreLandscapersToAttack = true;
+
+                        if (!noMoreLandscapersToAttack) {
+                            // basically reset params to what it was before we swarmed in
+                            // this should only happen once anyway
+                            swarmIn = false;
+                            roundsSpentCrunching = 0;
+                            noMoreLandscapersToAttack = true;
+                        }
+
                         break;
                 }
             }
