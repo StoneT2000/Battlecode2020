@@ -357,7 +357,7 @@ public class HQ extends RobotPlayer {
                     else if ((msg[1] ^ ATTACKED_ENEMY_WALL) == 0) {
                         attackedMainWallsRound = rc.getRoundNum();
                     }
-                    else if ((msg[1] ^ NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ) == 0 && rc.getRoundNum() >= 1960) {
+                    else if ((msg[1] ^ NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ) == 0 && rc.getRoundNum() >= 1950) {
                         noMoreLandscapersToAttack = true;
                         break;
                     }

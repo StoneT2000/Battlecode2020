@@ -1019,7 +1019,7 @@ public class DeliveryDrone extends RobotPlayer {
                                 buildIsland = false;
                             }
 
-                            if (rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 5) {
+                            if (rc.getRoundNum() >= 1500 && rc.getLocation().distanceSquaredTo(enemyBaseLocation) <= 5) {
                                 announceMessage(ATTACKED_ENEMY_WALL);
                                 if (closestEnemyLandscaper == null) {
                                     announceMessage(NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ);
@@ -1401,7 +1401,7 @@ public class DeliveryDrone extends RobotPlayer {
                         break;
                     case NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ:
 
-                        if (!noMoreLandscapersToAttack && rc.getRoundNum() >= 1960) {
+                        if (!noMoreLandscapersToAttack && rc.getRoundNum() >= 1950) {
                             // basically reset params to what it was before we swarmed in
                             // this should only happen once anyway
                             swarmIn = false;
