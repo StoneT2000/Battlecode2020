@@ -343,7 +343,7 @@ public class Miner extends RobotPlayer {
         // alwways prepare to build refinery
         int distToHQ = rc.getLocation().distanceSquaredTo(HQLocation);
 
-        if (EnemyDroneCount > 0 && closeNetguns == 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost && rc.getLocation().distanceSquaredTo(HQLocation) <= MAX_TERRAFORM_DIST + 20) {
+        if (EnemyDroneCount > 0 && closeNetguns == 0  && rc.getTeamSoup() >= RobotType.NET_GUN.cost) {
             role = BUILDING;
             unitToBuild = RobotType.NET_GUN;
         }
