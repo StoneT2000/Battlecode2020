@@ -146,7 +146,7 @@ public class DeliveryDrone extends RobotPlayer {
 
         int friendlyDrones = 0;
         RobotInfo nearestCow = null;
-        //int distToNearestCow =  9999999;
+        int distToNearestCow =  9999999;
         int distToNearestLandscaper = 99999999;
         //int distToNearestMiner = 9999999;
         //int distToNearestMinerAdjacentToHQ = 9999999;
@@ -296,7 +296,7 @@ public class DeliveryDrone extends RobotPlayer {
                                 break;
                         }
                     }
-                    else {
+                    else if (info.team == enemyTeam) {
                         // is an enemy unit
                         switch (role) {
                             case RUSH_DEFEND:
@@ -390,6 +390,10 @@ public class DeliveryDrone extends RobotPlayer {
                             }
                         }
 
+                    }
+                    else {
+                        if (rc.getRoundNum() >= 1400 && nearestCow == null)
+                            nearestCow = info;
                     }
                 }
 
@@ -828,9 +832,12 @@ public class DeliveryDrone extends RobotPlayer {
                                 }
                             } else {
                                 role = DUMP_BAD_GUY;
-                                holdingCow = true;
+                                //holdingCow = true;
                                 //targetLoc = closestMaybeHQ;
                                 setTargetLoc(closestMaybeHQ);
+                                if (skipHelping) {
+                                    skipHelping = false;
+                                }
                             }
                         }
                         else {

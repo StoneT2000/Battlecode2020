@@ -89,6 +89,11 @@ public class FulfillmentCenter extends RobotPlayer {
             if (debug) System.out.println("Not Building because netguns");
             confirmBuild = false;
         }
+        if (vaporatorsBuilt > 8) {
+            if (vaporatorsBuilt * 1.15 + 5 > dronesBuilt) {
+                confirmBuild = true;
+            }
+        }
         if (confirmBuild) {
             boolean builtUnit = false;
             for (int i = 9; --i >= 1; ) {

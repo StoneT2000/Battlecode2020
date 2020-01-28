@@ -11,6 +11,7 @@ public class DesignSchool extends RobotPlayer {
     static boolean dontBuild = false;
     static boolean wallIn = false;
     static boolean terraformingTime = false;
+    static boolean addedVaporators = false;
     static HashTable<MapLocation> MainWall = new HashTable<>(8);
     public static void run() throws GameActionException {
 
@@ -57,17 +58,14 @@ public class DesignSchool extends RobotPlayer {
         if (rc.getTeamSoup() > 1000 && rc.getRoundNum() % 4 == 0) {
             willBuild = true;
         }
-        if (dontBuild) {
-            willBuild = false;
-            dontBuild = false;
-        }
+
         if (vaporatorsBuilt * 1 > landscapersBuilt && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost) {
             willBuild = true;
         }
 
         if (terraformingTime && rc.getTeamSoup() >= RobotType.LANDSCAPER.cost && rc.getLocation().distanceSquaredTo(HQLocation) <= 48) {
             if (vaporatorsBuilt > 8) {
-                if (vaporatorsBuilt * 1.15 + 5 > landscapersBuilt) {
+                if (vaporatorsBuilt * 1.15 + 4 > landscapersBuilt) {
                     willBuild = true;
                 }
             }
@@ -77,7 +75,7 @@ public class DesignSchool extends RobotPlayer {
                 }
             }
             if (rc.getRoundNum() >= 800 && vaporatorsBuilt >= 4) {
-                if (vaporatorsBuilt * 1.1 + 5 > landscapersBuilt) {
+                if (vaporatorsBuilt * 1.1 + 3 > landscapersBuilt) {
                     willBuild = true;
                 }
             }
@@ -160,9 +158,6 @@ public class DesignSchool extends RobotPlayer {
                         needLandscaper = true;
                     }
                 }
-                else if ((msg[1] ^ BUILD_DRONE_NOW) == 0) {
-                    dontBuild = true;
-                }
                 else if (msg[1] == RobotType.VAPORATOR.ordinal()) {
                     vaporatorsBuilt++;
                 }
@@ -171,7 +166,10 @@ public class DesignSchool extends RobotPlayer {
                 }
                 else if ((msg[1] ^ WALL_IN) == 0 || (msg[1] ^ TERRAFORM_AND_WALL_IN) == 0) {
                     wallIn = true;
-                    vaporatorsBuilt -= 4;
+                    if (!addedVaporators) {
+                        vaporatorsBuilt += 2;
+                        addedVaporators = true;
+                    }
                 }
             }
         }
