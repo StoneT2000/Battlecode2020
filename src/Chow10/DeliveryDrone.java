@@ -47,6 +47,8 @@ public class DeliveryDrone extends RobotPlayer {
 
     static MapLocation lastSoupLocAnnounced = null;
 
+    static boolean noMoreLandscapersToAttack = false;
+
     static int wallSpaces = 0;
     static boolean toldToLockAndDefendByHQ = false;
     static boolean wallHasEmptySpot = true;
@@ -181,7 +183,10 @@ public class DeliveryDrone extends RobotPlayer {
         /* SCOUTING CODE */
 
         /* BIG BFS LOOP ISH */
-        int minDistToFlood = 999999999;
+        int minDistToFlood = 99999999;
+        if (waterLoc != null) {
+            minDistToFlood = rc.getLocation().distanceSquaredTo(waterLoc);
+        }
         MapLocation nearestEmptyHighLand = null;
         //int distToHighLand = 999999999;
 
@@ -199,8 +204,7 @@ public class DeliveryDrone extends RobotPlayer {
                 int dist = rc.getLocation().distanceSquaredTo(checkLoc);
                 RobotInfo info = rc.senseRobotAtLocation(checkLoc);
                 // if flooding and minDist is not that good
-                if (rc.senseFlooding(checkLoc) && minDistToFlood >= 16) {
-
+                if (rc.senseFlooding(checkLoc)) {
                     if (dist < minDistToFlood && dist != 0 && info == null) {
                         minDistToFlood = dist;
                         waterLoc = checkLoc;
@@ -370,21 +374,22 @@ public class DeliveryDrone extends RobotPlayer {
                             if (enemyNetguns.add(info.location)) {
                                 announceNET_GUN_LOCATION(info.location);
                             }
-                        }
-                        if (dist <= 25 && (info.type == RobotType.NET_GUN)) {
-                            // dangerous netgun, move somewhere not in range!
+                            if (dist <= 25) {
+                                // dangerous netgun, move somewhere not in range!
 
-                            Direction badDir = rc.getLocation().directionTo(info.location);
-                            dangerousDirections.add(badDir);
-                            Direction badDirLeft = badDir.rotateLeft();
-                            Direction badDirRight = badDir.rotateRight();
-                            if (rc.adjacentLocation(badDirLeft).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
-                                dangerousDirections.add(badDirLeft);
-                            }
-                            if (rc.adjacentLocation(badDirRight).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
-                                dangerousDirections.add(badDirRight);
+                                Direction badDir = rc.getLocation().directionTo(info.location);
+                                dangerousDirections.add(badDir);
+                                Direction badDirLeft = badDir.rotateLeft();
+                                Direction badDirRight = badDir.rotateRight();
+                                if (rc.adjacentLocation(badDirLeft).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+                                    dangerousDirections.add(badDirLeft);
+                                }
+                                if (rc.adjacentLocation(badDirRight).distanceSquaredTo(info.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+                                    dangerousDirections.add(badDirRight);
+                                }
                             }
                         }
+
                     }
                 }
 
@@ -987,6 +992,13 @@ public class DeliveryDrone extends RobotPlayer {
                                 buildIsland = false;
                             }
 
+                            if (rc.getLocation().isAdjacentTo(enemyBaseLocation) && rc.getRoundNum() % 4 == 0) {
+                                announceMessage(ATTACKED_ENEMY_WALL);
+                                if (closestEnemyLandscaper == null) {
+                                    announceMessage(NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ);
+                                }
+                            }
+
                             // begin attacking nearest enemy unit
 
                             if (!rc.isCurrentlyHoldingUnit() && (closestEnemyMiner != null || closestEnemyLandscaper != null)) {
@@ -1017,7 +1029,10 @@ public class DeliveryDrone extends RobotPlayer {
                                     // move away from island center
                                     setTargetLoc(HQLocation);
                                     attackLoc = HQLocation;
-
+                                }
+                                if (noMoreLandscapersToAttack) {
+                                    attackLoc = HQLocation;
+                                    setTargetLoc(HQLocation);
                                 }
                             }
                             if (attackWithAllUnits && rc.isCurrentlyHoldingUnit() && friendlyUnitHeld != null && enemyBaseLocation != null) {
@@ -1048,7 +1063,7 @@ public class DeliveryDrone extends RobotPlayer {
                                     // if can't drop on enemy wall in like 100 turns after we were told to swarm in, all drop near this specific loc
                                     // which is about 6 tiles from enemy base in direction to my base (easy coordination)
 
-                                    if (!droppedUnit && roundsSpentCrunching > MAX_CRUNCH_ROUNDS) {
+                                    if (!droppedUnit && roundsSpentCrunching > MAX_CRUNCH_ROUNDS && buildIsland) {
                                         // island locations...
 
                                         if (rc.getLocation().distanceSquaredTo(islandCenter) > 2) {
@@ -1092,8 +1107,9 @@ public class DeliveryDrone extends RobotPlayer {
                                     while (i++ < 8) {
                                         MapLocation dropLoc = rc.adjacentLocation(dropDir);
                                         // drop on place not flooding and is close enough to enemy base and has open land adjacent
-                                        if (rc.canSenseLocation(dropLoc) && dropLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ && locHasAdjacentBuildableLand(dropLoc)) {
-
+                                        int dropLocDistToHQ = dropLoc.distanceSquaredTo(enemyBaseLocation);
+                                        if (rc.canSenseLocation(dropLoc) && (dropLocDistToHQ <= DROP_ZONE_RANGE_OF_HQ || (!buildIsland && enemyDrones <= 0 && dropLocDistToHQ <= 2)) && locHasAdjacentBuildableLand(dropLoc)) {
+                                            // noMoreLandscapersToAttack
                                             if (!rc.senseFlooding(dropLoc)) {
                                                 if (rc.canDropUnit(dropDir)) {
                                                     rc.dropUnit(dropDir);
@@ -1108,7 +1124,7 @@ public class DeliveryDrone extends RobotPlayer {
                                     // check center, if center works, then disintegrate
                                     MapLocation dropCenterLoc = rc.getLocation();
                                     // drop on place not flooding and is close enough to enemy base and has open land adjacent
-                                    if (dropCenterLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ && locHasAdjacentBuildableLand(dropCenterLoc)) {
+                                    if (dropCenterLoc.distanceSquaredTo(enemyBaseLocation) <= DROP_ZONE_RANGE_OF_HQ && locHasAdjacentBuildableLand(dropCenterLoc) && (enemyDrones > 0 || buildIsland)) {
 
                                         if (debug) System.out.println("I'm in range!");
                                         if (!rc.senseFlooding(dropCenterLoc)) {
@@ -1355,7 +1371,9 @@ public class DeliveryDrone extends RobotPlayer {
                     case ATTACKED_ENEMY_WALL:
                         roundsSpentCrunching = 0; // reset this value as we are giving our drone more time to keep crunching up until a maximum
                         break;
-
+                    case NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ:
+                        noMoreLandscapersToAttack = true;
+                        break;
                 }
             }
         }

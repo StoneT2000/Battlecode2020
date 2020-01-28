@@ -78,6 +78,8 @@ public strictfp class RobotPlayer {
 
     static final int ATTACKED_ENEMY_WALL = 34;
 
+    static final int NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ = 35;
+
     static int thisLandScapersDesiredHeightOffset = 0;
 
     static int MAX_TERRAFORM_DIST = 134; // was 94
