@@ -28,7 +28,7 @@ public strictfp class RobotPlayer {
 
     static int turnCount;
     static final boolean debug = false;
-    static final int UNIQUEKEY = -111777234;
+    static final int UNIQUEKEY = -222111945;
     static Team enemyTeam; // enemy team enum
 
     static final int BASE_WALL_DIST = 1;
