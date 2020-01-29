@@ -103,7 +103,7 @@ public strictfp class RobotPlayer {
 
     static int HQ_LAND_RANGE = 5; // how big in r2 HQ's land (that is untouched untill walling) is
 
-    static int DROP_ZONE_RANGE_OF_HQ = 36; // how far away are we allowed to drop our units for attack from HQ.
+    static int DROP_ZONE_RANGE_OF_HQ = 25; // how far away are we allowed to drop our units for attack from HQ.
 
     public static void run(RobotController rc) throws GameActionException {
 

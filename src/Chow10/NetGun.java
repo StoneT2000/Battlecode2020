@@ -42,6 +42,7 @@ public class NetGun extends RobotPlayer {
             }
         }
 
+        // FIXME: announceMessage(PLACED_NETGUN) if placed in late game!
         if (rc.getLocation().distanceSquaredTo(HQLocation) <= HQ_LAND_RANGE && wallIn) {
             rc.disintegrate();
         }
