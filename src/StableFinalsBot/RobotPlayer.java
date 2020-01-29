@@ -24,11 +24,11 @@ public strictfp class RobotPlayer {
     static MapLocation islandCenter = null; // island center to put miners on to attack drone walls
     static MapLocation islandCenterSide = null; // island center to put miners on to attack drone walls
 
-    static int MAX_CRUNCH_ROUNDS = 15;
+    static final int MAX_CRUNCH_ROUNDS = 15;
 
     static int turnCount;
     static final boolean debug = false;
-    static final int UNIQUEKEY = -987123451;
+    static final int UNIQUEKEY = -1234917945;
     static Team enemyTeam; // enemy team enum
 
     static final int BASE_WALL_DIST = 1;
@@ -80,21 +80,6 @@ public strictfp class RobotPlayer {
 
     static final int NO_LANDSCAPERS_LEFT_ON_ENEMY_HQ = 35;
 
-    static final int BUILD_ISLAND = 36;
-
-    static final int FOUND_LANDSCAPERS_ON_ENEMY_HQ_AGAIN = 37;
-    static final int PLACED_NETGUN = 38;
-
-    static final int LANDSCAPER_DRONES_SWARM = 39;
-    static final int MINER_DRONES_SWARM = 40;
-    static final int ONLY_DRONES_SWARM = 41;
-
-    static final int STOP_LANDSCAPER_DRONES_SWARM = 42;
-    static final int STOP_MINER_DRONES_SWARM = 43;
-    static final int STOP_ONLY_DRONES_SWARM = 44;
-
-    static final int RECALL_ONLY_DRONES = 45;
-
     static int thisLandScapersDesiredHeightOffset = 0;
 
     static int MAX_TERRAFORM_DIST = 134; // was 94
@@ -103,7 +88,7 @@ public strictfp class RobotPlayer {
 
     static int HQ_LAND_RANGE = 5; // how big in r2 HQ's land (that is untouched untill walling) is
 
-    static int DROP_ZONE_RANGE_OF_HQ = 25; // how far away are we allowed to drop our units for attack from HQ.
+    static int DROP_ZONE_RANGE_OF_HQ = 72; // how far away are we allowed to drop our units for attack from HQ.
 
     public static void run(RobotController rc) throws GameActionException {
 
@@ -760,27 +745,6 @@ public strictfp class RobotPlayer {
             dir = dir.rotateRight();
         }
         return false;
-    }
-    static boolean safeDropLocForMiner(MapLocation loc) throws GameActionException {
-        int i = 0;
-        Direction dir = Direction.NORTH;
-        int baseElevation = rc.senseElevation(loc);
-        boolean safe = false;
-        while (i++ < 8) {
-            MapLocation adjLoc = loc.add(dir);
-            if (rc.canSenseLocation(adjLoc)) {
-                int elevation = rc.senseElevation(adjLoc);
-                if (!rc.senseFlooding(adjLoc) && !rc.isLocationOccupied(adjLoc) && (elevation + 3 >= baseElevation && baseElevation >= elevation - 3)) {
-                    safe = true;
-                }
-                RobotInfo info = rc.senseRobotAtLocation(adjLoc);
-                if (info != null && info.type == RobotType.DELIVERY_DRONE && info.team == enemyTeam && !info.isCurrentlyHoldingUnit()) {
-                    return false;
-                }
-            }
-            dir = dir.rotateRight();
-        }
-        return safe;
     }
     static void setIslandCenterAndOtherConstants() {
         if (enemyBaseLocation != null) {
