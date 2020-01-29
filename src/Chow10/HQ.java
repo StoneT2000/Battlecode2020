@@ -401,10 +401,7 @@ public class HQ extends RobotPlayer {
         if  (rc.getRoundNum() < 50 && minersBuilt < 4) {
             unitToBuild = RobotType.MINER;
         }
-        if (vaporatorsBuilt * 0.7 >= minersBuilt && rc.getRoundNum() >= 800) {
-            unitToBuild = RobotType.MINER;
-        }
-        if ((vaporatorsBuilt - 15) * 1.15 >= minersBuilt && rc.getRoundNum() >= 800 && vaporatorsBuilt >= 20) {
+        if (vaporatorsBuilt * 1.15 >= minersBuilt && rc.getRoundNum() >= 800) {
             unitToBuild = RobotType.MINER;
         }
         // if we have minerCost + FC Cost, build miner and hope it builds FC. dont build more miners...
