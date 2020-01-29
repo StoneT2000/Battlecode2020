@@ -1399,12 +1399,14 @@ public class DeliveryDrone extends RobotPlayer {
                         if (friendlyUnitHeld != null && friendlyUnitHeld.type == RobotType.LANDSCAPER) {
                             swarmIn = true;
                             buildIsland = false;
+                            roundsSpentCrunching = 0;
                         }
                         break;
                     case MINER_DRONES_SWARM:
                         if (friendlyUnitHeld != null && friendlyUnitHeld.type == RobotType.MINER) {
                             swarmIn = true;
                             buildIsland = false; // stop islanding, start swarming
+                            roundsSpentCrunching = 0;
                         }
                         break;
                     case ONLY_DRONES_SWARM:
@@ -1412,6 +1414,7 @@ public class DeliveryDrone extends RobotPlayer {
                             swarmIn = true;
                             buildIsland = false;
                             recalledToHQ = false;
+                            roundsSpentCrunching = 0;
                         }
                         break;
                     case STOP_LANDSCAPER_DRONES_SWARM:
@@ -1445,6 +1448,7 @@ public class DeliveryDrone extends RobotPlayer {
                     case SWARM_IN:
                         swarmIn = true;
                         buildIsland = false;
+                        roundsSpentCrunching = 0;
                         break;
                     case ANNOUNCE_ENEMY_BASE_LOCATION:
                         enemyBaseLocation = parseLoc(msg[2]);
