@@ -22,6 +22,8 @@ As other teams post their postmortems I'll also link them here:
 
 the `oldbots` folder contains a lot of old code of previous iterations of my bot.
 
+Also disclaimer: This was all written in 22 days and in the middle of my midterms and school work, so expect a lot of spaghetti code and bad practices.
+
 ## Past Bots
 
 My past teams and bot source code:
