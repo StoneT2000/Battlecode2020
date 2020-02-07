@@ -12,6 +12,10 @@ Check out https://www.battlecode.org/ for more information about Battlecode!
 
 As other teams post their postmortems I'll also link them here:
 
+Java Best Waifu (1st): https://github.com/IvanGeffner/battlecode2020/blob/master/BC2020_Postmortem.pdf
+
+The High Ground (4th): https://github.com/uvafan/bc20/blob/master/Postmortem.pdf
+
 ## Code
 
 `src/ChowQualifiersFinalBot.zip` is a zipped up folder of my **qualifiers** bot
